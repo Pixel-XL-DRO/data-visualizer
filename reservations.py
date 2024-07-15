@@ -139,6 +139,8 @@ else:
   start_date = datetime.combine(start_date, datetime.min.time())
 
 
+df = df[df['is_payed'] == True]
+df = df[df['is_cancelled'] == False]
 df = df[df['city'].isin(city_checkboxes)]
 df = df[df['language'].isin(language_checkboxes)]
 df = df[df['attraction_group'].isin(attraction_groups_checkboxes)]
