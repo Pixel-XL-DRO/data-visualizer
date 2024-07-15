@@ -94,7 +94,7 @@ end_date = None
 # side bar
 with st.sidebar:
   x_axis_type = st.selectbox('Wybierz rodzaj daty', ['Data stworzenia', 'Data rozpoczecia'])
-  time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku', "Przedział"], index=3)
+  time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku', "Przedział"], index=2)
   if time_range == "Przedział":
     start_date = st.date_input('Data rozpoczecia')
     end_date = st.date_input('Data konca')
