@@ -25,9 +25,9 @@ def make_sure_only_one_separate_toggle_is_on(key):
     if st.session_state.t4:
       st.session_state.t3 = False
 
-def create_chart(data, y_field, y_field_ma, title):
+def create_chart_with_ma(data, y_field, y_field_ma, title):
     base = alt.Chart(data).encode(
-      x=alt.X(x_axis_type, title='Data'),
+      x=alt.X(x_axis_type, title='Data', axis=alt.Axis(tickCount="month")),
     ).interactive()
 
     points = base.mark_point().encode(
@@ -75,6 +75,7 @@ query = """
     booked_date.date AS booked_date,
     location.city AS city,
     client.language AS language,
+    client.id AS client_id
   FROM
     `pixelxl-database-dev.reservation_data.event_create_reservation` res
   JOIN
@@ -122,7 +123,6 @@ with st.sidebar:
       attraction_groups_checkboxes = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique())
       seperate_attractions = st.checkbox('Rozdziel atrakcje', key="t4", on_change=lambda:make_sure_only_one_separate_toggle_is_on("t4"))
 
-# transform data
 df['start_date'] = pd.to_datetime(df['start_date']).dt.tz_localize(None)
 df['booked_date'] = pd.to_datetime(df['booked_date']).dt.tz_localize(None)
 
@@ -163,60 +163,59 @@ df = df[df['attraction_group'].isin(attraction_groups_checkboxes)]
 df = df[df[x_axis_type] >= start_date]
 df = df[df[x_axis_type] <= end_date]
 
-reservations_rolling_averages = []
-total_cost_rolling_averages = []
-total_people_rolling_averages = []
+df = df.sort_values(by=x_axis_type, ascending=True)
+df['cumulative_reservations'] = df.groupby('client_id').cumcount() + 1
+df['has_past_reservation'] = df['cumulative_reservations'] > 1
 
 if seperate_cities:
-  df_grouped = df.groupby([df[x_axis_type].dt.to_period('D'), df['city']]).agg(
+  df_grouped = df.groupby([df[x_axis_type].dt.to_period('M'), df['city']]).agg(
     reservations=('id', 'count'),
-    total_cost=('whole_cost_with_voucher', 'sum'),
-    total_people=('no_of_people', 'sum')
+    returning_clients=('client_id', lambda x: x.duplicated(keep=False).sum()),
+    past_reservation_clients=('has_past_reservation', 'sum')
   ).reset_index()
-
-  for city in df_grouped['city'].unique():
-    reservations_rolling_averages.append(df_grouped[df_grouped['city'] == city]['reservations'].rolling(window=moving_average_days).mean())
-    total_cost_rolling_averages.append(df_grouped[df_grouped['city'] == city]['total_cost'].rolling(window=moving_average_days).mean())
-    total_people_rolling_averages.append(df_grouped[df_grouped['city'] == city]['total_people'].rolling(window=moving_average_days).mean())
 
 elif seperate_attractions:
-  df_grouped = df.groupby([df[x_axis_type].dt.to_period('D'), df['attraction_group']]).agg(
+  df_grouped = df.groupby([df[x_axis_type].dt.to_period('M'), df['attraction_group']]).agg(
     reservations=('id', 'count'),
-    total_cost=('whole_cost_with_voucher', 'sum'),
-    total_people=('no_of_people', 'sum')
+    returning_clients=('client_id', lambda x: x.duplicated(keep=False).sum()),
+    past_reservation_clients=('has_past_reservation', 'sum')
   ).reset_index()
-
-  for attraction_group in df_grouped['attraction_group'].unique():
-    reservations_rolling_averages.append(df_grouped[df_grouped['attraction_group'] == attraction_group]['reservations'].rolling(window=moving_average_days).mean())
-    total_cost_rolling_averages.append(df_grouped[df_grouped['attraction_group'] == attraction_group]['total_cost'].rolling(window=moving_average_days).mean())
-    total_people_rolling_averages.append(df_grouped[df_grouped['attraction_group'] == attraction_group]['total_people'].rolling(window=moving_average_days).mean())
 
 else:
-  df_grouped = df.groupby(df[x_axis_type].dt.to_period('D')).agg(
+  df_grouped = df.groupby(df[x_axis_type].dt.to_period('M')).agg(
     reservations=('id', 'count'),
-    total_cost=('whole_cost_with_voucher', 'sum'),
-    total_people=('no_of_people', 'sum')
+    returning_clients=('client_id', lambda x: x.duplicated(keep=False).sum()),
+    past_reservation_clients=('has_past_reservation', 'sum')
   ).reset_index()
 
-  reservations_rolling_averages.append(df_grouped['reservations'].rolling(window=moving_average_days).mean())
-  total_cost_rolling_averages.append(df_grouped['total_cost'].rolling(window=moving_average_days).mean())
-  total_people_rolling_averages.append(df_grouped['total_people'].rolling(window=moving_average_days).mean())
-
 df_grouped[x_axis_type] = df_grouped[x_axis_type].dt.to_timestamp()
+df_grouped['retention_percent'] = df_grouped['returning_clients'] / df_grouped['reservations'] * 100
+df_grouped['past_retention_percent'] = df_grouped['past_reservation_clients'] / df_grouped['reservations'] * 100
 
-if moving_average_toggle:
-  df_grouped['reservations_ma'] = pd.concat(reservations_rolling_averages)
-  df_grouped['total_cost_ma'] = pd.concat(total_cost_rolling_averages)
-  df_grouped['total_people_ma'] = pd.concat(total_people_rolling_averages)
+# st.text("Retencja na miesiac (procent osób które odwiedziły nas conajmniej 2 razy)")
+# reservations_chart = create_chart_with_ma(df_grouped, 'retention_percent', 'retention_percent', "Procent osób")
+# st.altair_chart(reservations_chart, use_container_width=True)
 
-st.text("Liczba rezerwacji")
-reservations_chart = create_chart(df_grouped, 'reservations', 'reservations_ma', "Liczba rezerwacji")
+st.text("Retencja na miesiac (procent osób które odwiedziły nas conajmniej 2 razy w historii)")
+reservations_chart = create_chart_with_ma(df_grouped, 'past_retention_percent', 'past_retention_percent', "Procent osób")
 st.altair_chart(reservations_chart, use_container_width=True)
 
-st.text("Przychód (PLN)")
-cost_chart = create_chart(df_grouped, 'total_cost', 'total_cost_ma', "Przychód (PLN)")
-st.altair_chart(cost_chart, use_container_width=True)
+# df_grouped['cumulative_reservations'] = df_grouped['reservations'].cumsum()
+# df_grouped['cumulative_client_reservations'] = df_grouped['returning_clients'].cumsum()
+# df_grouped['cumulative_retention_percent'] = df_grouped['cumulative_client_reservations'] / df_grouped['cumulative_reservations'] * 100
 
-st.text("Liczba osób")
-people_chart = create_chart(df_grouped, 'total_people', 'total_people_ma', "Liczba osób")
-st.altair_chart(people_chart, use_container_width=True)
+# st.text("Kumulatywna retencja (procent osób powracajacych)")
+# reservations_chart = create_chart_with_ma(df_grouped, 'cumulative_retention_percent', 'cumulative_retention_percent', "Procent osób")
+# st.altair_chart(reservations_chart, use_container_width=True)
+
+
+client_reservations_count = df.groupby('client_id').size().reset_index(name='reservation_count')
+
+client_reservations_count['category'] = client_reservations_count['reservation_count'].apply(
+    lambda x: '1 raz' if x == 1 else '2 razy' if x == 2 else ('3 razy' if x == 3 else ('4 razy' if x == 4 else 'więcej'))
+)
+
+category_counts = client_reservations_count['category'].value_counts().reset_index()
+category_counts.columns = ['category', 'count']
+st.write("Ile razy ludzie u nas byli?")
+category_counts
