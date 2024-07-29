@@ -76,13 +76,13 @@ def get_reservation_data():
 
 def mock_price_and_people(day_of_week, visit_type, current_price, current_number_of_people):
   if visit_type == "urodziny - standard":
-    return 549, 6 if day_of_week > 0 and day_of_week < 5 else 649, 6
+    return (549, 6) if day_of_week > 0 and day_of_week < 5 else (649, 6)
   if visit_type == "urodziny Pixel":
-    return 549, 6 if day_of_week > 0 and day_of_week < 5 else 649, 6
+    return (549, 6) if day_of_week > 0 and day_of_week < 5 else (649, 6)
   if visit_type == "urodziny - XL":
-    return 899, 12 if day_of_week > 0 and day_of_week < 5 else 999, 12
+    return (899, 12) if day_of_week > 0 and day_of_week < 5 else (999, 12)
   if visit_type == "urodziny - XXL":
-    return 2299, 50 if day_of_week > 0 and day_of_week < 5 else 2399, 50
+    return (2299, 50) if day_of_week > 0 and day_of_week < 5 else (2399, 50)
   if visit_type == "szkoła do 24 osób":
     # 18 people * 28pln
     return 504, 18
