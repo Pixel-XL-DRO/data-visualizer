@@ -30,6 +30,18 @@ def create_chart(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label
        return points
     return line
 
+def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, colorBy):
+    base = alt.Chart(data).encode(
+      x=alt.X(x_axis_type, title=x_axis_label),
+    ).interactive()
+
+    bar = base.mark_bar(size=10).encode(
+      y=alt.Y(y_value, title=y_axis_label),
+      tooltip=[x_axis_type, y_value],
+      color=alt.Color(colorBy, scale=alt.Scale(scheme='dark2')) if colorBy else alt.value('green')
+    )
+
+    return bar
 
 def make_sure_only_one_toggle_is_on(toggles, key):
   if st.session_state[key]:

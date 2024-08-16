@@ -1,12 +1,13 @@
 import sys
 sys.path.append("shared")
+sys.path.append("shared/sidebars")
 sys.path.append("utils")
 
 import streamlit as st
 import altair as alt
 
 import queries
-import sidebar
+import clients_sidebar
 import clients_utils
 import utils
 
@@ -21,10 +22,8 @@ with st.spinner():
   df = queries.get_reservation_data()
 
 # side bar
-(df, x_axis_type, moving_average_toggle,
-show_only_moving_average, moving_average_days,
-seperate_cities,seperate_attractions, seperate_status,
-seperate_visit_types) = sidebar.filter_data(df)
+(df, x_axis_type, seperate_cities, seperate_attractions,
+seperate_status, seperate_visit_types) = clients_sidebar.filter_data(df)
 
 groupBy = 'city' if seperate_cities else 'attraction_group' if seperate_attractions else 'status' if seperate_status else 'visit_type' if seperate_visit_types else None
 

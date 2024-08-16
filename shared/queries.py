@@ -30,11 +30,25 @@ def get_reservation_data():
       res.is_cancelled,
       res.no_of_people,
       res.whole_cost_with_voucher,
+      res.additional_items_cost,
       res.attraction_group,
-      res.visit_type as visit_type,
+      res.visit_type AS visit_type,
       start_date.date AS start_date,
       booked_date.date AS booked_date,
-      start_date.day_of_week as day_of_week,
+      start_date.hour AS start_date_hour,
+      start_date.day_of_month AS start_date_day_of_month,
+      start_date.day_of_week AS start_date_day_of_week,
+      start_date.week_of_month AS start_date_week_of_month,
+      start_date.week AS start_date_week_of_year,
+      start_date.month AS start_date_month,
+      start_date.year AS start_date_year,
+      booked_date.hour AS booked_date_hour,
+      booked_date.day_of_month AS booked_date_day_of_month,
+      booked_date.day_of_week AS booked_date_day_of_week,
+      booked_date.week_of_month AS booked_date_week_of_month,
+      booked_date.week AS booked_date_week_of_year,
+      booked_date.month AS booked_date_month,
+      booked_date.year AS booked_date_year,
       location.city AS city,
       client.language AS language,
       client.id AS client_id
@@ -63,7 +77,8 @@ def get_reservation_data():
 
   new_values = df.apply(
     lambda row: mock_price_and_people(
-      row['day_of_week'], row['visit_type'],
+      row['start_date_day_of_week'], row['visit_type'],
+      row['city'], row['additional_items_cost'],
       row['whole_cost_with_voucher'], row['no_of_people']
     ), axis=1
   )
@@ -73,36 +88,49 @@ def get_reservation_data():
 
   return df
 
-
-def mock_price_and_people(day_of_week, visit_type, current_price, current_number_of_people):
+def mock_price_and_people(day_of_week, visit_type, city, additional_items_cost, current_price, current_number_of_people):
   if visit_type == "urodziny - standard":
-    return (549, 6) if day_of_week > 0 and day_of_week < 5 else (649, 6)
+    return (549 + additional_items_cost, 6) if day_of_week > 0 and day_of_week < 5 else (649 + additional_items_cost, 6)
   if visit_type == "urodziny Pixel":
-    return (549, 6) if day_of_week > 0 and day_of_week < 5 else (649, 6)
+    return (549 + additional_items_cost, 6) if day_of_week > 0 and day_of_week < 5 else (649 + additional_items_cost, 6)
+  if visit_type == "urodziny - L":
+    return (899 + additional_items_cost, 12) if day_of_week > 0 and day_of_week < 5 else (999 + additional_items_cost, 12)
   if visit_type == "urodziny - XL":
-    return (899, 12) if day_of_week > 0 and day_of_week < 5 else (999, 12)
+    if city == "wroclaw":
+      return (899 + additional_items_cost, 12) if day_of_week > 0 and day_of_week < 5 else (999 + additional_items_cost, 12)
+    return (1349 + additional_items_cost, 18) if day_of_week > 0 and day_of_week < 5 else (1449 + additional_items_cost, 18)
   if visit_type == "urodziny - XXL":
-    return (2299, 50) if day_of_week > 0 and day_of_week < 5 else (2399, 50)
+    if city == "wroclaw":
+      return (2299 + additional_items_cost, 50) if day_of_week > 0 and day_of_week < 5 else (2399 + additional_items_cost, 50)
+    return (1799 + additional_items_cost, 24) if day_of_week > 0 and day_of_week < 5 else (1889 + additional_items_cost, 24)
   if visit_type == "szkoła do 24 osób":
     # 18 people * 28pln
-    return 504, 18
+    return (504 + additional_items_cost, 18)
   if visit_type == "szkoła do 36 osób":
     # 30 people * 28 pln
-    return 840, 30
+    return (840 + additional_items_cost, 30)
   if visit_type == "szkoła do 48 osób":
     # 42 people * 28 pln
-    return 1176, 42
+    return (1176 + additional_items_cost, 42)
   if visit_type == "szkoła od 48 osób":
     # 54 people * 28 pln
-    return 1512, 54
+    return (1512 + additional_items_cost, 54)
   if visit_type == "integracja - L":
-    return 699, 10
+    if city == "wroclaw":
+      return (699 + additional_items_cost, 10)
+    return (699 + additional_items_cost, 8)
   if visit_type == "integracja - L+":
-    return 999, 16
+    if city == "wroclaw":
+      return (999 + additional_items_cost, 16)
+    return (1299 + additional_items_cost, 16)
   if visit_type == "integracja - XL":
-    return 1299, 25
+    if city == "wroclaw":
+      return (1299 + additional_items_cost, 25)
+    return (1899 + additional_items_cost, 24)
   if visit_type == "integracja - XL+":
-    return 1899, 31
+    if city == "wroclaw":
+      return (1899 + additional_items_cost, 31)
+    return (2449 + additional_items_cost, 32)
   if visit_type == "integracja - XXL":
-    return 2899, 50
-  return current_price, current_number_of_people
+    return (2899 + additional_items_cost, 50)
+  return (current_price, current_number_of_people)

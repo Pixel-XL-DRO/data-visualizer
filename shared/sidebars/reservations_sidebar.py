@@ -14,7 +14,7 @@ def determine_status(row):
     return 'Zrealizowane nieopłacone'
   return 'Zrealizowane'
 
-def test():
+def ensure_status():
   if st.session_state.ms1[0] == "Wszystkie":
     st.session_state.ms1 = st.session_state.ms1[1:]
   elif st.session_state.ms1[-1] == "Wszystkie":
@@ -46,7 +46,7 @@ def filter_data(df):
         status_checkboxes = st.multiselect("Status", ["Zrealizowane", "Anulowane", "Zrealizowane nieopłacone"], default="Zrealizowane")
         seperate_status = st.checkbox('Rozdziel status', key="t5", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t5"))
       with st.container(border=True):
-        visit_type_groups_checkboxes = st.multiselect('Typy wizyty', np.concatenate([df['visit_type'].unique(), np.array(["Wszystkie"])]), default="Wszystkie", on_change=lambda:test(), key="ms1")
+        visit_type_groups_checkboxes = st.multiselect('Typy wizyty', np.concatenate([df['visit_type'].unique(), np.array(["Wszystkie"])]), default="Wszystkie", on_change=lambda:ensure_status(), key="ms1")
         seperate_visit_types = st.checkbox('Rozdziel typy wizyty', key="t6", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t6"))
 
     if x_axis_type == 'Data stworzenia':
@@ -74,7 +74,8 @@ def filter_data(df):
       elif time_range == '3 lat':
         start_date = end_date - timedelta(days=1095)
       elif time_range == 'Od poczatku':
-        start_date = df[x_axis_type].min()
+        min_date = df[x_axis_type].min()
+        start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 

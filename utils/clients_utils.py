@@ -1,6 +1,6 @@
 def group_data(df, x_axis_type, grouping_field):
   if grouping_field:
-    df_grouped = df.groupby([df[x_axis_type].dt.to_period('M'), df['city']]).agg(
+    df_grouped = df.groupby([df[x_axis_type].dt.to_period('M'), df[grouping_field]]).agg(
       reservations=('id', 'count'),
       returning_clients=('client_id', lambda x: x.duplicated(keep=False).sum()),
       past_reservation_clients=('has_past_reservation', 'sum')

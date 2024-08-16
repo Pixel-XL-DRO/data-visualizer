@@ -1,5 +1,6 @@
 import sys
 sys.path.append("shared")
+sys.path.append("shared/sidebars")
 sys.path.append("utils")
 
 import streamlit as st
@@ -7,7 +8,7 @@ import pandas as pd
 
 import queries
 import utils
-import sidebar
+import reservations_sidebar
 import reservations_utils
 
 st.set_page_config(layout="wide")
@@ -26,7 +27,7 @@ with st.spinner():
 (df, x_axis_type, moving_average_toggle,
 show_only_moving_average, moving_average_days,
 seperate_cities,seperate_attractions, seperate_status,
-seperate_visit_types) = sidebar.filter_data(df)
+seperate_visit_types) = reservations_sidebar.filter_data(df)
 
 groupBy = 'city' if seperate_cities else 'attraction_group' if seperate_attractions else 'status' if seperate_status else 'visit_type' if seperate_visit_types else None
 
