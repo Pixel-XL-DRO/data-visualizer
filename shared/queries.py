@@ -90,47 +90,47 @@ def get_reservation_data():
 
 def mock_price_and_people(day_of_week, visit_type, city, additional_items_cost, current_price, current_number_of_people):
   if visit_type == "urodziny - standard":
-    return (549 + additional_items_cost, 6) if day_of_week > 0 and day_of_week < 5 else (649 + additional_items_cost, 6)
+    return (max((549 + additional_items_cost), current_price), 6) if day_of_week > 0 and day_of_week < 5 else (max((649 + additional_items_cost), current_price), 6)
   if visit_type == "urodziny Pixel":
-    return (549 + additional_items_cost, 6) if day_of_week > 0 and day_of_week < 5 else (649 + additional_items_cost, 6)
+    return (max((549 + additional_items_cost), current_price), 6) if day_of_week > 0 and day_of_week < 5 else (max((649 + additional_items_cost), current_price), 6)
   if visit_type == "urodziny - L":
-    return (899 + additional_items_cost, 12) if day_of_week > 0 and day_of_week < 5 else (999 + additional_items_cost, 12)
+    return (max((899 + additional_items_cost), current_price), 12) if day_of_week > 0 and day_of_week < 5 else (max((999 + additional_items_cost), current_price), 12)
   if visit_type == "urodziny - XL":
     if city == "wroclaw":
-      return (899 + additional_items_cost, 12) if day_of_week > 0 and day_of_week < 5 else (999 + additional_items_cost, 12)
+      return (max((899 + additional_items_cost), current_price), 12) if day_of_week > 0 and day_of_week < 5 else (max((999 + additional_items_cost), current_price), 12)
     return (1349 + additional_items_cost, 18) if day_of_week > 0 and day_of_week < 5 else (1449 + additional_items_cost, 18)
   if visit_type == "urodziny - XXL":
     if city == "wroclaw":
-      return (2299 + additional_items_cost, 50) if day_of_week > 0 and day_of_week < 5 else (2399 + additional_items_cost, 50)
-    return (1799 + additional_items_cost, 24) if day_of_week > 0 and day_of_week < 5 else (1889 + additional_items_cost, 24)
+      return (max((2299 + additional_items_cost), current_price), 50) if day_of_week > 0 and day_of_week < 5 else (max((2399 + additional_items_cost), current_price), 50)
+    return (max((1799 + additional_items_cost), current_price), 24) if day_of_week > 0 and day_of_week < 5 else (max((1889 + additional_items_cost), current_price), 24)
   if visit_type == "szkoła do 24 osób":
     # 18 people * 28pln
-    return (504 + additional_items_cost, 18)
+    return (max((504 + additional_items_cost), current_price), 18)
   if visit_type == "szkoła do 36 osób":
     # 30 people * 28 pln
-    return (840 + additional_items_cost, 30)
+    return (max((840 + additional_items_cost), current_price), 30)
   if visit_type == "szkoła do 48 osób":
     # 42 people * 28 pln
-    return (1176 + additional_items_cost, 42)
+    return (max((1176 + additional_items_cost), current_price), 42)
   if visit_type == "szkoła od 48 osób":
     # 54 people * 28 pln
-    return (1512 + additional_items_cost, 54)
+    return (max((1512 + additional_items_cost), current_price), 54)
   if visit_type == "integracja - L":
     if city == "wroclaw":
-      return (699 + additional_items_cost, 10)
-    return (699 + additional_items_cost, 8)
+      return (max((699 + additional_items_cost), current_price), 10)
+    return (max((699 + additional_items_cost), current_price), 8)
   if visit_type == "integracja - L+":
     if city == "wroclaw":
-      return (999 + additional_items_cost, 16)
-    return (1299 + additional_items_cost, 16)
+      return (max((999 + additional_items_cost), current_price), 16)
+    return (max((1299 + additional_items_cost), current_price), 16)
   if visit_type == "integracja - XL":
     if city == "wroclaw":
-      return (1299 + additional_items_cost, 25)
-    return (1899 + additional_items_cost, 24)
+      return (max((1299 + additional_items_cost), current_price), 25)
+    return (max((1899 + additional_items_cost), current_price), 24)
   if visit_type == "integracja - XL+":
     if city == "wroclaw":
-      return (1899 + additional_items_cost, 31)
-    return (2449 + additional_items_cost, 32)
+      return (max((1899 + additional_items_cost), current_price), 31)
+    return (max((2449 + additional_items_cost), current_price), 32)
   if visit_type == "integracja - XXL":
-    return (2899 + additional_items_cost, 50)
+    return (max((2899 + additional_items_cost), current_price), 50)
   return (current_price, current_number_of_people)
