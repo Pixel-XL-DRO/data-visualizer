@@ -30,7 +30,7 @@ def create_chart(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label
        return points
     return line
 
-def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, colorBy):
+def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, colorBy, currentValue=None):
     base = alt.Chart(data).encode(
       x=alt.X(x_axis_type, title=x_axis_label),
     ).interactive()
@@ -38,7 +38,11 @@ def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, col
     bar = base.mark_bar(size=10).encode(
       y=alt.Y(y_value, title=y_axis_label),
       tooltip=[x_axis_type, y_value],
-      color=alt.Color(colorBy, scale=alt.Scale(scheme='dark2')) if colorBy else alt.value('green')
+      color=alt.condition(
+        alt.datum[x_axis_type] == currentValue,
+        alt.value('orange'),
+        alt.value('blue')
+      )
     )
 
     return bar
@@ -53,3 +57,10 @@ def make_sure_only_one_toggle_is_on(toggles, key):
 def chain_toggle_off(key_to_check, key_to_toggle):
   if not st.session_state[key_to_check]:
     st.session_state[key_to_toggle] = False
+
+
+def get_month_days_count(year, month):
+  return 31 if month in [1, 3, 5, 7, 8, 10, 12] else 30 if month in [4, 6, 9, 11] else 28 if month == 2 and year % 4 == 0 else 29
+
+def get_year_days_count(year):
+  return 366 if year % 4 == 0 else 365

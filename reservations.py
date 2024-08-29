@@ -11,6 +11,7 @@ import utils
 import reservations_sidebar
 import reservations_utils
 
+
 st.set_page_config(layout="wide")
 
 def determine_status(row):

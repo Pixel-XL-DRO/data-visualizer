@@ -18,6 +18,8 @@ def determine_status(row):
     return 'Zrealizowane nieopłacone'
   return 'Zrealizowane'
 
+st.set_page_config(layout="wide")
+
 with st.spinner():
   df = queries.get_reservation_data()
 
@@ -29,7 +31,7 @@ groupBy = 'city' if seperate_cities else 'attraction_group' if seperate_attracti
 
 df_grouped = clients_utils.group_data(df, x_axis_type, groupBy)
 
-st.text("Retencja na miesiac (procent osób które odwiedziły nas conajmniej 2 razy w historii)")
+st.text("Retencja na miesiac (procent osób które odwiedziły nas conajmniej 2 razy w historii) \n [WIP]")
 reservations_chart = utils.create_chart(df_grouped, x_axis_type, "Data", None, 'past_retention_percent', "Procent osób", groupBy, 4, "month")
 st.altair_chart(reservations_chart, use_container_width=True)
 

@@ -89,11 +89,6 @@ def filter_data(df):
     df = df[df['attraction_group'].isin(attraction_groups_checkboxes)]
     df = df if "Wszystkie" in visit_type_groups_checkboxes else df[df['visit_type'].isin(visit_type_groups_checkboxes)]
 
-    # stricte for clients.py, probably should move some of the logic so sidebar.py is more universal
-    df = df.sort_values(by=x_axis_type, ascending=True)
-    df['cumulative_reservations'] = df.groupby('client_id').cumcount() + 1
-    df['has_past_reservation'] = df['cumulative_reservations'] > 1
-
     df = df[df[x_axis_type] >= start_date]
     df = df[df[x_axis_type] <= end_date]
 

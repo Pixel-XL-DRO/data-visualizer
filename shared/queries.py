@@ -10,7 +10,7 @@ credentials = service_account.Credentials.from_service_account_info(
 
 client = bigquery.Client(credentials=credentials)
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=6000)
 def run_query(query):
   query_job = client.query(query)
   rows_raw = query_job.result()
@@ -51,7 +51,8 @@ def get_reservation_data():
       booked_date.year AS booked_date_year,
       location.city AS city,
       client.language AS language,
-      client.id AS client_id
+      client.id AS client_id,
+      client.email AS email
     FROM
       `pixelxl-database-dev.reservation_data.event_create_reservation` res
     JOIN

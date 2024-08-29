@@ -1,5 +1,8 @@
 import sys
 sys.path.append("shared")
+import pandas as pd
+
+import reservations_cumulative_utils
 
 from datetime import datetime, timedelta
 import utils
@@ -30,8 +33,6 @@ def filter_data(df):
     if time_range == "Przedział":
       start_date = st.date_input('Data rozpoczecia')
       end_date = st.date_input('Data konca')
-    with st.expander("Grupy czasowe (WIP, nie działa)"):
-      group_dates_by = st.selectbox('Wybierz grupowanie po dacie', ['Godzina', 'Dzień tygodnia', 'Tydzien roku', 'Tydzien miesiaca', 'Dzień miesiaca', 'Miesiac', 'Rok'])
     with st.expander("Filtry"):
       with st.container(border=True):
         city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
@@ -87,15 +88,19 @@ def filter_data(df):
     df = df[df['attraction_group'].isin(attraction_groups_checkboxes)]
     df = df if "Wszystkie" in visit_type_groups_checkboxes else df[df['visit_type'].isin(visit_type_groups_checkboxes)]
 
-    # stricte for clients.py, probably should move some of the logic so sidebar.py is more universal
-    df = df.sort_values(by=x_axis_type, ascending=True)
-    df['cumulative_reservations'] = df.groupby('client_id').cumcount() + 1
-    df['has_past_reservation'] = df['cumulative_reservations'] > 1
+    group_by = 'city' if seperate_cities else 'attraction_group' if seperate_attractions else 'status' if seperate_status else 'visit_type' if seperate_visit_types else None
+
+    df = reservations_cumulative_utils.group_data_cumulative(df, x_axis_type, group_by)
+
+    # return start_date, 1, 1, 1,1,1,1
+
+    # df[x_axis_type] = df[x_axis_type].to_timestamp()
+    df[x_axis_type] = df[x_axis_type].dt.to_timestamp()
+    df[x_axis_type] = pd.to_datetime(df[x_axis_type])
 
     df = df[df[x_axis_type] >= start_date]
     df = df[df[x_axis_type] <= end_date]
 
-
     return (df, x_axis_type,
       seperate_cities,seperate_attractions, seperate_status,
-      seperate_visit_types, group_dates_by)
+      seperate_visit_types, group_by)
