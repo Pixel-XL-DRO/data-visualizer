@@ -29,13 +29,10 @@ with st.spinner():
 seperate_status, seperate_visit_types, group_by) = reservations_cumulative_sidebar.filter_data(df)
 
 
-st.text("Kumulujaca sie liczba rezerwacji")
-reservations_chart = utils.create_chart(df_cumulative, x_axis_type, "Data", None, 'reservations', "Liczba rezerwacji", group_by, 2 if group_by else 4, "month")
-st.altair_chart(reservations_chart, use_container_width=True)
-st.text("Kumulujacy sie przychód")
-reservations_chart = utils.create_chart(df_cumulative, x_axis_type, "Data", None, 'total_cost', "Przychód (PLN)", group_by, 2 if group_by else 4, "month")
-st.altair_chart(reservations_chart, use_container_width=True)
-st.text("Kumulujaca sie liczba osób")
-reservations_chart = utils.create_chart(df_cumulative, x_axis_type, "Data", None, 'total_people', "Liczba osób", group_by, 2 if group_by else 4, "month")
-st.altair_chart(reservations_chart, use_container_width=True)
+reservations_chart = utils.create_chart_new(df_cumulative, x_axis_type, "Data", None, 'reservations', "Kumulujaca sie liczba rezerwacji", group_by, 2 if group_by else 4, "Liczba rezerwacji")
+st.plotly_chart(reservations_chart, use_container_width=True)
+reservations_chart = utils.create_chart_new(df_cumulative, x_axis_type, "Data", None, 'total_cost', "Kumulujacy sie przychód (PLN)", group_by, 2 if group_by else 4, "Przychód (PLN)")
+st.plotly_chart(reservations_chart, use_container_width=True)
+reservations_chart = utils.create_chart_new(df_cumulative, x_axis_type, "Data", None, 'total_people', "Kumulujaca sie liczba osób", group_by, 2 if group_by else 4, "Liczba osób")
+st.plotly_chart(reservations_chart, use_container_width=True)
 

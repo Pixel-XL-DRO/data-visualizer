@@ -1,5 +1,69 @@
 import streamlit as st
 import altair as alt
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+
+def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label, colorBy, lineStrokeWidth, line_label):
+  fig = None
+
+  if points_y and line_y:
+    fig = px.line(
+      data,
+      x=x_axis_type,
+      y=line_y,
+      color=colorBy if colorBy in data.columns else None,
+      title=y_axis_label
+    )
+    fig.add_traces(px.scatter(
+      data,
+      x=x_axis_type,
+      y=points_y,
+      color=colorBy if colorBy in data.columns else None,
+      title=y_axis_label
+    ).data)
+
+
+  elif points_y:
+    fig = px.scatter(
+      data,
+      x=x_axis_type,
+      y=points_y,
+      color=colorBy if colorBy in data.columns else None,
+      title=y_axis_label
+    )
+
+  elif line_y:
+    fig = px.line(
+      data,
+      x=x_axis_type,
+      y=line_y,
+      color=colorBy if colorBy in data.columns else None,
+      title=y_axis_label
+    )
+
+  if line_y:
+    fig.update_traces(line=dict(width=lineStrokeWidth, color="royalblue"), selector=dict(mode='lines'), hovertemplate='<b>' + line_label + '</b>: %{y}')
+  if not colorBy:
+    fig.update_traces(marker=dict(color="orangered"), selector=dict(mode='markers'), hovertemplate='<b>' + y_axis_label + '</b>: %{y}')
+  else:
+    fig.update_traces(selector=dict(mode='markers'), hovertemplate='<b>' + y_axis_label + '</b>: %{y}')
+
+  fig.update_layout(
+    hovermode='x unified',
+    dragmode='pan',
+    xaxis_title=x_axis_label,
+    yaxis_title=y_axis_label,
+    xaxis_zeroline=False,
+    yaxis=dict(
+      spikecolor="white", spikethickness=0.5, spikedash='solid', spikemode='across', spikesnap="cursor"
+    ),
+    xaxis=dict(
+      spikecolor="white", spikethickness=0.5, spikedash='solid', spikemode='across'
+    )
+  )
+
+  return fig
 
 def create_chart(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label, colorBy, lineStrokeWidth, tickCount):
     base = alt.Chart(data).encode(
@@ -57,6 +121,10 @@ def make_sure_only_one_toggle_is_on(toggles, key):
 def chain_toggle_off(key_to_check, key_to_toggle):
   if not st.session_state[key_to_check]:
     st.session_state[key_to_toggle] = False
+
+def chain_toggle_on(key_to_check, key_to_toggle):
+  if st.session_state[key_to_check]:
+    st.session_state[key_to_toggle] = True
 
 
 def get_month_days_count(year, month):
