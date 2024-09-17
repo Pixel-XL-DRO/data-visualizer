@@ -42,8 +42,11 @@ def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_l
       title=y_axis_label
     )
 
-  if line_y:
+  if not colorBy:
     fig.update_traces(line=dict(width=lineStrokeWidth, color="royalblue"), selector=dict(mode='lines'), hovertemplate='<b>' + line_label + '</b>: %{y}')
+  else:
+    fig.update_traces(line=dict(width=lineStrokeWidth), selector=dict(mode='lines'), hovertemplate='<b>' + line_label + '</b>: %{y}')
+
   if not colorBy:
     fig.update_traces(marker=dict(color="orangered"), selector=dict(mode='markers'), hovertemplate='<b>' + y_axis_label + '</b>: %{y}')
   else:
