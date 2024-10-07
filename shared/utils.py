@@ -59,10 +59,10 @@ def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_l
     yaxis_title=y_axis_label,
     xaxis_zeroline=False,
     yaxis=dict(
-      spikecolor="white", spikethickness=0.5, spikedash='solid', spikemode='across', spikesnap="cursor"
+      spikecolor="red", spikethickness=0.7, spikedash='solid', spikemode='across', spikesnap="cursor"
     ),
     xaxis=dict(
-      spikecolor="white", spikethickness=0.5, spikedash='solid', spikemode='across'
+      spikecolor="red", spikethickness=0.7, spikedash='solid', spikemode='across'
     )
   )
 
