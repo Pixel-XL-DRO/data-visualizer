@@ -135,3 +135,65 @@ def get_month_days_count(year, month):
 
 def get_year_days_count(year):
   return 366 if year % 4 == 0 else 365
+
+def map_day_of_week_number_to_string(day_of_week_as_number):
+  return {
+    0: "Niedziela",
+    1: "Poniedzialek",
+    2: "Wtorek",
+    3: "Sroda",
+    4: "Czwartek",
+    5: "Piatek",
+    6: "Sobota"
+  }[day_of_week_as_number]
+
+def map_day_of_week_string_to_number(day_of_week_as_string):
+  return {
+    "Niedziela": 0,
+    "Poniedzialek": 1,
+    "Wtorek": 2,
+    "Sroda": 3,
+    "Czwartek": 4,
+    "Piatek": 5,
+    "Sobota": 6
+  }[day_of_week_as_string]
+
+def format_date(date):
+  split_date = str(date).split('.')
+  day = split_date[0]
+  month = split_date[1]
+  year = split_date[2]
+
+  if len(str(day)) == 1:
+    day = "0" + str(day)
+
+  if len(str(month)) == 1:
+    month = "0" + str(month)
+
+  return f"{day}.{month}.{year}"
+
+def parse_hour(hour):
+  split = hour.split('.')
+  hours = split[0]
+  minutes = int(int(split[1]) / 10 * 60)
+
+  if len(str(hours)) == 1:
+    hours = "0" + str(hours)
+
+  if len(str(minutes)) == 1:
+    minutes = "0" + str(minutes)
+
+  return f"{hours}:{minutes}"
+
+
+
+def get_day_of_week_string_shortcut(day_of_week):
+  return {
+    0: "Pon.",
+    1: "Wt",
+    2: "Śr.",
+    3: "Czw.",
+    4: "Pt.",
+    5: "Sob.",
+    6: "Nd."
+  }[day_of_week]

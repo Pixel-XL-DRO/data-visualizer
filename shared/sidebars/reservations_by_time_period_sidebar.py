@@ -37,7 +37,7 @@ def filter_data(df):
       city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
       language_checkboxes = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique())
       attraction_groups_checkboxes = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique())
-      status_checkboxes = st.multiselect("Status", ["Zrealizowane", "Anulowane", "Zrealizowane nieopłacone"], default="Zrealizowane")
+      status_checkboxes = st.multiselect("Status", ["Zrealizowane", "Anulowane", "Zrealizowane nieopłacone"], default=["Zrealizowane", "Zrealizowane nieopłacone"])
       visit_type_groups_checkboxes = st.multiselect('Typy wizyty', np.concatenate([df['visit_type'].unique(), np.array(["Wszystkie"])]), default="Wszystkie", on_change=lambda:ensure_status(), key="ms1")
 
     if x_axis_type == 'Data stworzenia':
