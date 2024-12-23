@@ -28,7 +28,6 @@ with st.spinner():
 (df_cumulative, x_axis_type, seperate_cities,seperate_attractions,
 seperate_status, seperate_visit_types, group_by) = reservations_cumulative_sidebar.filter_data(df)
 
-
 reservations_chart = utils.create_chart_new(df_cumulative, x_axis_type, "Data", None, 'reservations', "Kumulujaca sie liczba rezerwacji", group_by, 2 if group_by else 4, "Liczba rezerwacji")
 st.plotly_chart(reservations_chart, use_container_width=True)
 reservations_chart = utils.create_chart_new(df_cumulative, x_axis_type, "Data", None, 'total_cost', "Kumulujacy sie przychód (PLN)", group_by, 2 if group_by else 4, "Przychód (PLN)")

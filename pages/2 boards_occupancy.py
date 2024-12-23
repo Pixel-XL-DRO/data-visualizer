@@ -31,19 +31,22 @@ for location_id in df['location_id'].unique():
 
   location_boards_availability = df_location_boards_availability.loc[(df_location_boards_availability['boards_availability_dim_location_id'] == location_id)]
   if location_boards_availability.empty:
-      raise Exception(f"location {location['city']} {location['street']} not associated with boards availability")
+      st.error(f"location {location['city']} {location['street']} not associated with boards availability")
+      st.stop()
 
   for day_of_week in range(7):
     location_hours_availability = df_location_hours_availability.loc[(df_location_hours_availability['hours_availability_dim_location_id'] == location_id) & (df_location_hours_availability['hours_availability_day_of_week'] == day_of_week)]
     if location_hours_availability.empty:
-      raise Exception(f"location {location['city']} {location['street']} for {utils.map_day_of_week_number_to_string(day_of_week)} not associated with hours availability")
+      st.error(f"location {location['city']} {location['street']} for {utils.map_day_of_week_number_to_string(day_of_week)} not associated with hours availability")
+      st.stop()
 
 for visit_type_id in df['visit_type_id'].unique():
   visit_type_availability = df_visit_type_availability.loc[(df_visit_type_availability['visit_type_availability_dim_visit_type_id'] == visit_type_id)]
   visit_type = df_visit_types[df_visit_types['visit_type_id'] == visit_type_id].iloc[0]
   location = df_locations[df_locations['id'] == visit_type['visit_type_dim_location_id']].iloc[0]
   if visit_type_availability.empty:
-    raise Exception(f"visit type {visit_type['name']} in  {location['city']} {location['street']} not associated with visit type availability")
+    st.error(f"visit type {visit_type['name']} in  {location['city']} {location['street']} not associated with visit type availability")
+    st.stop()
 
 df = df.merge(df_visit_type_availability, how='left', left_on='visit_type_id', right_on='visit_type_availability_dim_visit_type_id')
 # df = df.merge(df_location_boards_availability, how='left', left_on='location_id', right_on='boards_availability_dim_location_id')
@@ -56,19 +59,17 @@ selected_location_hours_availability = df_location_hours_availability[df_locatio
 df = df[df['location_id'].isin(selected_location['id'])]
 
 min_date = df['start_date'].min()
+max_date = df['start_date'].max()
 
 if 'week_offset' not in st.session_state:
     st.session_state.week_offset = 0
 
-start_of_range = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - pd.Timedelta(days=st.session_state.week_offset * 7)
-end_of_range = start_of_range - pd.Timedelta(days=7)
-
-# show from yesterday - since we dont have data for today
+# show since yesterday - since we dont have data for today
 yesterday = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - pd.Timedelta(days=1)
 current_week_start = (yesterday) - pd.Timedelta(days=yesterday.weekday())
 
 def update_week_offset(offset):
-  if offset == -1 and st.session_state.week_offset > 0:
+  if offset == -1:
     st.session_state.week_offset -= 1
   elif offset == 1 and current_week_start - pd.Timedelta(days=7 * (st.session_state.week_offset + 1)) >= min_date:
     st.session_state.week_offset += 1
@@ -83,9 +84,9 @@ if selected_week_start - pd.Timedelta(days=7) >= min_date:
     st.button("<=", on_click=lambda: update_week_offset(1))
 
 with col2:
-  st.write(f"{selected_week_start.date()} - {selected_week_end.date()}" )
+  st.write(f"{selected_week_start.day}.{selected_week_start.month}.{selected_week_start.year} - {selected_week_end.day}.{selected_week_end.month}.{selected_week_end.year}" )
 
-if st.session_state.week_offset > 0:
+if True or st.session_state.week_offset > 0:
   with col3:
     st.button("=>", on_click=lambda: update_week_offset(-1))
 

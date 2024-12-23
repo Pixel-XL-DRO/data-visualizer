@@ -78,7 +78,7 @@ def filter_data(df):
     # df[x_axis_type] = pd.to_datetime(df[x_axis_type])
 
     df = df[df[x_axis_type] >= start_date]
-    df = df[df[x_axis_type] <= end_date]
+    # df = df[df[x_axis_type] <= end_date]
 
     return (df, x_axis_type)
     # return (df, x_axis_type, seperate_cities, group_by)
