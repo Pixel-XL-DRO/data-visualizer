@@ -63,9 +63,9 @@ if 'week_offset' not in st.session_state:
 start_of_range = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - pd.Timedelta(days=st.session_state.week_offset * 7)
 end_of_range = start_of_range - pd.Timedelta(days=7)
 
-today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-current_week_start = today - pd.Timedelta(days=today.weekday())  # Poniedziałek bieżącego tygodnia
-current_week_end = today
+# show from yesterday - since we dont have data for today
+yesterday = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - pd.Timedelta(days=1)
+current_week_start = (yesterday) - pd.Timedelta(days=yesterday.weekday())
 
 def update_week_offset(offset):
   if offset == -1 and st.session_state.week_offset > 0:
@@ -83,7 +83,7 @@ if selected_week_start - pd.Timedelta(days=7) >= min_date:
     st.button("<=", on_click=lambda: update_week_offset(1))
 
 with col2:
-  st.write(f"{end_of_range.date()} - {start_of_range.date()}" )
+  st.write(f"{selected_week_start.date()} - {selected_week_end.date()}" )
 
 if st.session_state.week_offset > 0:
   with col3:
