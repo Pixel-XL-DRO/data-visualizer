@@ -238,7 +238,9 @@ heatmap = alt.Chart(heatmap_df).mark_rect(stroke="black", strokeWidth=3).encode(
 )
 
 text = heatmap.mark_text(fontSize=14, fontWeight='bold', baseline='middle').encode(
-    alt.Text('boards_occupancy:Q', format=".0f"), color=alt.value('black')
+    alt.Text('boards_occupancy:Q', format=".0%"), color=alt.value('black')
+).transform_calculate(
+    boards_occupancy="datum.boards_occupancy / 100"
 )
 
 st.altair_chart(heatmap + text, use_container_width=True)
