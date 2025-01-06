@@ -30,6 +30,7 @@ with st.expander("Dane lokalizacyjne (liczba dostępnych godzin)"):
 
   with st.container(border=True):
     df_current_mappings = filtered_hours_availability_df[['hours_availability_number_of_hours', 'hours_availability_starting_hour', 'hours_availability_since_when', 'hours_availability_until_when']]
+    df_current_mappings = df_current_mappings.sort_values(by=['hours_availability_until_when']).reset_index(drop=True)
     st.write("Aktualne mapowania: ")
     st.write(df_current_mappings)
 
@@ -50,6 +51,7 @@ with st.expander("Dane lokalizacyjne (liczba dostępnych mat)"):
 
   with st.container(border=True):
     boards_df_current_mappings = filtered_boards_availability_df[['boards_availability_number_of_boards', 'boards_availability_time_unit_in_hours', 'boards_availability_since_when', 'boards_availability_until_when']]
+    boards_df_current_mappings = boards_df_current_mappings.sort_values(by=['boards_availability_until_when']).reset_index(drop=True)
     st.write("Aktualne mapowania: ")
     st.write(boards_df_current_mappings)
 
@@ -74,6 +76,7 @@ with st.expander("Dane typów wizyt (liczba zajmowanych mat i godzin)"):
 
   with st.container(border=True):
     visit_types_df_current_mappings = filtered_visit_type_availability_df[['visit_type_availability_number_of_boards_per_time_unit', 'visit_type_availability_duration_in_time_units', 'visit_type_availability_since_when', 'visit_type_availability_until_when']]
+    visit_types_df_current_mappings = visit_types_df_current_mappings.sort_values(by=['visit_type_availability_until_when']).reset_index(drop=True)
     st.write("Aktualne mapowania: ")
     st.write(visit_types_df_current_mappings)
 
