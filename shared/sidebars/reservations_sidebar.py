@@ -15,6 +15,10 @@ def determine_status(row):
   return 'Zrealizowane'
 
 def ensure_status():
+  if (not st.session_state.ms1):
+    st.session_state.ms1 = ["Wszystkie"]
+    return
+
   if st.session_state.ms1[0] == "Wszystkie":
     st.session_state.ms1 = st.session_state.ms1[1:]
   elif st.session_state.ms1[-1] == "Wszystkie":
