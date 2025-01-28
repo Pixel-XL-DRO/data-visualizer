@@ -190,7 +190,9 @@ for start_date_key, hours_data in hours_map.items():
       'display_label': display_label,
       'start_date_hour': utils.parse_hour(hour),
       'slots_taken': slots_taken,
-      'boards_occupancy': (slots_taken / total_boards * 100).clip(max=100).round(0)
+      # TODO: revert
+      # 'boards_occupancy': (slots_taken / total_boards * 100).clip(max=100).round(0)
+      'boards_occupancy': (slots_taken / total_boards * 100).round(0)
     })
 
 
@@ -225,7 +227,9 @@ heatmap_df = pd.concat([heatmap_df, average_dataframe], ignore_index=True)
 heatmap = alt.Chart(heatmap_df).mark_rect(stroke="black", strokeWidth=3).encode(
   x=alt.X('display_label:O', title='Data', sort=alt.EncodingSortField('sort_key', order='ascending'), axis=alt.Axis(orient='top', labelFontSize=14, labelAngle=-90)),
   y=alt.Y('start_date_hour:O', title='Godzina', axis=alt.Axis(labelFontSize=14),),
-  color=alt.Color('boards_occupancy:Q', scale=alt.Scale(scheme='redyellowgreen', domain=[0, 100]), title='Procent zajętych mat'),
+  # TODO: revert
+  # color=alt.Color('boards_occupancy:Q', scale=alt.Scale(scheme='redyellowgreen', domain=[0, 100]), title='Procent zajętych mat'),
+  color=alt.Color('boards_occupancy:Q', scale=alt.Scale(scheme='redyellowgreen'), title='Procent zajętych mat'),
   tooltip=[
     alt.Tooltip('start_date_key:O', title='Data'),
     alt.Tooltip('start_date_hour:O', title='Godzina'),
