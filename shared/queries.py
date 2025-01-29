@@ -10,7 +10,12 @@ credentials = service_account.Credentials.from_service_account_info(
   st.secrets["gcp_service_account"]
 )
 
+reviews_credentials = service_account.Credentials.from_service_account_info(
+  st.secrets["gcp_reviews_account"]
+)
+
 client = bigquery.Client(credentials=credentials)
+reviews_client = bigquery.Client(credentials=reviews_credentials)
 
 def run_query(query, job_config=None):
 
@@ -19,6 +24,34 @@ def run_query(query, job_config=None):
   # dict cause of caching
   rows = [dict(row) for row in rows_raw]
   return rows
+
+def run_reviews_query(query, job_config=None):
+
+  query_job = reviews_client.query(query, job_config)
+  rows_raw = query_job.result()
+  # dict cause of caching
+  rows = [dict(row) for row in rows_raw]
+  return rows
+
+@st.cache_data(ttl=6000)
+def get_reviews():
+  query = """
+    SELECT
+      ratings.location_id AS location_id,
+      ratings.value AS rating,
+      ratings.create_time AS create_time,
+      dim_location.address AS address,
+      dim_location.locality AS city,
+    FROM
+      reviews.star_rating ratings
+    JOIN
+      reviews.dim_location dim_location
+      ON ratings.location_id = dim_location.name
+  """
+  rows = run_reviews_query(query)
+  df = pd.DataFrame(rows, columns=['location_id', 'rating', 'create_time', 'address', 'city'])
+
+  return df
 
 @st.cache_data(ttl=6000)
 def get_locations_data():

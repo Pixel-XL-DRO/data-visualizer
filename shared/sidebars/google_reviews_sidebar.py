@@ -1,0 +1,59 @@
+import sys
+sys.path.append("shared")
+
+from datetime import datetime, timedelta
+import utils
+import streamlit as st
+import pandas as pd
+import numpy as np
+
+def filter_data(df):
+  start_date = None
+  end_date = None
+
+  df['location'] = df['city'] + ', ' + df['address']
+
+  with st.sidebar:
+    time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku', "Przedział"], index=3)
+    rating_to_show = st.selectbox('Wybierz ocenę', ["Wszystkie (suma)"] + sorted(df['rating'].unique(), reverse=True), index=1)
+    if time_range == "Przedział":
+      start_date = st.date_input('Data rozpoczecia')
+      end_date = st.date_input('Data konca')
+    location_checkboxes = st.selectbox("Lokalizacje", df['location'].unique())
+
+    if end_date is None:
+      end_date = datetime.now()
+    else:
+      end_date = datetime.combine(end_date, datetime.min.time())
+
+    if start_date is None:
+      if time_range == '7 dni':
+        start_date = end_date - timedelta(days=7)
+      elif time_range == '1 miesiaca':
+        start_date = end_date - timedelta(days=30)
+      elif time_range == '6 miesiecy':
+        start_date = end_date - timedelta(days=182)
+      elif time_range == '1 roku':
+        start_date = end_date - timedelta(days=365)
+      elif time_range == '2 lat':
+        start_date = end_date - timedelta(days=730)
+      elif time_range == '3 lat':
+        start_date = end_date - timedelta(days=1095)
+      elif time_range == 'Od poczatku':
+        min_date = df['create_time'].min()
+        start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
+    else:
+      start_date = datetime.combine(start_date, datetime.min.time())
+
+    df['create_time'] = pd.to_datetime(df['create_time']).dt.tz_localize(None)
+
+    df = df[df['location'] == location_checkboxes]
+    if rating_to_show != "Wszystkie (suma)":
+      df = df[df['rating'] == rating_to_show]
+
+    df = df[df['create_time'] >= start_date]
+    df = df[df['create_time'] <= end_date]
+
+    df = df.reset_index(drop=True)
+
+    return (df)
