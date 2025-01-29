@@ -19,7 +19,7 @@ def filter_data(df):
     if time_range == "Przedział":
       start_date = st.date_input('Data rozpoczecia')
       end_date = st.date_input('Data konca')
-    location_checkboxes = st.selectbox("Lokalizacje", df['location'].unique())
+    location_checkboxes = st.selectbox("Lokalizacje", df['location'].unique(), index=1)
 
     if end_date is None:
       end_date = datetime.now()
