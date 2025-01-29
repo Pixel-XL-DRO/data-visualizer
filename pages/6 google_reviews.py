@@ -28,17 +28,11 @@ with tab1:
   (df_grouped) = google_reviews_utils.group_data(df, 'M')
   df_grouped['create_time'] = df_grouped['create_time'].dt.to_timestamp().dt.strftime('%m/%Y')
 
-  if len(df_grouped) > 1:
-    df_grouped = df_grouped.iloc[1:]  # cut first row cause its not fully filled
-
   reviews_chart = utils.create_bar_chart(df_grouped, 'create_time', "Data", 'ratings_count', "Liczba ocen", None)
   st.altair_chart(reviews_chart, use_container_width=True)
 with tab2:
   (df_grouped) = google_reviews_utils.group_data(df, 'D')
   df_grouped['create_time'] = df_grouped['create_time'].dt.to_timestamp().dt.strftime('%d/%m/%Y')
-
-  if len(df_grouped) > 1:
-    df_grouped = df_grouped.iloc[1:]  # cut first row cause its not fully filled
 
   reviews_chart = utils.create_bar_chart(df_grouped, 'create_time', "Data", 'ratings_count', "Liczba ocen", None)
   st.altair_chart(reviews_chart, use_container_width=True)

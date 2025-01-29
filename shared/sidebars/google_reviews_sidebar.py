@@ -14,7 +14,7 @@ def filter_data(df):
   df['location'] = df['city'] + ', ' + df['address']
 
   with st.sidebar:
-    time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku', "Przedział"], index=3)
+    time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=3)
     rating_to_show = st.selectbox('Wybierz ocenę', ["Wszystkie (suma)"] + sorted(df['rating'].unique(), reverse=True), index=1)
     if time_range == "Przedział":
       start_date = st.date_input('Data rozpoczecia')
