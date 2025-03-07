@@ -35,11 +35,11 @@ def filter_data(df):
       start_date = st.date_input('Data rozpoczecia')
       end_date = st.date_input('Data konca')
     with st.expander("Średnia kroczaca"):
-      moving_average_toggle = st.checkbox('Pokazuj', key="t1", value=True, on_change=lambda:utils.chain_toggle_off("t1", "t2"))
+      moving_average_toggle = st.checkbox('Pokazuj', key="t1", value=True, on_change=lambda:utils.chain_toggle_off("t1", "t2","t7"))
       show_only_moving_average = st.checkbox('Pokazuj tylko srednia kroczaca', key="t2", value=False, on_change=lambda:utils.chain_toggle_on("t2", "t1"))
       moving_average_days = st.slider('Ile dni', 1, 30, 7)
-    with st.expander("Rodzaj wykresów"):
-      chart_type = st.radio('', ["stary", "nowy"], index=1)
+    with st.expander("Notatki"):
+      show_notes = st.checkbox('Pokazuj notatki', key="t7", value=False, on_change=lambda:utils.chain_toggle_on("t7","t1","t2"))
     with st.expander("Filtry"):
       with st.container(border=True):
         city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
@@ -59,11 +59,6 @@ def filter_data(df):
       x_axis_type = 'booked_date'
     elif x_axis_type == 'Data rozpoczecia':
       x_axis_type = 'start_date'
-
-    if chart_type == 'stary':
-      chart_type = 'old'
-    elif chart_type == 'nowy':
-      chart_type = 'new'
 
     if end_date is None:
       # 23:59:59 the day before - to account for data collection that takes place at 01:00:00 - we want to cut out single reservations at 00:00:00
@@ -106,5 +101,5 @@ def filter_data(df):
 
     return (df, x_axis_type, moving_average_toggle,
       show_only_moving_average, moving_average_days,
-      seperate_cities,seperate_attractions, seperate_status,
-      seperate_visit_types, chart_type)
+      seperate_cities, show_notes, seperate_attractions, seperate_status,
+      seperate_visit_types)
