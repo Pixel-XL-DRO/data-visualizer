@@ -1,6 +1,6 @@
 import pandas as pd
 import streamlit as st
-
+import uuid
 import datetime
 
 from google.oauth2 import service_account
@@ -144,6 +144,7 @@ def refresh_data_editor_data():
   get_historical_location_hours_availability.clear()
   get_historical_location_boards_availability.clear()
   get_historical_visit_type_availability.clear()
+  get_notes.clear()
 
 def add_historical_location_hours_availability(location_id, since_when, day_of_week, number_of_hours, starting_hour):
   query = """
@@ -385,3 +386,57 @@ def mock_price_and_people(day_of_week, visit_type, city, additional_items_cost, 
   if visit_type == "integracja - XXL":
     return (max((2899 + additional_items_cost), current_price), 50)
   return (current_price, current_number_of_people)
+
+@st.cache_data(ttl=6000)
+def get_notes():
+  query = """
+    SELECT
+      notes.id as id,
+      notes.date_id as date,
+      notes.content as content,
+      location.city as city
+    FROM
+      reservation_data.notes notes
+    JOIN
+      `pixelxl-database-dev.reservation_data.dim_location` location
+    ON
+      notes.dim_location_id = location.id
+  """
+  rows = run_query(query)
+  df = pd.DataFrame(rows, columns=['id', 'date', 'content', 'city'])
+
+  return df
+
+def add_note(date_id, content, location_id):
+  note_id = str(uuid.uuid4())
+  query = """
+    INSERT INTO
+      reservation_data.notes (id, date_id, content, dim_location_id)
+    VALUES
+      (@id, @date_id, @content, @location_id)
+  """
+  job_config = bigquery.QueryJobConfig(
+    query_parameters=[
+        bigquery.ScalarQueryParameter("id", "STRING", note_id),
+        bigquery.ScalarQueryParameter("date_id", "STRING", date_id),
+        bigquery.ScalarQueryParameter("content", "STRING", content),
+        bigquery.ScalarQueryParameter("location_id", "STRING", location_id),
+    ]
+  )
+  run_query(query, job_config)
+  get_notes.clear()
+
+def delete_note(id):
+  query = """
+    DELETE FROM
+      reservation_data.notes notes
+    WHERE
+      notes.id = @id
+  """
+  job_config = bigquery.QueryJobConfig(
+    query_parameters=[
+        bigquery.ScalarQueryParameter("id", "STRING", id),
+    ]
+  )
+  res = run_query(query, job_config)
+  get_notes.clear()

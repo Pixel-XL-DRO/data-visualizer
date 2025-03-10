@@ -17,6 +17,7 @@ with st.spinner():
   boards_availability_df = queries.get_historical_location_boards_availability()
   visit_types_df = queries.get_visit_types_data()
   visit_type_availability_df = queries.get_historical_visit_type_availability()
+  notes_df = queries.get_notes()
 
 st.button("Odśwież", on_click=lambda: queries.refresh_data_editor_data())
 
@@ -88,6 +89,25 @@ with st.expander("Dane typów wizyt (liczba zajmowanych mat i godzin)"):
     visit_types_number_of_boards_per_time_unit = st.number_input(key="visit_type_number_of_boards", label="Ile mat", step=1, value=4, min_value=0, max_value=99)
     visit_types_duration_in_time_units = st.number_input(key="visit_type_number_of_hours", label="Dlugośc w jednostkach czasowych", step=0.5, value=1.0, min_value=0.0, max_value=24.0)
     st.button(key="visit_type_add_button", label="Dodaj", on_click=lambda: queries.add_historical_visit_type_availability(selected_visit_type['visit_type_id'].values[0], visit_types_since_when_dt, visit_types_number_of_boards_per_time_unit, visit_types_duration_in_time_units))
+
+
+with st.expander("Dane notatek "):
+  st.write("Utwórz notatke")
+  with st.container(border=True):
+    note_location_selectbox = st.selectbox(key="note_location_select_box", label="Wybierz miasto", options=(locations_df['city'] + ' ' + locations_df['street']))
+    note_selected_location = locations_df.loc[(locations_df['city'] == note_location_selectbox.split(' ')[0]) & (locations_df['street'] == note_location_selectbox.split(' ')[1])]
+    note_date = st.date_input(key="note_date_input", label="Data notatki")
+    note_date_dt = str(datetime.datetime(note_date.year, note_date.month, note_date.day))
+    note_content = st.text_input(key="note_content_input", label="Treść notatki")
+
+    st.button(key="note_add_button", label="Dodaj", on_click=lambda: queries.add_note(note_date_dt, note_content, note_selected_location['id'].values[0]))
+
+  st.write("Usuń notatkę")
+  with st.container(border=True):
+    note_delete_selectbox = st.selectbox(key="note_delete_selectbox", label="Wybierz notatkę do usunięcia", options=(notes_df['content']))
+    note_delete_selected = (notes_df.loc[notes_df['content'] == note_delete_selectbox]['id']).values[0]
+    st.button(key="note_delete_button", label="usun", disabled=note_delete_selectbox == None, on_click=lambda: queries.delete_note(note_delete_selected))
+
 
 #   st.write("Aktualna liczba mat: " + str(chosen_city['number_of_boards'].values[0]))
 #   new_number_of_boards = st.text_input("Nowa liczba mat: ")

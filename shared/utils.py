@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label, colorBy, lineStrokeWidth, line_label):
+def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label, colorBy, lineStrokeWidth, line_label, show_notes):
   fig = None
 
   if points_y and line_y:
@@ -22,7 +22,6 @@ def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_l
       color=colorBy if colorBy in data.columns else None,
       title=y_axis_label
     ).data)
-
 
   elif points_y:
     fig = px.scatter(
@@ -65,6 +64,26 @@ def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_l
       spikecolor="red", spikethickness=0.7, spikedash='solid', spikemode='across'
     )
   )
+
+  if show_notes:
+    x_values = []
+    y_values = []
+    text_values = []
+    for i, row in data.iterrows():
+        if 'note-content' in row and pd.notna(row['note-content']):
+            x_values.append(row[x_axis_type])
+            y_values.append(row[line_y])
+            text_values.append(f"{row['city']}: {row['note-content']}")
+
+    fig.add_scatter(
+        x=x_values, y=y_values,
+        mode='markers',
+        text=text_values,
+        hoverinfo='text',
+        marker=dict(size=8, color="yellow"),
+        customdata=text_values,
+        name="Notatka",
+    )
 
   return fig
 
@@ -121,13 +140,19 @@ def make_sure_only_one_toggle_is_on(toggles, key):
         st.session_state[toggle] = False
 
 
-def chain_toggle_off(key_to_check, key_to_toggle):
-  if not st.session_state[key_to_check]:
-    st.session_state[key_to_toggle] = False
+def chain_toggle_off(key_to_check, *keys_to_toggle):
+  if st.session_state.get(key_to_check):
+    return
 
-def chain_toggle_on(key_to_check, key_to_toggle):
-  if st.session_state[key_to_check]:
-    st.session_state[key_to_toggle] = True
+  for key in keys_to_toggle:
+    st.session_state[key] = False
+
+def chain_toggle_on(key_to_check, *keys_to_toggle):
+  if not st.session_state.get(key_to_check):
+    return
+
+  for key in keys_to_toggle:
+    st.session_state[key] = True
 
 
 def get_month_days_count(year, month):
