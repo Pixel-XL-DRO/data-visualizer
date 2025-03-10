@@ -1,6 +1,6 @@
 import pandas as pd
 import streamlit as st
-
+import uuid
 import datetime
 
 from google.oauth2 import service_account
@@ -407,7 +407,8 @@ def get_notes():
 
   return df
 
-def add_note(id, date_id, content, location_id):
+def add_note(date_id, content, location_id):
+  note_id = str(uuid.uuid4())
   query = """
     INSERT INTO
       reservation_data.notes (id, date_id, content, dim_location_id)
@@ -416,7 +417,7 @@ def add_note(id, date_id, content, location_id):
   """
   job_config = bigquery.QueryJobConfig(
     query_parameters=[
-        bigquery.ScalarQueryParameter("id", "STRING", id),
+        bigquery.ScalarQueryParameter("id", "STRING", note_id),
         bigquery.ScalarQueryParameter("date_id", "STRING", date_id),
         bigquery.ScalarQueryParameter("content", "STRING", content),
         bigquery.ScalarQueryParameter("location_id", "STRING", location_id),

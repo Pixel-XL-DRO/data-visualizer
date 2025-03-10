@@ -5,7 +5,6 @@ sys.path.append("utils")
 
 import streamlit as st
 import datetime
-import uuid
 
 import queries
 import utils
@@ -95,15 +94,13 @@ with st.expander("Dane typów wizyt (liczba zajmowanych mat i godzin)"):
 with st.expander("Dane notatek "):
   st.write("Utwórz notatke")
   with st.container(border=True):
-    note_id = str(uuid.uuid4())
-
     note_location_selectbox = st.selectbox(key="note_location_select_box", label="Wybierz miasto", options=(locations_df['city'] + ' ' + locations_df['street']))
     note_selected_location = locations_df.loc[(locations_df['city'] == note_location_selectbox.split(' ')[0]) & (locations_df['street'] == note_location_selectbox.split(' ')[1])]
     note_date = st.date_input(key="note_date_input", label="Data notatki")
     note_date_dt = str(datetime.datetime(note_date.year, note_date.month, note_date.day))
     note_content = st.text_input(key="note_content_input", label="Treść notatki")
 
-    st.button(key="note_add_button", label="Dodaj", on_click=lambda: queries.add_note(note_id, note_date_dt, note_content, note_selected_location['id'].values[0]))
+    st.button(key="note_add_button", label="Dodaj", on_click=lambda: queries.add_note(note_date_dt, note_content, note_selected_location['id'].values[0]))
 
   st.write("Usuń notatkę")
   with st.container(border=True):
