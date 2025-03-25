@@ -75,15 +75,16 @@ def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_l
             y_values.append(row[line_y])
             text_values.append(f"{row['city']}: {row['note-content']}")
 
-    fig.add_scatter(
-        x=x_values, y=y_values,
-        mode='markers',
-        text=text_values,
-        hoverinfo='text',
-        marker=dict(size=8, color="yellow"),
-        customdata=text_values,
-        name="Notatka",
-    )
+    for index, value in enumerate(text_values):
+      city_from_value = value.split(':')[0]
+      fig.add_scatter(
+          x=x_values, y=y_values,
+          mode='markers',
+          text=value,
+          hoverinfo='text',
+          marker=dict(size=8, color="yellow"),
+          name=f"Notatka {city_from_value}",
+      )
 
   return fig
 

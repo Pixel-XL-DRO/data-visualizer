@@ -28,7 +28,7 @@ def group_data_and_calculate_moving_average(df, df_notes, x_axis_type, moving_av
             for index, row in df_grouped.iterrows():
                 date = row[x_axis_type]
                 city = row[grouping_field]
-                matching_notes = df_notes[(df_notes['date'] == date) & (df_notes['city'] == city)]
+                matching_notes = df_notes[(df_notes['date'] == date) & (df_notes['note_city'] == city)]
                 if not matching_notes.empty:
                     df_grouped.at[index, 'note-content'] = " | ".join(matching_notes['content'].dropna())
 
@@ -53,13 +53,13 @@ def group_data_and_calculate_moving_average(df, df_notes, x_axis_type, moving_av
 
             if matching_notes.empty:
                 group_row['note-content'] = None
-                group_row['city'] = None
+                group_row['note_city'] = None
                 new_df_grouped.append(group_row)
             else:
                 for _, note_row in matching_notes.iterrows():
                     new_row = group_row.copy()
                     new_row['note-content'] = note_row['content']
-                    new_row['city'] = note_row['city']
+                    new_row['city'] = note_row['note_city']
                     new_df_grouped.append(new_row)
 
         df_grouped = pd.DataFrame(new_df_grouped)

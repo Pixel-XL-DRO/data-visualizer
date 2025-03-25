@@ -394,7 +394,7 @@ def get_notes():
       notes.id as id,
       notes.date_id as date,
       notes.content as content,
-      location.city as city
+      location.city as note_city
     FROM
       reservation_data.notes notes
     JOIN
@@ -403,7 +403,7 @@ def get_notes():
       notes.dim_location_id = location.id
   """
   rows = run_query(query)
-  df = pd.DataFrame(rows, columns=['id', 'date', 'content', 'city'])
+  df = pd.DataFrame(rows, columns=['id', 'date', 'content', 'note_city'])
 
   return df
 
