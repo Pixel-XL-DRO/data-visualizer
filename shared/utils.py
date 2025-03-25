@@ -75,7 +75,7 @@ def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_l
             y_values.append(row[line_y])
             text_values.append(f"{row['city']}: {row['note-content']}")
 
-    for index, value in enumerate(text_values):
+    for index, value in enumerate(pd.unique(text_values)):
       city_from_value = value.split(':')[0]
       fig.add_scatter(
           x=x_values, y=y_values,
