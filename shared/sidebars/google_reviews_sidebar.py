@@ -19,7 +19,7 @@ def filter_data(df):
     if time_range == "Przedział":
       start_date = st.date_input('Data rozpoczecia')
       end_date = st.date_input('Data konca')
-    location_checkboxes = st.selectbox("Lokalizacje", df['location'].unique(), index=1)
+    location_checkboxes = st.multiselect("Lokalizacje", df['location'].unique(), default=df['location'][0])
 
     if end_date is None:
       end_date = datetime.now()
@@ -47,7 +47,7 @@ def filter_data(df):
 
     df['create_time'] = pd.to_datetime(df['create_time']).dt.tz_localize(None)
 
-    df = df[df['location'] == location_checkboxes]
+    df = df[df['location'].isin(location_checkboxes)]
     if rating_to_show != "Wszystkie (suma)":
       df = df[df['rating'] == rating_to_show]
 
