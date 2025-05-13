@@ -14,8 +14,13 @@ reviews_credentials = service_account.Credentials.from_service_account_info(
   st.secrets["gcp_reviews_account"]
 )
 
+performance_reviews_credentials = service_account.Credentials.from_service_account_info(
+  st.secrets["gcp_performance_reviews_account"]
+)
+
 client = bigquery.Client(credentials=credentials)
 reviews_client = bigquery.Client(credentials=reviews_credentials)
+performance_reviews_client = bigquery.Client(credentials=performance_reviews_credentials)
 
 def run_query(query, job_config=None):
 
@@ -32,6 +37,15 @@ def run_reviews_query(query, job_config=None):
   # dict cause of caching
   rows = [dict(row) for row in rows_raw]
   return rows
+
+def run_performance_review_query(query, job_config=None):
+
+  query_job = performance_reviews_client.query(query, job_config)
+  rows_raw = query_job.result()
+  # dict cause of caching
+  rows = [dict(row) for row in rows_raw]
+  return rows
+
 
 @st.cache_data(ttl=6000)
 def get_reviews():
@@ -440,3 +454,23 @@ def delete_note(id):
   )
   res = run_query(query, job_config)
   get_notes.clear()
+
+@st.cache_data(ttl=6000)
+def get_performance_reviews():
+  query = """
+    SELECT
+      review.feedback as feedback,
+      review.score as score,
+      review.date as date,
+      location.city as city,
+      review.reservationId as reservationId
+    FROM
+      performance_data.mail_review review
+    JOIN
+      performance_data.dim_location location
+    ON
+      review.dim_location_id = location.id
+  """
+  rows = run_performance_review_query(query)
+  df = pd.DataFrame(rows, columns=['reservationId', 'feedback', 'score', 'city', 'date'])
+  return df

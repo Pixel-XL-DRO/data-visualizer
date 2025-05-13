@@ -41,7 +41,7 @@ if moving_average_toggle:
     df_grouped['total_people_ma'] = pd.concat(total_people_rolling_averages)
 
 df_grouped[x_axis_type] = df_grouped[x_axis_type].dt.to_timestamp()
-reservations_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", 'reservations' if not show_only_moving_average else None, 'reservations_ma' if moving_average_toggle else None, "Liczba rezerwacji", groupBy, 2 if groupBy else 4, "Średnia",show_notes)
+reservations_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", 'reservations' if not show_only_moving_average else None, 'reservations_ma' if moving_average_toggle else None, "Liczba rezerwacji", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
 st.plotly_chart(reservations_chart, use_container_width=True)
 
 cost_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", 'total_cost' if not show_only_moving_average else None, 'total_cost_ma' if moving_average_toggle else None, "Przychód (PLN)", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
