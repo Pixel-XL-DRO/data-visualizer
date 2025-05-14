@@ -117,9 +117,14 @@ def create_chart(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label
        return points
     return line
 
-def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, colorBy, currentValue=None, sort_order=None):
+def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, colorBy, currentValue=None, sort_order=None, x_tick_count=None):
+
+    x_axis = alt.Axis(labelAngle=0)
+    if x_tick_count is not None:
+      x_axis.tickCount = x_tick_count
+
     base = alt.Chart(data).encode(
-      x=alt.X(x_axis_type, title=x_axis_label, axis=alt.Axis(labelAngle=0, tickCount=10), sort=sort_order),
+      x=alt.X(x_axis_type, title=x_axis_label, axis=x_axis, sort=sort_order),
     ).interactive()
 
     bar = base.mark_bar(size=10).encode(

@@ -55,7 +55,7 @@ st.subheader("Ilość ocen")
 score_counts = df_unique['score'].value_counts().reset_index()
 score_counts.columns = ['score', 'count']
 
-score_count_chart = utils.create_bar_chart(score_counts, 'score', 'Ocena', 'count', 'Ilość', None)
+score_count_chart = utils.create_bar_chart(score_counts, 'score', 'Ocena', 'count', 'Ilość', None, None, None, 10)
 st.altair_chart(score_count_chart, use_container_width=True)
 
 st.divider()
