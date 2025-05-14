@@ -15,19 +15,19 @@ def filter_data(df):
   with st.sidebar:
     with st.container(border=True):
       time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=6)
-      rating_to_show = st.selectbox('Wybierz ocenę', ["Wszystkie (suma)"] + sorted(df['score'].unique(), reverse=True), index=0)
       if time_range == "Przedział":
         start_date = st.date_input('Data rozpoczecia')
         end_date = st.date_input('Data konca')
 
-    with st.container(border=True):
+    with st.expander("Średnia krocząca"):
       moving_average_toggle = st.checkbox('Pokazuj', key="t1", value=True, on_change=lambda:utils.chain_toggle_off("t1", "t2","t7"))
       show_only_moving_average = st.checkbox('Pokazuj tylko srednia kroczaca', key="t2", value=False, on_change=lambda:utils.chain_toggle_on("t2", "t1"))
       moving_average_days = st.slider('Ile dni', 1, 30, 7)
 
-    with st.container(border=True):
-      location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
-      seperate_cities = st.checkbox('Rozdziel miasta')
+    with st.expander("Filtry"):
+      with st.container(border=True):
+        location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
+        seperate_cities = st.checkbox('Rozdziel miasta')
 
     if end_date is None:
       end_date = datetime.now()
@@ -56,9 +56,7 @@ def filter_data(df):
     df['date'] = pd.to_datetime(df['date']).dt.tz_localize(None)
 
     df = df[df['city'].isin(location_checkboxes)]
-    if rating_to_show != "Wszystkie (suma)":
-      df = df[df['score'] == rating_to_show]
-
     df = df[df['date'] >= start_date]
     df = df[df['date'] <= end_date]
+
     return (df, seperate_cities, moving_average_toggle, show_only_moving_average, moving_average_days)

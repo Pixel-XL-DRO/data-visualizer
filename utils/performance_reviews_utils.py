@@ -2,6 +2,7 @@ def group_data_and_calculate_nps(df, group_by, moving_average_days):
 
   nps_rolling_averages = []
 
+  #each promoter and detractor is resulted as bool so we save them as 0 or 1 for easier calculations
   df['promoters'] = (df['score'] >= 9).astype(int)
   df['detractors'] = (df['score'] <= 6).astype(int)
 

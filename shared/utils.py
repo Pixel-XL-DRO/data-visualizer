@@ -119,7 +119,7 @@ def create_chart(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label
 
 def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, colorBy, currentValue=None, sort_order=None):
     base = alt.Chart(data).encode(
-      x=alt.X(x_axis_type, title=x_axis_label, axis=alt.Axis(labelAngle=0), sort=sort_order),
+      x=alt.X(x_axis_type, title=x_axis_label, axis=alt.Axis(labelAngle=0, tickCount=10), sort=sort_order),
     ).interactive()
 
     bar = base.mark_bar(size=10).encode(

@@ -50,7 +50,16 @@ with tab2:
   st.plotly_chart(performance_score_chart, use_container_width=True)
 
 st.divider()
+st.subheader("Ilość ocen")
+
+score_counts = df_unique['score'].value_counts().reset_index()
+score_counts.columns = ['score', 'count']
+
+score_count_chart = utils.create_bar_chart(score_counts, 'score', 'Ocena', 'count', 'Ilość', None)
+st.altair_chart(score_count_chart, use_container_width=True)
+
+st.divider()
 st.subheader("Opinie")
 
-df_unique['feedback'] = df_unique['feedback'].apply(lambda x: '' if pd.isna(x) else x)
+df_unique = df_unique[df_unique['feedback'].notnull()]
 st.table(df_unique[['date', 'city', 'score', 'feedback']])
