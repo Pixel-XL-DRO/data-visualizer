@@ -90,7 +90,6 @@ def filter_data(df):
 
     df['status'] = df.apply(determine_status, axis=1)
     df = df[df['status'].isin(status_checkboxes)]
-    df = df[df['city'].isin(city_checkboxes)]
     df = df[df['language'].isin(language_checkboxes)]
     df = df[df['attraction_group'].isin(attraction_groups_checkboxes)]
     df = df if "Wszystkie" in visit_type_groups_checkboxes else df[df['visit_type'].isin(visit_type_groups_checkboxes)]
@@ -98,8 +97,10 @@ def filter_data(df):
     df = df[df[x_axis_type] >= start_date]
     df = df[df[x_axis_type] <= end_date]
 
+    df_unfiltered_by_city = df
+    df = df[df['city'].isin(city_checkboxes)]
 
-    return (df, x_axis_type, moving_average_toggle,
+    return (df, df_unfiltered_by_city, x_axis_type, moving_average_toggle,
       show_only_moving_average, moving_average_days,
       seperate_cities, show_notes, seperate_attractions, seperate_status,
       seperate_visit_types)
