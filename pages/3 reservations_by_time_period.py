@@ -43,4 +43,3 @@ st.altair_chart(reservations_chart, use_container_width=True)
 st.text("Średnia liczba osób w danej grupie czasowej")
 reservations_chart = utils.create_bar_chart(df_grouped, 'parsed_period', group_dates_by, 'total_people', 'Liczba użytkowników', None, current_period)
 st.altair_chart(reservations_chart, use_container_width=True)
-

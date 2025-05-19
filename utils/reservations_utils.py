@@ -65,3 +65,46 @@ def group_data_and_calculate_moving_average(df, df_notes, x_axis_type, moving_av
         df_grouped = pd.DataFrame(new_df_grouped)
 
     return df_grouped, reservations_rolling_averages, total_cost_rolling_averages, total_people_rolling_averages
+
+def calculate_reservations_ahead(df):
+
+    df['start_date'] = pd.to_datetime(df['start_date'], errors='coerce')
+    df['booked_date'] = pd.to_datetime(df['booked_date'], errors='coerce')
+
+    df = df.dropna(subset=['start_date', 'booked_date'])
+
+    df['days'] = (df['start_date'] - df['booked_date']).dt.days
+    df = df[df['days'] >= 0]
+
+    df_grouped = df.groupby(['city', 'days']).size().reset_index(name='reservations')
+
+    df_grouped['weighted_days'] = df_grouped['days'] * df_grouped['reservations']
+    df_mean = df_grouped.groupby('city').agg(
+        total_reservations=('reservations', 'sum'),
+        total_weighted_days=('weighted_days', 'sum')
+    ).reset_index()
+
+    df_mean['mean_days'] = df_mean['total_weighted_days'] / df_mean['total_reservations']
+    return df_mean[['city', 'mean_days']]
+
+def calculate_reservations_ahead_by_city(df, city, period):
+    df = df[df['city'] == city]
+
+    df['start_date'] = pd.to_datetime(df['start_date'], errors='coerce')
+    df['booked_date'] = pd.to_datetime(df['booked_date'], errors='coerce')
+    df = df.dropna(subset=['start_date', 'booked_date'])
+
+    df['days'] = (df['start_date'] - df['booked_date']).dt.days
+    df = df[df['days'] >= 0]
+
+    df_period = df[df['days'] <= period]
+    df_after = df[df['days'] > period]
+
+    in_period = df_period.groupby('days').size().reset_index(name='reservations')
+    after_sum = df_after.shape[0]
+    after_period = pd.DataFrame([[f'{period}+', after_sum]], columns=['days', 'reservations'])
+    df_grouped = pd.concat([in_period, after_period], ignore_index=True)
+
+    df_grouped['days'] = df_grouped['days'].astype(str)
+
+    return df_grouped
