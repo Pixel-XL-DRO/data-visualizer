@@ -61,5 +61,8 @@ st.altair_chart(score_count_chart, use_container_width=True)
 st.divider()
 st.subheader("Opinie")
 
-df_unique = df_unique[df_unique['feedback'].notnull()]
+df_unique = df_unique[
+    df_unique['feedback'].notna() & df_unique['feedback'].str.strip()
+].sort_values(by=['date'], ascending=False).reset_index()
+
 st.table(df_unique[['date', 'city', 'score', 'feedback']])
