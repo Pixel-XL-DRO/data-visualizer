@@ -228,3 +228,19 @@ def get_day_of_week_string_shortcut(day_of_week):
     5: "Sob.",
     6: "Nd."
   }[day_of_week]
+
+def get_month_from_month_number(month_number):
+  return {
+    1: "Styczeń",
+    2: "Luty",
+    3: "Marzec",
+    4: "Kwiecień",
+    5: "Maj",
+    6: "Czerwiec",
+    7: "Lipiec",
+    8: "Sierpień",
+    9: "Wrzesień",
+    10: "Październik",
+    11: "Listopad",
+    12: "Grudzień"
+  }[month_number]
