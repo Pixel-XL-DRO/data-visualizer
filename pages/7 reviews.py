@@ -20,7 +20,7 @@ with st.spinner():
 
 df_unique = df.drop_duplicates(subset=['reservationId'], keep='first')
 
-df_copy = df
+df_copy = df_unique
 
 (df_unique, separete_cities, moving_average_toggle, show_only_moving_average, moving_average_days) = performance_reviews_sidebar.filter_data(df_unique)
 
