@@ -63,8 +63,7 @@ def group_data_and_calculate_nps_for_each_month(df, city, year):
 
   df_grouped['nps'] = ((df_grouped['promoters_count'] / df_grouped['score_count']) - (df_grouped['detractors_count'] / df_grouped['score_count'])) * 100
 
-  # we return .dt.month[0] cause .dt.month returns dataset not single value
-  df_grouped['month'] = utils.get_month_from_month_number(df_grouped['date'].dt.month[0])
+  df_grouped['month'] = df_grouped['date'].dt.month.map(utils.get_month_from_month_number)
 
   df_grouped = df_grouped[(df_grouped['date'].dt.year == year) & (df_grouped['city'] == city)]
 
