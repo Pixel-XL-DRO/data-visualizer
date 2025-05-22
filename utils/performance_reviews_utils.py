@@ -1,3 +1,4 @@
+import utils
 def group_data_and_calculate_nps(df, group_by, moving_average_days):
 
   nps_rolling_averages = []
@@ -50,21 +51,6 @@ def group_data_and_calculate_nps(df, group_by, moving_average_days):
 
 def group_data_and_calculate_nps_for_each_month(df, city, year):
 
-  months = {
-        1: "Styczeń",
-        2: "Luty",
-        3: "Marzec",
-        4: "Kwiecień",
-        5: "Maj",
-        6: "Czerwiec",
-        7: "Lipiec",
-        8: "Sierpień",
-        9: "Wrzesień",
-        10: "Październik",
-        11: "Listopad",
-        12: "Grudzień"
-    }
-
   #each promoter and detractor is resulted as bool so we save them as 0 or 1 for easier calculations
   df['promoters'] = (df['score'] >= 9).astype(int)
   df['detractors'] = (df['score'] <= 6).astype(int)
@@ -77,7 +63,8 @@ def group_data_and_calculate_nps_for_each_month(df, city, year):
 
   df_grouped['nps'] = ((df_grouped['promoters_count'] / df_grouped['score_count']) - (df_grouped['detractors_count'] / df_grouped['score_count'])) * 100
 
-  df_grouped['month'] = df_grouped['date'].dt.month.map(months)
+  # we return .dt.month[0] cause .dt.month returns dataset not single value
+  df_grouped['month'] = utils.get_month_from_month_number(df_grouped['date'].dt.month[0])
 
   df_grouped = df_grouped[(df_grouped['date'].dt.year == year) & (df_grouped['city'] == city)]
 
