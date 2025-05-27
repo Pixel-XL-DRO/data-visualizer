@@ -20,6 +20,8 @@ with st.spinner():
 
 df_unique = df.drop_duplicates(subset=['reservationId'], keep='first')
 
+df_copy = df_unique
+
 (df_unique, separete_cities, moving_average_toggle, show_only_moving_average, moving_average_days) = performance_reviews_sidebar.filter_data(df_unique)
 
 groupBy = 'city' if separete_cities else None
@@ -31,7 +33,7 @@ if moving_average_toggle:
 
 df_grouped['date'] = df_grouped['date'].dt.to_timestamp().dt.strftime('%d/%m/%Y')
 
-tab1, tab2 = st.tabs(["Kumulatywne", "Normalne"])
+tab1, tab2, tab3 = st.tabs(["Kumulatywne", "Normalne", "Miesieczne"])
 
 with tab1:
 
@@ -48,6 +50,15 @@ with tab2:
 
   performance_score_chart = utils.create_chart_new(df_grouped, df_grouped['date'], "Data", None, 'score_count' , "Liczba ocen", groupBy, 2 if groupBy else 4, "Liczba ocen", False)
   st.plotly_chart(performance_score_chart, use_container_width=True)
+
+with tab3:
+
+  city = st.selectbox('Wybierz miasto', df_copy['city'].unique(), index=0)
+  year = st.selectbox('Wybierz rok', df_copy['date'].dt.year.unique(), index=0)
+
+  df_copy_grouped = performance_reviews_utils.group_data_and_calculate_nps_for_each_month(df_copy, city, year)
+  performance_bar_chart = utils.create_bar_chart(df_copy_grouped, 'month', 'Miesiac', 'nps', 'Wynik NPS', None)
+  st.altair_chart(performance_bar_chart, use_container_width=True)
 
 st.divider()
 st.subheader("Ilość ocen")
