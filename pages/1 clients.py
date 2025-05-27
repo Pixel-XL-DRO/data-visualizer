@@ -34,9 +34,3 @@ df_grouped = clients_utils.group_data(df, x_axis_type, groupBy)
 st.text("Retencja na miesiac (procent wizyt, które zostały stworzone przez klientów którzy już u nas byli \n")
 reservations_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", None, 'past_retention_percent', "Procent osób", groupBy, 4, "Procent osób", False)
 st.plotly_chart(reservations_chart, use_container_width=True)
-
-client_reservations_count = df.groupby('client_id').size().reset_index(name='reservation_count')
-
-client_reservations_count['category'] = client_reservations_count['reservation_count'].apply(
-    lambda x: '1 raz' if x == 1 else '2 razy' if x == 2 else ('3 razy' if x == 3 else ('4 razy' if x == 4 else 'więcej'))
-)
