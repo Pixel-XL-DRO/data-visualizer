@@ -1,2 +1,4 @@
 .DS_STORE
 .streamlit/secrets.toml
+*.pyc
+
