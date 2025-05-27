@@ -26,6 +26,9 @@ with st.spinner():
 
 (df, x_axis_type) = boards_occupancy_sidebar.filter_data(df)
 
+#TODO DELETE
+df = df[df['location_id'] != "de9c964b-090c-4115-8e01-93fcabd14dbd"]
+
 for location_id in df['location_id'].unique():
   location = df_locations[df_locations['id'] == location_id].iloc[0]
 
