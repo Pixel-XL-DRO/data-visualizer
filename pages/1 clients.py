@@ -32,5 +32,5 @@ groupBy = 'city' if seperate_cities else 'attraction_group' if seperate_attracti
 df_grouped = clients_utils.group_data(df, x_axis_type, groupBy)
 
 st.text("Retencja na miesiac (procent wizyt, które zostały stworzone przez klientów którzy już u nas byli \n")
-reservations_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", None, 'past_retention_percent', "Procent osób", groupBy, 4, "Procent osób", False)
+reservations_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", None, 'past_retention_percent', "Procent wizyt", groupBy, 4, "Procent wizyt", False)
 st.plotly_chart(reservations_chart, use_container_width=True)
