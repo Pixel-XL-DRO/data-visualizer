@@ -10,6 +10,7 @@ import queries
 import clients_sidebar
 import clients_utils
 import utils
+import auth
 
 def determine_status(row):
   if row['is_cancelled']:
@@ -17,8 +18,6 @@ def determine_status(row):
   elif not row['is_payed']:
     return 'Zrealizowane nieopłacone'
   return 'Zrealizowane'
-
-st.set_page_config(layout="wide")
 
 with st.spinner():
   df = queries.get_reservation_data()

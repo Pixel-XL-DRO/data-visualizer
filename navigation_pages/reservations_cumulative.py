@@ -12,8 +12,6 @@ import utils
 import reservations_cumulative_sidebar
 import reservations_cumulative_utils
 
-st.set_page_config(layout="wide")
-
 def determine_status(row):
   if row['is_cancelled']:
     return 'Anulowane'

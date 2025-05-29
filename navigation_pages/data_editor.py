@@ -9,8 +9,6 @@ import datetime
 import queries
 import utils
 
-st.set_page_config(layout="wide")
-
 with st.spinner():
   locations_df = queries.get_locations_data()
   hours_availability_df = queries.get_historical_location_hours_availability()

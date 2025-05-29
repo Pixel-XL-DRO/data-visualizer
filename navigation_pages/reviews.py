@@ -11,10 +11,6 @@ import utils
 import performance_reviews_sidebar
 import performance_reviews_utils
 
-st.set_page_config(layout="wide")
-# tooltip didnt work on fullscreen without this hack
-st.markdown('<style>#vg-tooltip-element{z-index: 1000051}</style>', unsafe_allow_html=True)
-
 with st.spinner():
   df = queries.get_performance_reviews()
 

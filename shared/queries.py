@@ -79,6 +79,9 @@ def get_locations_data():
       reservation_data.dim_location dim_location
   """
   rows = run_query(query)
+
+  rows = [row for row in rows if f"{row['city']}-{row['street']}" in st.session_state.locations]
+
   df = pd.DataFrame(rows, columns=['id', 'street', 'city', 'country'])
 
   return df
@@ -309,6 +312,7 @@ def get_reservation_data():
       booked_date.month AS booked_date_month,
       booked_date.year AS booked_date_year,
       location.city AS city,
+      location.street AS street,
       client.language AS language,
       client.id AS client_id,
       client.email AS email,
