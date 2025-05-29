@@ -80,8 +80,6 @@ def get_locations_data():
   """
   rows = run_query(query)
 
-  rows = [row for row in rows if f"{row['city']}-{row['street']}" in st.session_state.locations]
-
   df = pd.DataFrame(rows, columns=['id', 'street', 'city', 'country'])
 
   return df
