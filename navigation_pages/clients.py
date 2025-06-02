@@ -10,7 +10,6 @@ import queries
 import clients_sidebar
 import clients_utils
 import utils
-import auth
 
 def determine_status(row):
   if row['is_cancelled']:
