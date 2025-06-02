@@ -18,8 +18,6 @@ def determine_status(row):
     return 'Zrealizowane nieopłacone'
   return 'Zrealizowane'
 
-st.set_page_config(layout="wide")
-
 with st.spinner():
   df = queries.get_reservation_data()
 

@@ -10,9 +10,7 @@ import queries
 import utils
 import reservations_sidebar
 import reservations_utils
-
-st.set_page_config(layout="wide")
-st.markdown('<style>#vg-tooltip-element{z-index: 1000051}</style>', unsafe_allow_html=True)
+import auth
 
 def determine_status(row):
     if row['is_cancelled']:
@@ -24,6 +22,8 @@ def determine_status(row):
 with st.spinner():
     df = queries.get_reservation_data()
     df_notes = queries.get_notes()
+
+df = auth.filter_locations(df)
 
 (df, df_unfiltered_by_city, x_axis_type, moving_average_toggle,
  show_only_moving_average, moving_average_days,

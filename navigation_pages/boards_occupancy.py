@@ -14,8 +14,6 @@ import queries
 import utils
 import boards_occupancy_sidebar
 
-st.set_page_config(layout="wide")
-
 with st.spinner():
   df = queries.get_reservation_data()
   df_locations = queries.get_locations_data()
