@@ -33,7 +33,7 @@ pages_by_role = {
     "Konto": [logout_page]
   },
   "manager": {
-    "Rezerwacje": [reservations_page, clients_page],
+    "Rezerwacje": [reservations_page, clients_page, reservations_by_time_period_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
   }
