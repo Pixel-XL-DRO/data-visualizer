@@ -7,6 +7,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 
+import auth
 import queries
 import utils
 import reservations_by_time_period_sidebar
@@ -21,6 +22,8 @@ def determine_status(row):
 
 with st.spinner():
   df = queries.get_reservation_data()
+
+df = auth.filter_locations(df)
 
 # side bar
 (df, x_axis_type, group_dates_by) = reservations_by_time_period_sidebar.filter_data(df)
