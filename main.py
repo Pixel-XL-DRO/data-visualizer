@@ -24,10 +24,11 @@ reservations_cumulative_page = st.Page("navigation_pages/reservations_cumulative
 data_editor_page = st.Page("navigation_pages/data_editor.py", title="Edytor danych", icon=":material/edit:")
 google_reviews_page = st.Page("navigation_pages/google_reviews.py", title="Opinie Google", icon=":material/reviews:")
 reviews_page = st.Page("navigation_pages/reviews.py", title="NPS", icon=":material/sentiment_very_satisfied:")
+dotypos = st.Page("navigation_pages/dotypos.py", title="System kasowy", icon=":material/point_of_sale:")
 
 pages_by_role = {
   "admin": {
-    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
+    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page, dotypos],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
