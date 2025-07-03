@@ -12,7 +12,7 @@ def logout():
   if st.button("Wyloguj się"):
     st.logout()
 
-auth.authorize(["admin", "manager"])
+auth.authorize(["admin", "manager", "super-admin"])
 
 logout_page = st.Page(logout, title="Wyloguj się", icon=":material/logout:")
 
@@ -27,8 +27,14 @@ reviews_page = st.Page("navigation_pages/reviews.py", title="NPS", icon=":materi
 dotypos = st.Page("navigation_pages/dotypos.py", title="System kasowy", icon=":material/point_of_sale:")
 
 pages_by_role = {
-  "admin": {
+  "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page, dotypos],
+    "Opinie": [google_reviews_page, reviews_page],
+    "Admin Panel": [data_editor_page],
+    "Konto": [logout_page]
+  },
+  "admin": {
+    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
