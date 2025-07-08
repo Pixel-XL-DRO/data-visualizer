@@ -66,25 +66,26 @@ def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_l
   )
 
   if show_notes:
-    x_values = []
-    y_values = []
-    text_values = []
-    for i, row in data.iterrows():
-        if 'note-content' in row and pd.notna(row['note-content']):
-            x_values.append(row[x_axis_type])
-            y_values.append(row[line_y])
-            text_values.append(f"{row['city']}: {row['note-content']}")
+    note_data = data.loc[data['note-content'].notna()].copy()
 
-    for index, value in enumerate(pd.unique(text_values)):
-      city_from_value = value.split(':')[0]
-      fig.add_scatter(
-          x=x_values, y=y_values,
-          mode='markers',
-          text=value,
-          hoverinfo='text',
-          marker=dict(size=8, color="yellow"),
-          name=f"Notatka {city_from_value}",
-      )
+    note_data['note_text'] = note_data.apply(
+        lambda row: f"{row['city']}: {row['note-content']}", axis=1
+    )
+
+    grouped_notes = note_data.groupby(x_axis_type)['note_text'].apply(
+        lambda texts: '<br>'.join(texts)
+    ).reset_index().rename(columns={'note_text': 'combined_notes'})
+    note_data = note_data.merge(grouped_notes, on=x_axis_type)
+
+    fig.add_scatter(
+        x=note_data[x_axis_type],
+        y=note_data[line_y],
+        mode='markers',
+        text=note_data['combined_notes'],
+        hoverinfo='text',
+        marker=dict(size=8, color="yellow"),
+        name='Notatki',
+    )
 
   return fig
 

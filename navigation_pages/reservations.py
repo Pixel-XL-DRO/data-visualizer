@@ -34,7 +34,6 @@ groupBy = 'city' if seperate_cities else 'attraction_group' if seperate_attracti
 
 (df_grouped, reservations_rolling_averages, total_cost_rolling_averages,
  total_people_rolling_averages) = reservations_utils.group_data_and_calculate_moving_average(df, df_notes, x_axis_type, moving_average_days, groupBy)
-
 df_ahead = reservations_utils.calculate_reservations_ahead(df_unfiltered_by_city)
 
 if moving_average_toggle:

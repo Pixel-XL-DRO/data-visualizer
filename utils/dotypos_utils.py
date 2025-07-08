@@ -10,8 +10,7 @@ def group_order_items(df, group_by, moving_average_days):
     df = df[df['quantity'] > 0]
 
     df = df[df['document_number'] != '0']
-    df_upsell = df[~df['category'].isin(['Urodziny', 'Integracje', 'Bilety'])] # NAPRAWIC jak bedzie nie dzialac narazie dziala
-    df = df[~df['category'].isin(['Urodziny', 'Integracje', 'Bilety'])]
+    df_upsell = df
 
     df['date_only'] = df['creation_date'].dt.date
     df_upsell['date_only'] = df_upsell['creation_date'].dt.date
@@ -70,7 +69,6 @@ def group_order_items(df, group_by, moving_average_days):
             netto=('netto', 'sum'),
         ).reset_index()
 
-        # df_upsell_grouped = df_upsell_grouped.sort_values('date_only') #czasami to cos nie dziala ale narazie dziala
         df_upsell_grouped['avg_netto_per_purchase'] = (
             df_upsell_grouped['netto'].rolling(window=moving_average_days, min_periods=moving_average_days).sum() /
             df_upsell_grouped['quantity'].rolling(window=moving_average_days, min_periods=moving_average_days).sum()
@@ -93,7 +91,7 @@ def calc_earnings_per_reservation(df_reservation, df, group_by, moving_average_d
     df['brutto'] = pd.to_numeric(df['brutto'], errors='coerce')
     df['netto'] = pd.to_numeric(df['netto'], errors='coerce')
 
-    df_upsell = df[~df['category'].isin(['Urodziny', 'Integracje', 'Bilety'])]
+    df_upsell = df
 
     df_upsell['start_date'] = pd.to_datetime(df_upsell['creation_date']).dt.date
     df_reservation['start_date'] = pd.to_datetime(df_reservation['booked_date']).dt.date
@@ -160,3 +158,57 @@ def calc_earnings_per_reservation(df_reservation, df, group_by, moving_average_d
             window=moving_average_days, min_periods=moving_average_days).mean()
 
     return df_result
+
+def calc_items(df, groupBy, moving_average_days):
+
+    df = df[df['status'] == 'closed']
+    df = df[df['document_number'] != '0'] # we want to filter weird orders without doc number
+
+    df['creation_date'] = pd.to_datetime(df['creation_date']).dt.date
+    df['brutto'] = pd.to_numeric(df['brutto'], errors='coerce')
+    df['netto'] = pd.to_numeric(df['netto'], errors='coerce')
+    if groupBy:
+
+        df_grouped_items = df.groupby(["creation_date", 'name', 'category', groupBy]).agg(
+            quantity=('quantity', 'sum'),
+            brutto=('brutto', 'sum'),
+            netto=('netto', 'sum'),
+            mean_brutto=('brutto', 'mean'),
+            mean_netto=('netto', 'mean'),
+        ).reset_index()
+
+        df_grouped = df.groupby(["creation_date", groupBy]).agg(
+            quantity=('quantity', 'sum'),
+            brutto=('brutto', 'sum'),
+            netto=('netto', 'sum'),
+            mean_brutto=('brutto', 'mean'),
+            mean_netto=('netto', 'mean'),
+        ).reset_index()
+
+        df_grouped['quantity_ma'] = df_grouped.groupby(groupBy)['quantity'].transform(
+            lambda x: x.rolling(window=moving_average_days, min_periods=moving_average_days).mean()
+        )
+
+    else:
+
+        df_grouped_items = df.groupby(["creation_date", 'name', 'category']).agg(
+            quantity=('quantity', 'sum'),
+            total_brutto=('brutto', 'sum'),
+            total_netto=('netto', 'sum'),
+            mean_brutto=('brutto', 'mean'),
+            mean_netto=('netto', 'mean'),
+        ).reset_index()
+
+
+        df_grouped = df.groupby(["creation_date"]).agg(
+            quantity=('quantity', 'sum'),
+            total_brutto=('brutto', 'sum'),
+            total_netto=('netto', 'sum'),
+            mean_brutto=('brutto', 'mean'),
+            mean_netto=('netto', 'mean'),
+        ).reset_index()
+
+        df_grouped['quantity_ma'] = df_grouped['quantity'].rolling(
+            window=moving_average_days, min_periods=moving_average_days).mean()
+
+    return df_grouped, df_grouped_items

@@ -7,7 +7,14 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-def filter_data(df):
+def determine_status(row):
+  if row['is_cancelled']:
+    return 'Anulowane'
+  elif not row['is_payed']:
+    return 'Zrealizowane nieopłacone'
+  return 'Zrealizowane'
+
+def filter_data(df, df_res):
   start_date = None
   end_date = None
 
@@ -27,6 +34,8 @@ def filter_data(df):
       with st.container(border=True):
         location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
         separate_cities = st.checkbox('Rozdziel miasta')
+      with st.container(border=True):
+        status_checkboxes = st.multiselect("Status", ["Zrealizowane", "Anulowane", "Zrealizowane nieopłacone"], default=["Zrealizowane", "Zrealizowane nieopłacone"])
 
     if end_date is None:
       end_date = datetime.now()
@@ -58,4 +67,7 @@ def filter_data(df):
     df = df[df['creation_date'] >= start_date]
     df = df[df['creation_date'] <= end_date]
 
-    return (df, separate_cities, show_only_moving_average, moving_average_days, moving_average_toggle)
+    df_res['status'] = df_res.apply(determine_status, axis=1)
+    df_res = df_res[df_res['status'].isin(status_checkboxes)]
+
+    return (df, df_res, separate_cities, show_only_moving_average, moving_average_days, moving_average_toggle)
