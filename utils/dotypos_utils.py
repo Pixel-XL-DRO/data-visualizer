@@ -164,12 +164,14 @@ def calc_items(df, groupBy, moving_average_days):
     df = df[df['status'] == 'closed']
     df = df[df['document_number'] != '0'] # we want to filter weird orders without doc number
 
+    df_grouped_items = df
+
     df['creation_date'] = pd.to_datetime(df['creation_date']).dt.date
     df['brutto'] = pd.to_numeric(df['brutto'], errors='coerce')
     df['netto'] = pd.to_numeric(df['netto'], errors='coerce')
     if groupBy:
 
-        df_grouped_items = df.groupby(["creation_date", 'name', 'category', groupBy]).agg(
+        df_grouped_items = df_grouped_items.groupby(['name', groupBy]).agg(
             quantity=('quantity', 'sum'),
             brutto=('brutto', 'sum'),
             netto=('netto', 'sum'),
@@ -191,7 +193,7 @@ def calc_items(df, groupBy, moving_average_days):
 
     else:
 
-        df_grouped_items = df.groupby(["creation_date", 'name', 'category']).agg(
+        df_grouped_items = df_grouped_items.groupby(['name']).agg(
             quantity=('quantity', 'sum'),
             total_brutto=('brutto', 'sum'),
             total_netto=('netto', 'sum'),
