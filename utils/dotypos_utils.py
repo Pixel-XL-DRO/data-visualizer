@@ -94,7 +94,7 @@ def calc_earnings_per_reservation(df_reservation, df, group_by, moving_average_d
     df_upsell = df
 
     df_upsell['start_date'] = pd.to_datetime(df_upsell['creation_date']).dt.date
-    df_reservation['start_date'] = pd.to_datetime(df_reservation['booked_date']).dt.date
+    df_reservation['start_date'] = pd.to_datetime(df_reservation['start_date']).dt.date
 
     if group_by:
         df_grouped = df_reservation.groupby(['start_date', df_reservation[group_by]]).agg(

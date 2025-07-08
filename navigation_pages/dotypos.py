@@ -79,11 +79,11 @@ with tab3:
     reservation_count_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data", 'count' if not show_only_moving_average else None, 'count_rolling_avg' if moving_average_toggle else None, "ilosc rezerwacji", groupBy, 2 if groupBy else 4, "Średnia", False)
     st.plotly_chart(reservation_count_chart, use_container_width=True)
 
+    upsell_brutto_per_reservation_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data",  'mean_brutto_per_reservation' if not show_only_moving_average else None, 'mean_brutto_per_reservation_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa brutto na rezerwacje", groupBy, 2 if groupBy else 4, "Średnia", False)
+    st.plotly_chart(upsell_brutto_per_reservation_chart, use_container_width=True)
+
     upsell_netto_per_reservation_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data", 'mean_netto_per_reservation' if not show_only_moving_average else None, 'mean_netto_per_reservation_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa netto na rezerwacje", groupBy, 2 if groupBy else 4, "Średnia", False)
     st.plotly_chart(upsell_netto_per_reservation_chart, use_container_width=True)
-
-    upsell_brutto_per_reservation_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data",  'mean_brutto_per_reservation' if not show_only_moving_average else None, 'mean_brutto_per_reservation_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa netto na rezerwacje", groupBy, 2 if groupBy else 4, "Średnia", False)
-    st.plotly_chart(upsell_brutto_per_reservation_chart, use_container_width=True)
 
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
