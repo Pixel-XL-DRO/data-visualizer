@@ -120,17 +120,13 @@ with tab4:
 
 with tab5:
 
-    items  = utils.create_chart_new(df_items, 'creation_date', "Data", 'quantity' if not show_only_moving_average else None, 'quantity_ma' if moving_average_toggle else None, "Ilość sprzedaży na dany dzień", groupBy, 2 if groupBy else 4, "Średnia ilość sprzedaży", False)
-    st.plotly_chart(items, use_container_width=True)
-
     col1, col2 = st.columns(2)
 
     with col1:
-        current_period_start = st.date_input('Od kiedy', value=(datetime.now() - pd.Timedelta(days=8)).date())
+        current_period_start = st.date_input('Od kiedy', value=datetime(2025,1,1))
 
     with col2:
         current_period_end = st.date_input('Do kiedy', value=datetime.now())
-
 
     current_period_start = pd.to_datetime(current_period_start)
     current_period_end = pd.to_datetime(current_period_end)
@@ -140,8 +136,10 @@ with tab5:
         (df['creation_date'] <= current_period_end)
     ]
 
-
     df_items, df_filtered = dotypos_utils.calc_items(df_filtered, groupBy, moving_average_days)
+
+    items  = utils.create_chart_new(df_items, 'creation_date', "Data", 'quantity' if not show_only_moving_average else None, 'quantity_ma' if moving_average_toggle else None, "Ilość sprzedaży na dany dzień", groupBy, 2 if groupBy else 4, "Średnia ilość sprzedaży", False)
+    st.plotly_chart(items, use_container_width=True)
 
     df_filtered
 
