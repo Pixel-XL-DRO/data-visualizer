@@ -3,6 +3,7 @@ import altair as alt
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from io import BytesIO
 
 def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label, colorBy, lineStrokeWidth, line_label, show_notes):
   fig = None
@@ -245,3 +246,20 @@ def get_month_from_month_number(month_number):
     11: "Listopad",
     12: "Grudzień"
   }[month_number]
+
+def download_button(df, file_name):
+
+  output = BytesIO()
+  with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    writer.close()
+    processed_data = output.getvalue()
+
+    return (
+      st.download_button(
+      label="Pobierz plik .xlxs",
+      data=processed_data,
+      icon="⬇️",
+      file_name=f"{file_name}.xlsx",
+      mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ))

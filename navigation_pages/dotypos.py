@@ -3,7 +3,6 @@ import sys
 sys.path.append("shared")
 sys.path.append("shared/sidebars")
 sys.path.append("utils")
-from io import BytesIO
 import dotypos_utils
 import streamlit as st
 import datetime
@@ -37,86 +36,37 @@ with tab1:
     total_netto_chart = utils.create_chart_new(df_grouped, df_grouped['date_only'], "Data", 'netto' if not show_only_moving_average else None, 'netto_rolling_avg', "Sprzedaż barowa netto", groupBy, 2 if groupBy else 4, "Średnia sprzedaż barowa netto", False)
     st.plotly_chart(total_netto_chart, use_container_width=True)
 
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df_grouped.to_excel(writer, index=False, sheet_name='Sheet1')
-        writer.close()
-        processed_data = output.getvalue()
-
-    st.download_button(
-    label="Pobierz plik .xlxs",
-    data=processed_data,
-    icon="😈",
-    file_name="upsell.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    utils.download_button(df_grouped, "sprzedaz_barowa")
 
 with tab2:
 
-    upsell_brutto_per_visit_chart = utils.create_chart_new(df_upsell_grouped, df_upsell_grouped['date_only'], "Data",  'brutto_by_quantity' if not show_only_moving_average else None, 'avg_brutto_per_purchase' if moving_average_toggle else None, "Sprzedaż barowa brutto na rachunek", groupBy, 2 if groupBy else 4, "Średnia", False)
-    st.plotly_chart(upsell_brutto_per_visit_chart, use_container_width=True)
+    brutto_per_visit_chart = utils.create_chart_new(df_upsell_grouped, df_upsell_grouped['date_only'], "Data",  'brutto_by_quantity' if not show_only_moving_average else None, 'avg_brutto_per_purchase' if moving_average_toggle else None, "Sprzedaż barowa brutto na rachunek", groupBy, 2 if groupBy else 4, "Średnia", False)
+    st.plotly_chart(brutto_per_visit_chart, use_container_width=True)
 
-    upsell_netto_per_visit_chart = utils.create_chart_new(df_upsell_grouped, df_upsell_grouped['date_only'], "Data", 'netto_by_quantity' if not show_only_moving_average else None, 'avg_netto_per_purchase' if moving_average_toggle else None, "Sprzedaż barowa netto na rachunek", groupBy, 2 if groupBy else 4, "Średnia", False)
-    st.plotly_chart(upsell_netto_per_visit_chart, use_container_width=True)
+    netto_per_visit_chart = utils.create_chart_new(df_upsell_grouped, df_upsell_grouped['date_only'], "Data", 'netto_by_quantity' if not show_only_moving_average else None, 'avg_netto_per_purchase' if moving_average_toggle else None, "Sprzedaż barowa netto na rachunek", groupBy, 2 if groupBy else 4, "Średnia", False)
+    st.plotly_chart(netto_per_visit_chart, use_container_width=True)
 
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df_upsell_grouped.to_excel(writer, index=False, sheet_name='Sheet1')
-        writer.close()
-        processed_data = output.getvalue()
-
-
-    st.download_button(
-    label="Pobierz plik .xlxs",
-    data=processed_data,
-    icon="😎",
-    file_name="upsell.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    utils.download_button(df_upsell_grouped, "sprzedaz_na_wizyte")
 
 with tab3:
 
     reservation_count_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data", 'count' if not show_only_moving_average else None, 'count_rolling_avg' if moving_average_toggle else None, "ilosc rezerwacji", groupBy, 2 if groupBy else 4, "Średnia", False)
     st.plotly_chart(reservation_count_chart, use_container_width=True)
 
-    upsell_brutto_per_reservation_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data",  'mean_brutto_per_reservation' if not show_only_moving_average else None, 'mean_brutto_per_reservation_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa brutto na rezerwacje", groupBy, 2 if groupBy else 4, "Średnia", False)
-    st.plotly_chart(upsell_brutto_per_reservation_chart, use_container_width=True)
+    brutto_per_reservation_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data",  'mean_brutto_per_reservation' if not show_only_moving_average else None, 'mean_brutto_per_reservation_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa brutto na rezerwacje", groupBy, 2 if groupBy else 4, "Średnia", False)
+    st.plotly_chart(brutto_per_reservation_chart, use_container_width=True)
 
-    upsell_netto_per_reservation_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data", 'mean_netto_per_reservation' if not show_only_moving_average else None, 'mean_netto_per_reservation_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa netto na rezerwacje", groupBy, 2 if groupBy else 4, "Średnia", False)
-    st.plotly_chart(upsell_netto_per_reservation_chart, use_container_width=True)
+    netto_per_reservation_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data", 'mean_netto_per_reservation' if not show_only_moving_average else None, 'mean_netto_per_reservation_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa netto na rezerwacje", groupBy, 2 if groupBy else 4, "Średnia", False)
+    st.plotly_chart(netto_per_reservation_chart, use_container_width=True)
 
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df_res.to_excel(writer, index=False, sheet_name='Sheet1')
-        writer.close()
-        processed_data = output.getvalue()
-
-    st.download_button(
-    label="Pobierz plik .xlxs",
-    data=processed_data,
-    icon="👽",
-    file_name="upsell.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    utils.download_button(df_res, "sprzedaz_na_rezerwacje")
 
 with tab4:
 
     total_income  = utils.create_chart_new(df_res, df_res['start_date'], "Data", 'total_brutto_income' if not show_only_moving_average else None, "total_brutto_income_rolling_avg" if moving_average_toggle else None, "Sprzedaż barowa brutto + rezerwacje", groupBy, 2 if groupBy else 4, "Średnia", False)
     st.plotly_chart(total_income, use_container_width=True)
 
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df_res.to_excel(writer, index=False, sheet_name='Sheet1')
-        writer.close()
-        processed_data = output.getvalue()
-
-    st.download_button(
-    label="Pobierz plik .xlxs",
-    data=processed_data,
-    icon="👹",
-    file_name="f.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    utils.download_button(df_res, "total_przychod")
 
 with tab5:
 
@@ -138,21 +88,9 @@ with tab5:
 
     df_items, df_filtered = dotypos_utils.calc_items(df_filtered, groupBy, moving_average_days)
 
-    items  = utils.create_chart_new(df_items, 'creation_date', "Data", 'quantity' if not show_only_moving_average else None, 'quantity_ma' if moving_average_toggle else None, "Ilość sprzedaży na dany dzień", groupBy, 2 if groupBy else 4, "Średnia ilość sprzedaży", False)
-    st.plotly_chart(items, use_container_width=True)
+    items_chart  = utils.create_chart_new(df_items, 'creation_date', "Data", 'quantity' if not show_only_moving_average else None, 'quantity_ma' if moving_average_toggle else None, "Ilość sprzedaży na dany dzień", groupBy, 2 if groupBy else 4, "Średnia ilość sprzedaży", False)
+    st.plotly_chart(items_chart, use_container_width=True)
 
     df_filtered
 
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df_grouped_items.to_excel(writer, index=False, sheet_name='Sheet1')
-        writer.close()
-        processed_data = output.getvalue()
-
-    st.download_button(
-    label="Pobierz plik .xlxs",
-    data=processed_data,
-    icon="👻",
-    file_name="sprzedaż produktów.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    utils.download_button(df_grouped_items, "produkty")
