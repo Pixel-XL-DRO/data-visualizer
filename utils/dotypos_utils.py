@@ -92,13 +92,17 @@ def calc_earnings_per_reservation(df_reservation, df, group_by, moving_average_d
     df['netto'] = pd.to_numeric(df['netto'], errors='coerce')
 
     df_upsell = df
-
+    df_res = df_reservation
     df_upsell['start_date'] = pd.to_datetime(df_upsell['creation_date']).dt.date
     df_reservation['start_date'] = pd.to_datetime(df_reservation['start_date']).dt.date
+    df_res['start_date'] = pd.to_datetime(df_reservation['booked_date']).dt.date
 
     if group_by:
         df_grouped = df_reservation.groupby(['start_date', df_reservation[group_by]]).agg(
             count=('id', 'count'),
+        ).reset_index()
+
+        df_res = df_res.groupby(['start_date', df_res[group_by]]).agg(
             total_reservations_value=('whole_cost_with_voucher', 'sum')
         ).reset_index()
 
@@ -108,6 +112,7 @@ def calc_earnings_per_reservation(df_reservation, df, group_by, moving_average_d
         ).reset_index()
 
         df_result = pd.merge(df_grouped, df_upsell_grouped, on=['start_date', group_by], how='right')
+        df_result = pd.merge(df_result, df_res, on=['start_date', group_by], how='left')
 
         df_result['mean_brutto_per_reservation'] = df_result['total_brutto'] / df_result['count']
         df_result['mean_netto_per_reservation'] = df_result['total_netto'] / df_result['count']
@@ -129,6 +134,9 @@ def calc_earnings_per_reservation(df_reservation, df, group_by, moving_average_d
     else:
         df_grouped = df_reservation.groupby('start_date').agg(
             count=('id', 'count'),
+        ).reset_index()
+
+        df_res = df_res.groupby('start_date').agg(
             total_reservations_value=('whole_cost_with_voucher', 'sum')
         ).reset_index()
 
@@ -137,7 +145,8 @@ def calc_earnings_per_reservation(df_reservation, df, group_by, moving_average_d
             total_netto=('netto', 'sum'),
         ).reset_index()
 
-        df_result = pd.merge(df_grouped, df_upsell_grouped, on='start_date', how='right')
+        df_result = pd.merge(df_grouped, df_upsell_grouped,  on='start_date', how='right')
+        df_result = pd.merge(df_result, df_res, on=['start_date'], how='left')
 
         df_result = df_result.sort_values(by='start_date')
 
