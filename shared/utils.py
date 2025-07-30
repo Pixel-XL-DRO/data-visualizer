@@ -192,10 +192,10 @@ def map_day_of_week_string_to_number(day_of_week_as_string):
   }[day_of_week_as_string]
 
 def format_date(date):
-  split_date = str(date).split('.')
-  day = split_date[0]
+  split_date = str(date).split('-')
+  year = split_date[0]
   month = split_date[1]
-  year = split_date[2]
+  day = split_date[2]
 
   if len(str(day)) == 1:
     day = "0" + str(day)
@@ -203,7 +203,7 @@ def format_date(date):
   if len(str(month)) == 1:
     month = "0" + str(month)
 
-  return f"{day}.{month}.{year}"
+  return f"{day}-{month}-{year}"
 
 def parse_hour(hour):
   split = hour.split('.')
