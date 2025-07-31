@@ -351,7 +351,8 @@ def get_reservation_data():
     ), axis=1
   )
 
-  df['whole_cost_with_voucher'] = new_values.apply(lambda x: x[0])
+  # we stopped mocking data when we started with dotypos
+  df.loc[df['booked_date'] <= '2025-02-01', ['whole_cost_with_voucher']] = new_values.apply(lambda x: x[0])
   df['no_of_people'] = new_values.apply(lambda x: x[1])
 
   return df
@@ -478,30 +479,6 @@ def get_performance_reviews():
   return df
 
 @st.cache_data(ttl=6000)
-def get_orders():
-  query = """
-    SELECT
-          o.id as id,
-          o.creation_date as creation_date,
-          o.completion_date as completion_date,
-          o.currency as currency,
-          o.document_type as document_type,
-          o.status as status,
-          o.document_number as document_number,
-          o.value as value,
-          location.city as city
-        FROM
-          POS_system_data.order o
-        JOIN
-          POS_system_data.dim_location location
-        ON
-          o.dim_location_id = location.id
-  """
-  rows = run_query(query)
-  df = pd.DataFrame(rows, columns=['id', 'creation_date', 'completion_date', 'currency', 'document_type', 'status', 'document_number', 'value', 'city'])
-  return df
-
-@st.cache_data(ttl=6000)
 def get_order_items():
   query = """
     SELECT
@@ -512,6 +489,7 @@ def get_order_items():
       order_items.price_brutto as brutto,
       order_items.price_netto as netto,
       location.city as city,
+      location.street as street,
       o.creation_date as creation_date,
       o.value as value,
       o.status as status,
@@ -531,6 +509,16 @@ def get_order_items():
     ON
       o.dim_location_id = location.id
   """
+
   rows = run_query(query)
-  df = pd.DataFrame(rows, columns=['order_id', 'quantity', 'name', 'category', 'brutto', 'netto', 'city', 'creation_date', 'value', 'status','document_number'])
-  return df
+  df = pd.DataFrame(rows, columns=['order_id', 'quantity', 'name', 'category', 'brutto', 'netto', 'city', 'street', 'creation_date', 'value', 'status','document_number'])
+  df['start_date'] = df['creation_date'].dt.date
+  df = df[df['start_date'] >= pd.to_datetime('2025-02-01').date()]
+  df_all = df
+  mask = df['name'].str.contains('bilet|zadatek|voucher|integracja|uczestnik|urodzin', case=False, na=False)
+  df = df[~mask]
+
+  df_all = df_all[df_all['document_number'] != '0']
+  df_all = df_all[df_all['status'] != 'canceled']
+
+  return df, df_all

@@ -25,10 +25,12 @@ data_editor_page = st.Page("navigation_pages/data_editor.py", title="Edytor dany
 google_reviews_page = st.Page("navigation_pages/google_reviews.py", title="Opinie Google", icon=":material/reviews:")
 reviews_page = st.Page("navigation_pages/reviews.py", title="NPS", icon=":material/sentiment_very_satisfied:")
 dotypos = st.Page("navigation_pages/dotypos.py", title="System kasowy", icon=":material/point_of_sale:")
+income = st.Page("navigation_pages/income.py", title="Przychody", icon=":material/money_bag:")
+
 
 pages_by_role = {
   "super-admin": {
-    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page, dotypos],
+    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page, dotypos, income],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]

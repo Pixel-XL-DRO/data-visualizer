@@ -66,7 +66,7 @@ def filter_data(df, df_res):
     df = df[df['city'].isin(location_checkboxes)]
     df = df[df['creation_date'] >= start_date]
     df = df[df['creation_date'] <= end_date]
-
+    df = df[df['category'] != 'UNDEFINED']
     df_res['status'] = df_res.apply(determine_status, axis=1)
     df_res = df_res[df_res['status'].isin(status_checkboxes)]
 

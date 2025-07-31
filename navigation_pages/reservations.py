@@ -12,13 +12,6 @@ import reservations_sidebar
 import reservations_utils
 import auth
 
-def determine_status(row):
-    if row['is_cancelled']:
-        return 'Anulowane'
-    elif not row['is_payed']:
-        return 'Zrealizowane nieopłacone'
-    return 'Zrealizowane'
-
 with st.spinner():
     df = queries.get_reservation_data()
     df_notes = queries.get_notes()
@@ -44,9 +37,6 @@ if moving_average_toggle:
 df_grouped[x_axis_type] = df_grouped[x_axis_type].dt.to_timestamp()
 reservations_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", 'reservations' if not show_only_moving_average else None, 'reservations_ma' if moving_average_toggle else None, "Liczba rezerwacji", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
 st.plotly_chart(reservations_chart, use_container_width=True)
-
-cost_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", 'total_cost' if not show_only_moving_average else None, 'total_cost_ma' if moving_average_toggle else None, "Przychód (PLN)", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
-st.plotly_chart(cost_chart, use_container_width=True)
 
 people_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", 'total_people' if not show_only_moving_average else None, 'total_people_ma' if moving_average_toggle else None, "Liczba osób", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
 st.plotly_chart(people_chart, use_container_width=True)

@@ -2,12 +2,10 @@ import pandas as pd
 
 def group_order_items(df, group_by, moving_average_days):
 
-    df = df[df['status'] == 'closed']
-
+    # df = df[df['status'] != 'canceled']
     df['quantity'] = pd.to_numeric(df['quantity'], errors='coerce')
     df['brutto'] = pd.to_numeric(df['brutto'], errors='coerce')
     df['netto'] = pd.to_numeric(df['netto'], errors='coerce')
-    df = df[df['quantity'] > 0]
 
     df = df[df['document_number'] != '0']
     df_upsell = df
@@ -36,17 +34,15 @@ def group_order_items(df, group_by, moving_average_days):
             netto=('netto', 'sum'),
         ).reset_index()
 
-        df_upsell_grouped = df_upsell_grouped.sort_values(['date_only', group_by])
+        df_upsell_grouped['avg_netto_per_purchase'] = df_upsell_grouped.groupby(group_by)['netto'].transform(
+            lambda x: x.rolling(window=moving_average_days, min_periods=moving_average_days).sum() /
+                      df_upsell_grouped.groupby(group_by)['quantity'].transform(
+                          lambda x: x.rolling(window=moving_average_days, min_periods=moving_average_days).sum()))
 
-        df_upsell_grouped['avg_netto_per_purchase'] = df_upsell_grouped.groupby(group_by).apply(
-            lambda g: (g['netto'].rolling(window=moving_average_days, min_periods=moving_average_days).sum() /
-                       g['quantity'].rolling(window=moving_average_days, min_periods=moving_average_days).sum())
-        ).reset_index(level=0, drop=True)
-
-        df_upsell_grouped['avg_brutto_per_purchase'] = df_upsell_grouped.groupby(group_by).apply(
-            lambda g: (g['brutto'].rolling(window=moving_average_days, min_periods=moving_average_days).sum() /
-                       g['quantity'].rolling(window=moving_average_days, min_periods=moving_average_days).sum())
-        ).reset_index(level=0, drop=True)
+        df_upsell_grouped['avg_brutto_per_purchase'] = df_upsell_grouped.groupby(group_by)['brutto'].transform(
+            lambda x: x.rolling(window=moving_average_days, min_periods=moving_average_days).sum() /
+                      df_upsell_grouped.groupby(group_by)['quantity'].transform(
+                          lambda x: x.rolling(window=moving_average_days, min_periods=moving_average_days).sum()))
 
     else:
         df_grouped = df.groupby('date_only').agg(
@@ -86,7 +82,7 @@ def group_order_items(df, group_by, moving_average_days):
 
 def calc_earnings_per_reservation(df_reservation, df, group_by, moving_average_days):
 
-    df = df[df['status'] == 'closed']
+    df = df[df['status'] != 'canceled']
 
     df['brutto'] = pd.to_numeric(df['brutto'], errors='coerce')
     df['netto'] = pd.to_numeric(df['netto'], errors='coerce')
@@ -170,7 +166,6 @@ def calc_earnings_per_reservation(df_reservation, df, group_by, moving_average_d
 
 def calc_items(df, groupBy, moving_average_days):
 
-    df = df[df['status'] == 'closed']
     df = df[df['document_number'] != '0'] # we want to filter weird orders without doc number
 
     df_grouped_items = df
@@ -221,5 +216,14 @@ def calc_items(df, groupBy, moving_average_days):
 
         df_grouped['quantity_ma'] = df_grouped['quantity'].rolling(
             window=moving_average_days, min_periods=moving_average_days).mean()
+
+        df_grouped_items = df_grouped_items.rename(columns={
+        'name': 'Nazwa',
+        'quantity': 'Ilość',
+        'mean_brutto': 'Średnia brutto',
+        'mean_netto': 'średnia netto',
+        'total_brutto': 'Suma brutto',
+        'total_netto': 'Suma netto',
+    })
 
     return df_grouped, df_grouped_items
