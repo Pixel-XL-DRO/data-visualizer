@@ -153,6 +153,23 @@ def get_historical_visit_type_availability():
 
   return df
 
+@st.cache_data(ttl=6000)
+def get_slots_occupancy():
+  query = """
+    SELECT
+      reservation_id AS slots_occupancy_reservation_id,
+      slots_taken AS slots_occupancy_slots_taken,
+      time_taken AS slots_occupancy_time_taken,
+      datetime_slot AS slots_occupancy_datetime_slot
+    FROM
+      reservation_data.reservation_slots_occupancy
+  """
+  rows = run_query(query)
+
+  df = pd.DataFrame(rows, columns=['slots_occupancy_reservation_id', 'slots_occupancy_slots_taken', 'slots_occupancy_time_taken', 'slots_occupancy_datetime_slot'])
+
+  return df
+
 def refresh_data_editor_data():
   get_locations_data.clear()
   get_visit_types_data.clear()
