@@ -5,6 +5,7 @@ def group_data_and_calculate_moving_average(df, df_notes, x_axis_type, moving_av
     reservations_rolling_averages = []
     total_cost_rolling_averages = []
     total_people_rolling_averages = []
+    boardhours_rolling_averages = []
 
     if not df_notes['date'].empty:
         df_notes['date'] = df_notes['date'].dt.to_period('D')
@@ -15,6 +16,7 @@ def group_data_and_calculate_moving_average(df, df_notes, x_axis_type, moving_av
             reservations=('id', 'count'),
             total_cost=('whole_cost_with_voucher', 'sum'),
             total_people=('no_of_people', 'sum'),
+            boardhours_taken=('boardhours_taken', 'sum')
         ).reset_index()
 
         for value in df_grouped[grouping_field].unique():
@@ -22,6 +24,7 @@ def group_data_and_calculate_moving_average(df, df_notes, x_axis_type, moving_av
             reservations_rolling_averages.append(group_data['reservations'].rolling(window=moving_average_days).mean())
             total_cost_rolling_averages.append(group_data['total_cost'].rolling(window=moving_average_days).mean())
             total_people_rolling_averages.append(group_data['total_people'].rolling(window=moving_average_days).mean())
+            boardhours_rolling_averages.append(group_data['boardhours_taken'].rolling(window=moving_average_days).mean())
 
         if grouping_field == 'city':
 
@@ -38,11 +41,13 @@ def group_data_and_calculate_moving_average(df, df_notes, x_axis_type, moving_av
             reservations=('id', 'count'),
             total_cost=('whole_cost_with_voucher', 'sum'),
             total_people=('no_of_people', 'sum'),
+            boardhours_taken=('boardhours_taken', 'sum')
         ).reset_index()
 
         reservations_rolling_averages.append(df_grouped['reservations'].rolling(window=moving_average_days).mean())
         total_cost_rolling_averages.append(df_grouped['total_cost'].rolling(window=moving_average_days).mean())
         total_people_rolling_averages.append(df_grouped['total_people'].rolling(window=moving_average_days).mean())
+        boardhours_rolling_averages.append(df_grouped['boardhours_taken'].rolling(window=moving_average_days).mean())
 
     if not grouping_field == 'city':
         new_df_grouped = []
@@ -64,7 +69,7 @@ def group_data_and_calculate_moving_average(df, df_notes, x_axis_type, moving_av
 
         df_grouped = pd.DataFrame(new_df_grouped)
 
-    return df_grouped, reservations_rolling_averages, total_cost_rolling_averages, total_people_rolling_averages
+    return df_grouped, reservations_rolling_averages, total_cost_rolling_averages, total_people_rolling_averages, boardhours_rolling_averages
 
 def calculate_reservations_ahead(df):
 

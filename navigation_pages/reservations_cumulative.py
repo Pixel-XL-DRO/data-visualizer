@@ -25,6 +25,8 @@ seperate_status, seperate_visit_types, group_by) = reservations_cumulative_sideb
 
 reservations_chart = utils.create_chart_new(df_cumulative, x_axis_type, "Data", None, 'reservations', "Kumulujaca sie liczba rezerwacji", group_by, 2 if group_by else 4, "Liczba rezerwacji", False)
 st.plotly_chart(reservations_chart, use_container_width=True)
+reservations_chart = utils.create_chart_new(df_cumulative, x_axis_type, "Data", None, 'boardhours_taken', "Kumulujaca sie liczba matogodzin", group_by, 2 if group_by else 4, "Liczba matogodzin", False)
+st.plotly_chart(reservations_chart, use_container_width=True)
 reservations_chart = utils.create_chart_new(df_cumulative, x_axis_type, "Data", None, 'total_people', "Kumulujaca sie liczba osób", group_by, 2 if group_by else 4, "Liczba osób", False)
 st.plotly_chart(reservations_chart, use_container_width=True)
 

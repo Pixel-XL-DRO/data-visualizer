@@ -8,14 +8,16 @@ def group_data_and_calculate_moving_average(df, period, grouping_field):
     df_grouped = df.groupby([df[period], df[grouping_field]]).agg(
       reservations=('id', 'count'),
       total_cost=('whole_cost_with_voucher', 'sum'),
-      total_people=('no_of_people', 'sum')
+      total_people=('no_of_people', 'sum'),
+      boardhours_taken=('boardhours_taken', 'sum')
     ).reset_index()
 
   else:
     df_grouped = df.groupby(df[period]).agg(
       reservations=('id', 'count'),
       total_cost=('whole_cost_with_voucher', 'sum'),
-      total_people=('no_of_people', 'sum')
+      total_people=('no_of_people', 'sum'),
+      boardhours_taken=('boardhours_taken', 'sum')
     ).reset_index()
 
   return df_grouped
@@ -92,6 +94,8 @@ def count_occurences_and_group_data(type, min_date, max_date, df, period, groupB
   y_type = 'total_people'
   df_grouped[y_type] = df_grouped.apply(adjust_reservations, axis=1)
   y_type = 'total_cost'
+  df_grouped[y_type] = df_grouped.apply(adjust_reservations, axis=1)
+  y_type = 'boardhours_taken'
   df_grouped[y_type] = df_grouped.apply(adjust_reservations, axis=1)
   return df_grouped
 
