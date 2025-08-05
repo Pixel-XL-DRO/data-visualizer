@@ -301,60 +301,63 @@ def get_reservation_data():
   query = """
     SELECT
       res.id,
-      res.start_date_id,
-      res.booked_date_id,
-      res.location_id,
-      res.client_id,
-      res.is_payed,
-      res.is_cancelled,
-      res.no_of_people,
-      res.whole_cost_with_voucher,
-      res.additional_items_cost,
-      start_date.date AS start_date,
-      booked_date.date AS booked_date,
-      start_date.hour AS start_date_hour,
-      start_date.day_of_month AS start_date_day_of_month,
-      start_date.day_of_week AS start_date_day_of_week,
-      start_date.week_of_month AS start_date_week_of_month,
-      start_date.week AS start_date_week_of_year,
-      start_date.month AS start_date_month,
-      start_date.year AS start_date_year,
-      booked_date.hour AS booked_date_hour,
-      booked_date.day_of_month AS booked_date_day_of_month,
-      booked_date.day_of_week AS booked_date_day_of_week,
-      booked_date.week_of_month AS booked_date_week_of_month,
-      booked_date.week AS booked_date_week_of_year,
-      booked_date.month AS booked_date_month,
-      booked_date.year AS booked_date_year,
-      location.city AS city,
-      location.street AS street,
-      client.language AS language,
-      client.id AS client_id,
-      client.email AS email,
-      visit_type.id AS visit_type_id,
-      visit_type.name AS visit_type,
-      visit_type.attraction_group AS attraction_group
+      ANY_VALUE(res.start_date_id) AS start_date_id,
+      ANY_VALUE(res.booked_date_id) AS booked_date_id,
+      ANY_VALUE(res.location_id) AS location_id,
+      ANY_VALUE(res.client_id) AS client_id,
+      ANY_VALUE(res.is_payed) AS is_payed,
+      ANY_VALUE(res.is_cancelled) AS is_cancelled,
+      ANY_VALUE(res.no_of_people) AS no_of_people,
+      ANY_VALUE(res.whole_cost_with_voucher) AS whole_cost_with_voucher,
+      ANY_VALUE(res.additional_items_cost) AS additional_items_cost,
+      ANY_VALUE(start_date.date) AS start_date,
+      ANY_VALUE(booked_date.date) AS booked_date,
+      ANY_VALUE(start_date.hour) AS start_date_hour,
+      ANY_VALUE(start_date.day_of_month) AS start_date_day_of_month,
+      ANY_VALUE(start_date.day_of_week) AS start_date_day_of_week,
+      ANY_VALUE(start_date.week_of_month) AS start_date_week_of_month,
+      ANY_VALUE(start_date.week) AS start_date_week_of_year,
+      ANY_VALUE(start_date.month) AS start_date_month,
+      ANY_VALUE(start_date.year) AS start_date_year,
+      ANY_VALUE(booked_date.hour) AS booked_date_hour,
+      ANY_VALUE(booked_date.day_of_month) AS booked_date_day_of_month,
+      ANY_VALUE(booked_date.day_of_week) AS booked_date_day_of_week,
+      ANY_VALUE(booked_date.week_of_month) AS booked_date_week_of_month,
+      ANY_VALUE(booked_date.week) AS booked_date_week_of_year,
+      ANY_VALUE(booked_date.month) AS booked_date_month,
+      ANY_VALUE(booked_date.year) AS booked_date_year,
+      ANY_VALUE(location.city) AS city,
+      ANY_VALUE(location.street) AS street,
+      ANY_VALUE(client.language) AS language,
+      ANY_VALUE(client.id) AS client_id_detailed,
+      ANY_VALUE(client.email) AS email,
+      ANY_VALUE(visit_type.id) AS visit_type_id,
+      ANY_VALUE(visit_type.name) AS visit_type,
+      ANY_VALUE(visit_type.attraction_group) AS attraction_group,
+      COALESCE(SUM(reservation_slots_occupancy.slots_taken), 0) AS slots_taken,
+      COALESCE(AVG(reservation_slots_occupancy.time_taken), 0) AS time_unit
     FROM
       `pixelxl-database-dev.reservation_data.event_create_reservation` res
     JOIN
       `pixelxl-database-dev.reservation_data.dim_date` start_date
-    ON
-      res.start_date_id = start_date.id
+      ON res.start_date_id = start_date.id
     JOIN
       `pixelxl-database-dev.reservation_data.dim_date` booked_date
-    ON
-      res.booked_date_id = booked_date.id
+      ON res.booked_date_id = booked_date.id
     JOIN
       `pixelxl-database-dev.reservation_data.dim_location` location
-    ON
-      res.location_id = location.id
+      ON res.location_id = location.id
     JOIN
       `pixelxl-database-dev.reservation_data.dim_client` client
-    ON
-      res.client_id = client.id
+      ON res.client_id = client.id
     JOIN
       `pixelxl-database-dev.reservation_data.dim_visit_type` visit_type
-    ON res.visit_type_id = visit_type.id
+      ON res.visit_type_id = visit_type.id
+    LEFT JOIN
+      `pixelxl-database-dev.reservation_data.reservation_slots_occupancy` reservation_slots_occupancy
+      ON res.id = reservation_slots_occupancy.reservation_id
+    GROUP BY
+      res.id;
   """
 
   rows = run_query(query)
@@ -367,6 +370,8 @@ def get_reservation_data():
       row['whole_cost_with_voucher'], row['no_of_people']
     ), axis=1
   )
+
+  df['boardhours_taken'] = (df['slots_taken'] * df['time_unit'] / 60)
 
   # we stopped mocking data when we started with dotypos
   df.loc[df['booked_date'] <= '2025-02-01', ['whole_cost_with_voucher']] = new_values.apply(lambda x: x[0])
