@@ -26,6 +26,7 @@ def render_online_view(df):
     online_chart = utils.create_chart_new(df_online, df_online['date'], "Data", 'total_online_sum' if not show_only_moving_average else None, 'total_online_sum_ma' if moving_average_toggle else None, "Przychód (PLN)", group_by, 2 if group_by else 4, "Średnia", False)
     st.plotly_chart(online_chart, use_container_width=True)
 
+    st.text("Średni przychód online w danej grupie czasowej")
     reservations_chart = utils.create_bar_chart(df_by_weekday, 'group', group_dates_by, 'total_online_mean', 'Przychód (PLN)', None, None)
     st.altair_chart(reservations_chart, use_container_width=True)
 
@@ -53,6 +54,7 @@ def render_pos_view(df_dotypos):
     pos_chart = utils.create_chart_new(df_pos, df_pos['date'], "Data", 'total_pos_sum' if not show_only_moving_average else None, 'total_pos_sum_ma' if moving_average_toggle else None, "Przychód (PLN)", groupBy, 2 if groupBy else 4, "Średnia", False)
     st.plotly_chart(pos_chart, use_container_width=True)
 
+    st.text("Średni przychód kasowy w danej grupie czasowej")
     reservations_chart = utils.create_bar_chart(df_by_weekday, 'group', group_dates_by, 'total_pos_mean', 'Przychód (PLN)', None, None)
     st.altair_chart(reservations_chart, use_container_width=True)
 
@@ -80,6 +82,7 @@ def render_total_view(df, df_dotypos):
     total_chart = utils.create_chart_new(df_total, df_total['date'], "Data", 'total_reservations_sum' if not show_only_moving_average else None, 'total_reservations_sum_ma' if moving_average_toggle else None, "Przychód (PLN)", groupBy, 2 if groupBy else 4, "Średnia", False)
     st.plotly_chart(total_chart, use_container_width=True)
 
+    st.text("Średni przychód sumaryczny w danej grupie czasowej")
     reservations_chart = utils.create_bar_chart(df_by_weekday, 'group', group_dates_by, 'total_reservations_mean', 'Przychód (PLN)', None, None)
     st.altair_chart(reservations_chart, use_container_width=True)
 
