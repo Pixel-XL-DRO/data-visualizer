@@ -174,3 +174,38 @@ def filter_total_data(df, df_dotypos):
     df_dotypos = df_dotypos[df_dotypos['city'].isin(cities)]
 
     return df, df_dotypos, separate_cities, t2, ile_dni, t1, group_dates_by, start, end
+
+def filter_voucher_data(df_voucher):
+    years_possible = list(range(2023, datetime.now().year + 1))
+
+    with st.sidebar:
+        group_dates_by = st.selectbox('Wybierz grupowanie po dacie', [ 'Dzień tygodnia', 'Tydzien roku', 'Dzień miesiaca', 'Miesiac', 'Rok'],index=1, key='voucher_grouping')
+
+        with st.container(border=True):
+            time_range = st.selectbox('Pokazuj ', ['Od poczatku', *years_possible], index=len(years_possible), key='voucher_timerange')
+
+        with st.expander("Średnia kroczaca"):
+            t1 = st.checkbox('Pokazuj', key="total_t1", value=True, on_change=lambda: utils.chain_toggle_off("total_t1", "total_t2"))
+            t2 = st.checkbox('Pokazuj tylko srednia kroczaca', key="total_t2", value=False, on_change=lambda: utils.chain_toggle_on("total_t2", "total_t1"))
+            ile_dni = st.slider('Ile dni', 1, 30, 7, key="voucher_slider")
+
+        with st.expander("Filtry"):
+            with st.container(border=True):
+                cities = st.multiselect("Miasta", df_voucher['city'].unique(), default=df_voucher['city'].unique(), key="voucher_cities")
+                separate_cities = st.checkbox('Rozdziel miasta', key="voucher_sep")
+
+    if time_range == 'Od poczatku':
+        start = pd.to_datetime(df_voucher['creation_date']).dt.tz_localize(None).min()
+        end = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
+    else:
+        year = time_range
+        start = datetime(year, 1, 1)
+        if year == datetime.now().year:
+            end = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
+        else:
+            end = datetime(year, 12, 31, 23, 59, 59)
+
+    df_voucher = df_voucher[df_voucher['city'].isin(cities)]
+
+
+    return df_voucher, separate_cities, t2, ile_dni, t1, group_dates_by, start, end

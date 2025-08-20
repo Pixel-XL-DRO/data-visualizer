@@ -544,3 +544,25 @@ def get_order_items():
   df_all = df_all[df_all['status'] != 'canceled']
 
   return df, df_all
+
+def get_voucher_data():
+  query = """
+    SELECT
+      voucher.id as id,
+      voucher.voucher_creation_date as creation_date,
+      voucher.voucher_name as voucher_name,
+      voucher.net_amount as net_amount,
+      location.city as city,
+      location.street as street
+    FROM
+      vouchers_data.voucher voucher
+    JOIN
+      vouchers_data.dim_location location
+    ON
+      voucher.dim_location_id = location.id
+  """
+
+  rows = run_query(query)
+  df = pd.DataFrame(rows, columns=['id', 'creation_date', 'voucher_name', 'net_amount', 'city', 'street'])
+  return df
+
