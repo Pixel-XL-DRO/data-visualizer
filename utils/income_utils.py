@@ -1,10 +1,10 @@
 import pandas as pd
 
-def group_data_cumulative(df, df_dotypos, dfv, moving_average_days, grouping_field, start_date, end_date):
+def group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, grouping_field, start_date, end_date):
     df_dotypos['brutto'] = pd.to_numeric(df_dotypos['brutto'], errors='coerce')
     df_dotypos['date'] = pd.to_datetime(df_dotypos['start_date']).dt.date
     df['date'] = pd.to_datetime(df['booked_date']).dt.date
-    dfv['date'] = pd.to_datetime(dfv['creation_date']).dt.date
+    df_voucher['date'] = pd.to_datetime(df_voucher['creation_date']).dt.date
 
     start_date = pd.to_datetime(start_date).date()
     end_date = pd.to_datetime(end_date).date()
@@ -25,12 +25,12 @@ def group_data_cumulative(df, df_dotypos, dfv, moving_average_days, grouping_fie
                 lambda x: x.rolling(moving_average_days, min_periods=1).mean()
             )
 
-            df_voucher = dfv.groupby(['date', grouping_field]).agg(
+            df_voucher_grouped = df_voucher.groupby(['date', grouping_field]).agg(
                 total_voucher_sum=('net_amount', 'sum')
             ).reset_index()
 
-            df_voucher['cumsum_voucher'] = df_voucher.groupby(grouping_field)['total_voucher_sum'].cumsum()
-            df_voucher['total_voucher_sum_ma'] = df_voucher.groupby(grouping_field)['total_voucher_sum'].transform(
+            df_voucher_grouped['cumsum_voucher'] = df_voucher_grouped.groupby(grouping_field)['total_voucher_sum'].cumsum()
+            df_voucher_grouped['total_voucher_sum_ma'] = df_voucher_grouped.groupby(grouping_field)['total_voucher_sum'].transform(
                 lambda x: x.rolling(moving_average_days, min_periods=1).mean()
             )
 
@@ -47,12 +47,12 @@ def group_data_cumulative(df, df_dotypos, dfv, moving_average_days, grouping_fie
                 total_pos_sum=('brutto', 'sum')
             ).reset_index()
 
-            df_voucher = dfv.groupby(['date', grouping_field]).agg(
+            df_voucher_grouped = df_voucher.groupby(['date', grouping_field]).agg(
                 total_voucher_sum=('net_amount', 'sum')
             ).reset_index()
 
             df_total = pd.merge(df_online, df_pos, on=['date', grouping_field], how='outer')
-            df_total = pd.merge(df_total, df_voucher, on=['date', grouping_field], how='outer')
+            df_total = pd.merge(df_total, df_voucher_grouped, on=['date', grouping_field], how='outer')
 
             df_total['total_online_sum'] = df_total['total_online_sum'].fillna(0)
             df_total['total_pos_sum'] = df_total['total_pos_sum'].fillna(0)
@@ -62,9 +62,9 @@ def group_data_cumulative(df, df_dotypos, dfv, moving_average_days, grouping_fie
             df_online['cumsum_online'] = df_online.groupby(grouping_field)['total_online_sum'].cumsum()
             df_pos['cumsum_pos'] = df_pos.groupby(grouping_field)['total_pos_sum'].cumsum()
             df_total['cumsum_total'] = df_total.groupby(grouping_field)['total_reservations_sum'].cumsum()
-            df_voucher['cumsum_voucher'] = df_voucher.groupby(grouping_field)['total_voucher_sum'].cumsum()
+            df_voucher_grouped['cumsum_voucher'] = df_voucher_grouped.groupby(grouping_field)['total_voucher_sum'].cumsum()
 
-            df_voucher['total_voucher_sum_ma'] = df_voucher.groupby(grouping_field)['total_voucher_sum'].transform(
+            df_voucher_grouped['total_voucher_sum_ma'] = df_voucher_grouped.groupby(grouping_field)['total_voucher_sum'].transform(
                 lambda x: x.rolling(moving_average_days, min_periods=1).mean()
             )
 
@@ -88,12 +88,12 @@ def group_data_cumulative(df, df_dotypos, dfv, moving_average_days, grouping_fie
             total_pos_sum=('brutto', 'sum')
         ).reset_index()
 
-        df_voucher = dfv.groupby('date').agg(
+        df_voucher_grouped = df_voucher.groupby('date').agg(
             total_voucher_sum=('net_amount', 'sum')
         ).reset_index()
 
         df_total = pd.merge(df_online, df_pos, on='date', how='outer')
-        df_total = pd.merge(df_total, df_voucher, on='date', how='outer')
+        df_total = pd.merge(df_total, df_voucher_grouped, on='date', how='outer')
         df_total['total_online_sum'] = df_total['total_online_sum'].fillna(0)
         df_total['total_pos_sum'] = df_total['total_pos_sum'].fillna(0)
         df_total['total_voucher_sum'] = df_total['total_voucher_sum'].fillna(0)
@@ -101,14 +101,14 @@ def group_data_cumulative(df, df_dotypos, dfv, moving_average_days, grouping_fie
 
         df_online['cumsum_online'] = df_online['total_online_sum'].cumsum()
         df_pos['cumsum_pos'] = df_pos['total_pos_sum'].cumsum()
-        df_voucher['cumsum_voucher'] = df_voucher['total_voucher_sum'].cumsum()
+        df_voucher_grouped['cumsum_voucher'] = df_voucher_grouped['total_voucher_sum'].cumsum()
         df_total['cumsum_total'] = df_total['total_reservations_sum'].cumsum()
 
         df_online['total_online_sum_ma'] = df_online['total_online_sum'].rolling(
             moving_average_days, min_periods=1).mean()
         df_pos['total_pos_sum_ma'] = df_pos['total_pos_sum'].rolling(
             moving_average_days, min_periods=1).mean()
-        df_voucher['total_voucher_sum_ma'] = df_voucher['total_voucher_sum'].rolling(
+        df_voucher_grouped['total_voucher_sum_ma'] = df_voucher_grouped['total_voucher_sum'].rolling(
             moving_average_days, min_periods=1).mean()
         df_total['total_reservations_sum_ma'] = df_total['total_reservations_sum'].rolling(
             moving_average_days, min_periods=1).mean()
@@ -119,28 +119,28 @@ def group_data_cumulative(df, df_dotypos, dfv, moving_average_days, grouping_fie
         df_pos = df_pos[df_pos['date'] >= start_date]
         df_pos = df_pos[df_pos['date'] <= end_date]
 
-        df_voucher = df_voucher[df_voucher['date'] >= start_date]
-        df_voucher = df_voucher[df_voucher['date'] <= end_date]
+        df_voucher_grouped = df_voucher_grouped[df_voucher_grouped['date'] >= start_date]
+        df_voucher_grouped = df_voucher_grouped[df_voucher_grouped['date'] <= end_date]
 
         df_total = df_total[df_total['date'] >= start_date]
         df_total = df_total[df_total['date'] <= end_date]
 
-    return df_online, df_pos, df_total, df_voucher
+    return df_online, df_pos, df_total, df_voucher_grouped
 
-def average_by_weekday(df, df_dotypos, dfv, grouping_field, grouping_type, start_date, end_date):
+def average_by_weekday(df, df_dotypos, df_voucher, grouping_field, grouping_type, start_date, end_date):
     df['whole_cost_with_voucher'] = pd.to_numeric(df['whole_cost_with_voucher'], errors='coerce')
     df_dotypos['brutto'] = pd.to_numeric(df_dotypos['brutto'], errors='coerce')
 
     df['date'] = pd.to_datetime(df['booked_date']).dt.tz_localize(None)
     df_dotypos['date'] = pd.to_datetime(df_dotypos['creation_date']).dt.tz_localize(None)
-    dfv['date'] = pd.to_datetime(dfv['date']).dt.tz_localize(None)
+    df_voucher['date'] = pd.to_datetime(df_voucher['date']).dt.tz_localize(None)
 
     df = df[df['date'] >= start_date]
     df = df[df['date'] <= end_date]
     df_dotypos = df_dotypos[df_dotypos['date'] >= start_date]
     df_dotypos = df_dotypos[df_dotypos['date'] <= end_date]
-    dfv = dfv[dfv['date'] >= start_date]
-    dfv = dfv[dfv['date'] <= end_date]
+    df_voucher = df_voucher[df_voucher['date'] >= start_date]
+    df_voucher = df_voucher[df_voucher['date'] <= end_date]
 
     current_date = pd.Timestamp.now().tz_localize(None)
 
@@ -157,72 +157,72 @@ def average_by_weekday(df, df_dotypos, dfv, grouping_field, grouping_type, start
     if grouping_type == 'Godzina':
         df['group'] = df['date'].dt.hour
         df_dotypos['group'] = df_dotypos['date'].dt.hour
-        dfv['group'] = dfv['date'].dt.hour
+        df_voucher['group'] = df_voucher['date'].dt.hour
         df['period_key'] = df['date'].dt.date
         df_dotypos['period_key'] = df_dotypos['date'].dt.date
-        dfv['period_key'] = dfv['date'].dt.date
+        df_voucher['period_key'] = df_voucher['date'].dt.date
     elif grouping_type == 'Dzień tygodnia':
         df['group'] = df['date'].dt.day_name()
         df_dotypos['group'] = df_dotypos['date'].dt.day_name()
-        dfv['group'] = dfv['date'].dt.day_name()
+        df_voucher['group'] = df_voucher['date'].dt.day_name()
         df['period_key'] = df['date'].dt.to_period('W')
         df_dotypos['period_key'] = df_dotypos['date'].dt.to_period('W')
-        dfv['period_key'] = dfv['date'].dt.to_period('W')
+        df_voucher['period_key'] = df_voucher['date'].dt.to_period('W')
         current_week = current_date.to_period('W')
         df = df[df['period_key'] < current_week]
         df_dotypos = df_dotypos[df_dotypos['period_key'] < current_week]
-        dfv = dfv[dfv['period_key'] < current_week]
+        df_voucher = df_voucher[df_voucher['period_key'] < current_week]
     elif grouping_type == 'Tydzien roku':
         df['group'] = df['date'].dt.isocalendar().week
         df_dotypos['group'] = df_dotypos['date'].dt.isocalendar().week
-        dfv['group'] = dfv['date'].dt.isocalendar().week
+        df_voucher['group'] = df_voucher['date'].dt.isocalendar().week
         df['period_key'] = df['date'].dt.to_period('W')
         df_dotypos['period_key'] = df_dotypos['date'].dt.to_period('W')
-        dfv['period_key'] = dfv['date'].dt.to_period('W')
+        df_voucher['period_key'] = df_voucher['date'].dt.to_period('W')
         current_week = current_date.to_period('W')
         df = df[df['period_key'] < current_week]
         df_dotypos = df_dotypos[df_dotypos['period_key'] < current_week]
-        dfv = dfv[dfv['period_key'] < current_week]
+        df_voucher = df_voucher[df_voucher['period_key'] < current_week]
     elif grouping_type == 'Dzień miesiaca':
         df['group'] = df['date'].dt.day
         df_dotypos['group'] = df_dotypos['date'].dt.day
-        dfv['group'] = dfv['date'].dt.day
+        df_voucher['group'] = df_voucher['date'].dt.day
         df['period_key'] = df['date'].dt.to_period('M')
         df_dotypos['period_key'] = df_dotypos['date'].dt.to_period('M')
-        dfv['period_key'] = dfv['date'].dt.to_period('M')
+        df_voucher['period_key'] = df_voucher['date'].dt.to_period('M')
         current_month = current_date.to_period('M')
         df = df[df['period_key'] < current_month]
         df_dotypos = df_dotypos[df_dotypos['period_key'] < current_month]
-        dfv = dfv[dfv['period_key'] < current_month]
+        df_voucher = df_voucher[df_voucher['period_key'] < current_month]
     elif grouping_type == 'Miesiac':
         df['group'] = df['date'].dt.month
         df_dotypos['group'] = df_dotypos['date'].dt.month
-        dfv['group'] = dfv['date'].dt.month
+        df_voucher['group'] = df_voucher['date'].dt.month
         df['period_key'] = df['date'].dt.to_period('M')
         df_dotypos['period_key'] = df_dotypos['date'].dt.to_period('M')
-        dfv['period_key'] = dfv['date'].dt.to_period('M')
+        df_voucher['period_key'] = df_voucher['date'].dt.to_period('M')
         current_month = current_date.to_period('M')
         df = df[df['period_key'] < current_month]
         df_dotypos = df_dotypos[df_dotypos['period_key'] < current_month]
-        dfv = dfv[dfv['period_key'] < current_month]
+        df_voucher = df_voucher[df_voucher['period_key'] < current_month]
     elif grouping_type == 'Rok':
         df['group'] = df['date'].dt.year.astype(str)
         df_dotypos['group'] = df_dotypos['date'].dt.year.astype(str)
-        dfv['group'] = dfv['date'].dt.year.astype(str)
+        df_voucher['group'] = df_voucher['date'].dt.year.astype(str)
         df['period_key'] = df['date'].dt.year
         df_dotypos['period_key'] = df_dotypos['date'].dt.year
-        dfv['period_key'] = dfv['date'].dt.year
+        df_voucher['period_key'] = df_voucher['date'].dt.year
     else:
         raise ValueError(f"Unsupported grouping_type: {grouping_type}")
 
     online_periods = df['period_key'].nunique()
     pos_periods = df_dotypos['period_key'].nunique()
-    voucher_periods = dfv['period_key'].nunique()
+    voucher_periods = df_voucher['period_key'].nunique()
     total_periods = max(online_periods, pos_periods, voucher_periods)
 
     online_daily = df.groupby('group').agg(online_sum=('whole_cost_with_voucher', 'sum')).reset_index()
     pos_daily = df_dotypos.groupby('group').agg(pos_sum=('brutto', 'sum')).reset_index()
-    voucher_daily = dfv.groupby('group').agg(voucher_sum=('net_amount', 'sum')).reset_index()
+    voucher_daily = df_voucher.groupby('group').agg(voucher_sum=('net_amount', 'sum')).reset_index()
 
     daily = pd.merge(online_daily, pos_daily, on='group', how='outer').fillna(0)
     daily = pd.merge(daily, voucher_daily, on='group', how='outer').fillna(0)
