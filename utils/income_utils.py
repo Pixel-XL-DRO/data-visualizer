@@ -25,17 +25,9 @@ def group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, group
                 lambda x: x.rolling(moving_average_days, min_periods=1).mean()
             )
 
-            df_voucher_grouped = df_voucher.groupby(['date', grouping_field]).agg(
-                total_voucher_sum=('net_amount', 'sum')
-            ).reset_index()
-
-            df_voucher_grouped['cumsum_voucher'] = df_voucher_grouped.groupby(grouping_field)['total_voucher_sum'].cumsum()
-            df_voucher_grouped['total_voucher_sum_ma'] = df_voucher_grouped.groupby(grouping_field)['total_voucher_sum'].transform(
-                lambda x: x.rolling(moving_average_days, min_periods=1).mean()
-            )
-
-            df_pos = []
-            df_total = []
+            df_voucher_grouped = pd.DataFrame()
+            df_pos = pd.DataFrame()
+            df_total = pd.DataFrame()
         else:
 
 
@@ -113,15 +105,16 @@ def group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, group
         df_total['total_reservations_sum_ma'] = df_total['total_reservations_sum'].rolling(
             moving_average_days, min_periods=1).mean()
 
+    if not df_online.empty:
         df_online = df_online[df_online['date'] >= start_date]
         df_online = df_online[df_online['date'] <= end_date]
-
+    if not df_pos.empty:
         df_pos = df_pos[df_pos['date'] >= start_date]
         df_pos = df_pos[df_pos['date'] <= end_date]
-
+    if not df_voucher_grouped.empty:
         df_voucher_grouped = df_voucher_grouped[df_voucher_grouped['date'] >= start_date]
         df_voucher_grouped = df_voucher_grouped[df_voucher_grouped['date'] <= end_date]
-
+    if not df_total.empty:
         df_total = df_total[df_total['date'] >= start_date]
         df_total = df_total[df_total['date'] <= end_date]
 
