@@ -1,10 +1,14 @@
 import pandas as pd
 
-def group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, grouping_field, start_date, end_date):
+def group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, grouping_field, start_date, end_date, x_axis='booked_date'):
     df_dotypos['brutto'] = pd.to_numeric(df_dotypos['brutto'], errors='coerce')
     df_dotypos['date'] = pd.to_datetime(df_dotypos['start_date']).dt.date
-    df['date'] = pd.to_datetime(df['booked_date']).dt.date
+    df['date'] = pd.to_datetime(df[x_axis]).dt.date
     df_voucher['date'] = pd.to_datetime(df_voucher['creation_date']).dt.date
+
+    current_date = pd.Timestamp.now().tz_localize(None)
+    if(x_axis == 'start_date'):
+        df = df[df['date'] <= current_date.date()]
 
     start_date = pd.to_datetime(start_date).date()
     end_date = pd.to_datetime(end_date).date()
@@ -120,13 +124,16 @@ def group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, group
 
     return df_online, df_pos, df_total, df_voucher_grouped
 
-def average_by_weekday(df, df_dotypos, df_voucher, grouping_field, grouping_type, start_date, end_date):
+def average_by_weekday(df, df_dotypos, df_voucher, grouping_field, grouping_type, start_date, end_date, x_axis="booked_date"):
     df['whole_cost_with_voucher'] = pd.to_numeric(df['whole_cost_with_voucher'], errors='coerce')
     df_dotypos['brutto'] = pd.to_numeric(df_dotypos['brutto'], errors='coerce')
 
-    df['date'] = pd.to_datetime(df['booked_date']).dt.tz_localize(None)
+    df['date'] = pd.to_datetime(df[x_axis]).dt.tz_localize(None)
     df_dotypos['date'] = pd.to_datetime(df_dotypos['creation_date']).dt.tz_localize(None)
     df_voucher['date'] = pd.to_datetime(df_voucher['date']).dt.tz_localize(None)
+
+    if(x_axis == 'start_date'):
+        df = df[df['date'] <= pd.Timestamp.now()]
 
     df = df[df['date'] >= start_date]
     df = df[df['date'] <= end_date]
@@ -165,6 +172,9 @@ def average_by_weekday(df, df_dotypos, df_voucher, grouping_field, grouping_type
         df = df[df['period_key'] < current_week]
         df_dotypos = df_dotypos[df_dotypos['period_key'] < current_week]
         df_voucher = df_voucher[df_voucher['period_key'] < current_week]
+        df_weekdays = df.groupby('group')['period_key'].nunique()
+        df_dotypos_weekdays = df_dotypos.groupby('group')['period_key'].nunique()
+        df_voucher_weekdays = df_voucher.groupby('group')['period_key'].nunique()
     elif grouping_type == 'Tydzien roku':
         df['group'] = df['date'].dt.isocalendar().week
         df_dotypos['group'] = df_dotypos['date'].dt.isocalendar().week
@@ -223,11 +233,20 @@ def average_by_weekday(df, df_dotypos, df_voucher, grouping_field, grouping_type
     if grouping_type == 'Rok':
         total_periods = 1
 
-    daily['total_period_count'] = total_periods
-    daily['total_online_mean'] = daily['online_sum'] / total_periods
-    daily['total_pos_mean'] = daily['pos_sum'] / total_periods
-    daily['total_voucher_mean'] = daily['voucher_sum'] / total_periods
-    daily['total_reservations_mean'] = (daily['online_sum'] + daily['pos_sum'] + daily['voucher_sum']) / total_periods
+    if grouping_type == 'Dzień tygodnia':
+        daily['online_weekday_count'] = daily['group'].map(df_weekdays)
+        daily['pos_weekday_count'] = daily['group'].map(df_dotypos_weekdays)
+        daily['voucher_weekday_count'] = daily['group'].map(df_voucher_weekdays)
+
+    divisor = online_periods if grouping_type != 'Dzień tygodnia' else daily['online_weekday_count']
+    daily['total_online_mean'] = daily['online_sum'] / divisor
+    divisor = pos_periods if grouping_type != 'Dzień tygodnia' else daily['pos_weekday_count']
+    daily['total_pos_mean'] = daily['pos_sum'] / divisor
+    divisor = voucher_periods if grouping_type != 'Dzień tygodnia' else daily['voucher_weekday_count']
+    daily['total_voucher_mean'] = daily['voucher_sum'] / divisor
+    daily['total_reservations_mean'] = (
+        (daily['voucher_sum'] + daily['online_sum'] + daily['pos_sum']) / total_periods
+    )
 
     if grouping_type == 'Dzień tygodnia':
         daily['group'] = daily['group'].map(polish_weekdays_map)
