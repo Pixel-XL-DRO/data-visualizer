@@ -33,7 +33,7 @@ def filter_online_data(df):
         with st.expander("Średnia kroczaca"):
             t1 = st.checkbox('Pokazuj', key="online_t1", value=True, on_change=lambda: utils.chain_toggle_off("online_t1", "online_t2"))
             t2 = st.checkbox('Pokazuj tylko srednia kroczaca', key="online_t2", value=False, on_change=lambda: utils.chain_toggle_on("online_t2", "online_t1"))
-            ile_dni = st.slider('Ile dni', 1, 30, 7)
+            days_count = st.slider('Ile dni', 1, 30, 7)
 
         with st.expander("Filtry"):
             with st.container(border=True):
@@ -86,7 +86,7 @@ def filter_online_data(df):
         start = localized_dates[year_mask].min()
         end = localized_dates[year_mask].max()
 
-    return df, group_by, t2, ile_dni, t1, group_dates_by, start, end, date_type
+    return df, group_by, t2, days_count, t1, group_dates_by, start, end, date_type
 
 
 def filter_pos_data(df_dotypos):
@@ -104,7 +104,7 @@ def filter_pos_data(df_dotypos):
         with st.expander("Średnia kroczaca"):
             t1 = st.checkbox('Pokazuj', key="pos_t1", value=True, on_change=lambda: utils.chain_toggle_off("pos_t1", "pos_t2"))
             t2 = st.checkbox('Pokazuj tylko srednia kroczaca', key="pos_t2", value=False, on_change=lambda: utils.chain_toggle_on("pos_t2", "pos_t1"))
-            ile_dni = st.slider('Ile dni', 1, 30, 7, key="pos_slider")
+            days_count = st.slider('Ile dni', 1, 30, 7, key="pos_slider")
 
         with st.expander("Filtry"):
             with st.container(border=True):
@@ -126,7 +126,7 @@ def filter_pos_data(df_dotypos):
         start = localized_dates[year_mask].min()
         end = localized_dates[year_mask].max()
 
-    return df_dotypos, separate_cities, t2, ile_dni, t1, group_dates_by, start, end
+    return df_dotypos, separate_cities, t2, days_count, t1, group_dates_by, start, end
 
 
 def filter_total_data(df, df_dotypos):
@@ -141,7 +141,7 @@ def filter_total_data(df, df_dotypos):
         with st.expander("Średnia kroczaca"):
             t1 = st.checkbox('Pokazuj', key="total_t1", value=True, on_change=lambda: utils.chain_toggle_off("total_t1", "total_t2"))
             t2 = st.checkbox('Pokazuj tylko srednia kroczaca', key="total_t2", value=False, on_change=lambda: utils.chain_toggle_on("total_t2", "total_t1"))
-            ile_dni = st.slider('Ile dni', 1, 30, 7, key="total_slider")
+            days_count = st.slider('Ile dni', 1, 30, 7, key="total_slider")
 
         with st.expander("Filtry"):
             with st.container(border=True):
@@ -179,7 +179,7 @@ def filter_total_data(df, df_dotypos):
         year_mask = localized_dates.dt.year == year
         start = localized_dates[year_mask].min()
         end = localized_dates[year_mask].max()
-    return df, df_dotypos, separate_cities, t2, ile_dni, t1, group_dates_by, start, end
+    return df, df_dotypos, separate_cities, t2, days_count, t1, group_dates_by, start, end
 
 def filter_voucher_data(df_voucher):
     years_possible = list(range(2023, datetime.now().year + 1))
@@ -193,7 +193,7 @@ def filter_voucher_data(df_voucher):
         with st.expander("Średnia kroczaca"):
             t1 = st.checkbox('Pokazuj', key="total_t1", value=True, on_change=lambda: utils.chain_toggle_off("total_t1", "total_t2"))
             t2 = st.checkbox('Pokazuj tylko srednia kroczaca', key="total_t2", value=False, on_change=lambda: utils.chain_toggle_on("total_t2", "total_t1"))
-            ile_dni = st.slider('Ile dni', 1, 30, 7, key="voucher_slider")
+            days_count = st.slider('Ile dni', 1, 30, 7, key="voucher_slider")
 
         with st.expander("Filtry"):
             with st.container(border=True):
@@ -213,4 +213,4 @@ def filter_voucher_data(df_voucher):
         start = localized_dates[year_mask].min()
         end = localized_dates[year_mask].max()
 
-    return df_voucher, separate_cities, t2, ile_dni, t1, group_dates_by, start, end
+    return df_voucher, separate_cities, t2, days_count, t1, group_dates_by, start, end

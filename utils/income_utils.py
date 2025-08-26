@@ -133,7 +133,7 @@ def average_by_weekday(df, df_dotypos, df_voucher, grouping_field, grouping_type
     df_voucher['date'] = pd.to_datetime(df_voucher['date']).dt.tz_localize(None)
 
     if(x_axis == 'start_date'):
-        df = df[df['date'] <= pd.Timestamp.now()]
+        df = df[df['date'] < pd.Timestamp.now().replace(hour=00, minute=00, second=00)]
 
     df = df[df['date'] >= start_date]
     df = df[df['date'] <= end_date]
