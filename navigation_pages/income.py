@@ -20,10 +20,9 @@ with st.spinner():
 df = auth.filter_locations(df)
 
 def render_online_view(df):
-    (df, group_by, show_only_moving_average, moving_average_days, moving_average_toggle, group_dates_by, start_date, end_date) = income_sidebar.filter_online_data(df)
-    df_online, _, _, _ = income_utils.group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, group_by, start_date, end_date)
-    df_by_weekday = income_utils.average_by_weekday(df, df_dotypos, df_voucher, group_by, group_dates_by, start_date, end_date)
-
+    (df, group_by, show_only_moving_average, moving_average_days, moving_average_toggle, group_dates_by, start_date, end_date, x_axis) = income_sidebar.filter_online_data(df)
+    df_online, _, _, _ = income_utils.group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, group_by, start_date, end_date, x_axis)
+    df_by_weekday = income_utils.average_by_weekday(df, df_dotypos, df_voucher, group_by, group_dates_by, start_date, end_date, x_axis)
     online_chart = utils.create_chart_new(df_online, df_online['date'], "Data", 'total_online_sum' if not show_only_moving_average else None, 'total_online_sum_ma' if moving_average_toggle else None, "Przychód (PLN)", group_by, 2 if group_by else 4, "Średnia", False)
     st.plotly_chart(online_chart, use_container_width=True)
 

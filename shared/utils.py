@@ -131,7 +131,7 @@ def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, col
 
     bar = base.mark_bar(size=10).encode(
       y=alt.Y(y_value, title=y_axis_label),
-      tooltip=[x_axis_type, y_value],
+      tooltip=[alt.Tooltip(x_axis_type, title=x_axis_label), alt.Tooltip(y_value, title=y_axis_label)],
       color=alt.condition(
         alt.datum[x_axis_type] == currentValue,
         alt.value('orange'),
