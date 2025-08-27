@@ -6,9 +6,12 @@ def group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, group
     df['date'] = pd.to_datetime(df[x_axis]).dt.date
     df_voucher['date'] = pd.to_datetime(df_voucher['creation_date']).dt.date
 
-    current_date = pd.Timestamp.now().tz_localize(None)
-    if(x_axis == 'start_date'):
-        df = df[df['date'] <= current_date.date()]
+    current_date = pd.Timestamp.now().tz_localize(None).replace(hour=00, minute=00, second=00)
+
+    if end_date >= current_date:
+        end_date = current_date - pd.Timedelta(days=1)
+        end_date.replace(hour=23, minute=59, second=59)
+
 
     start_date = pd.to_datetime(start_date).date()
     end_date = pd.to_datetime(end_date).date()
@@ -132,8 +135,11 @@ def average_by_weekday(df, df_dotypos, df_voucher, grouping_field, grouping_type
     df_dotypos['date'] = pd.to_datetime(df_dotypos['creation_date']).dt.tz_localize(None)
     df_voucher['date'] = pd.to_datetime(df_voucher['date']).dt.tz_localize(None)
 
-    if(x_axis == 'start_date'):
-        df = df[df['date'] < pd.Timestamp.now().replace(hour=00, minute=00, second=00)]
+    current_date = pd.Timestamp.now().tz_localize(None).replace(hour=00, minute=00, second=00)
+
+    if end_date >= current_date:
+        end_date = current_date - pd.Timedelta(days=1)
+        end_date.replace(hour=23, minute=59, second=59)
 
     df = df[df['date'] >= start_date]
     df = df[df['date'] <= end_date]
