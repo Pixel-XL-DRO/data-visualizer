@@ -67,7 +67,7 @@ with tab4:
     col1, col2 = st.columns(2)
 
     with col1:
-        current_period_start = st.date_input('Od kiedy', value=datetime(2025,2,1)) # first of february is the date we fully adapted dotypos
+        current_period_start = st.date_input('Od kiedy', value=df['creation_date'].min()) # first of february is the date we fully adapted dotypos
 
     with col2:
         current_period_end = st.date_input('Do kiedy', value=datetime.now())
@@ -80,8 +80,8 @@ with tab4:
         (df['creation_date'] <= current_period_end)
     ]
 
-    items = st.multiselect("Produkty", df['name'].unique(), default=None)
-    df_filtered = df if len(items) == 0 or not items else df[df['name'].isin(items)]
+    items = st.multiselect("Produkty", df_filtered['name'].unique(), default=None)
+    df_filtered = df_filtered if len(items) == 0 or not items else df_filtered[df_filtered['name'].isin(items)]
 
     df_items, df_filt = dotypos_utils.calc_items(df_filtered, groupBy, moving_average_days)
 
