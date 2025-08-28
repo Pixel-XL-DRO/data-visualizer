@@ -18,7 +18,7 @@ logout_page = st.Page(logout, title="Wyloguj się", icon=":material/logout:")
 
 reservations_page = st.Page("navigation_pages/reservations.py", title="Rezerwacje", icon=":material/calendar_month:")
 clients_page = st.Page("navigation_pages/clients.py", title="Klienci", icon=":material/people:")
-boards_occupancy_page = st.Page("navigation_pages/boards_occupancy.py", title="Zajętość mat", icon=":material/flex_wrap:")
+boards_occupancy_page = st.Page("navigation_pages/boards_occupancy/boards_occupancy.py", title="Zajętość mat", icon=":material/flex_wrap:")
 reservations_by_time_period_page = st.Page("navigation_pages/reservations_by_time_period.py", title="Rezerwacje po okresie", icon=":material/history:")
 reservations_cumulative_page = st.Page("navigation_pages/reservations_cumulative.py", title="Rezerwacje kumulacyjne", icon=":material/timeline:")
 data_editor_page = st.Page("navigation_pages/data_editor.py", title="Edytor danych", icon=":material/edit:")
