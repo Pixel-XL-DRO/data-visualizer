@@ -18,6 +18,9 @@ with st.spinner():
     df_voucher = queries.get_voucher_data()
 
 df = auth.filter_locations(df)
+df_dotypos = auth.filter_locations(df_dotypos)
+df_voucher = auth.filter_locations(df_voucher)
+
 
 def render_online_view(df):
     (df, group_by, show_only_moving_average, moving_average_days, moving_average_toggle, group_dates_by, start_date, end_date, x_axis) = income_sidebar.filter_online_data(df)

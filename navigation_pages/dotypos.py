@@ -10,12 +10,15 @@ import pandas as pd
 import dotypos_sidebar
 import queries
 import utils
+import auth
 from datetime import datetime
-
 
 with st.spinner():
     df,_ = queries.get_order_items()
     df_reservation = queries.get_reservation_data()
+
+df = auth.filter_locations(df)
+df_reservation = auth.filter_locations(df_reservation)
 
 # side bar
 (df, df_reservation, separate_cities, show_only_moving_average, moving_average_days, moving_average_toggle) = dotypos_sidebar.filter_data(df, df_reservation)

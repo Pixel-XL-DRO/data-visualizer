@@ -36,13 +36,13 @@ pages_by_role = {
     "Konto": [logout_page]
   },
   "admin": {
-    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
+    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page, dotypos, income, vouchers],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
   },
   "manager": {
-    "Rezerwacje": [reservations_page, clients_page, reservations_by_time_period_page],
+    "Rezerwacje": [reservations_page, clients_page, reservations_by_time_period_page, dotypos, income, vouchers],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
   }
