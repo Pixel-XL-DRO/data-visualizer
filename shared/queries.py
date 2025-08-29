@@ -2,7 +2,6 @@ import pandas as pd
 import streamlit as st
 import uuid
 import datetime
-
 from google.oauth2 import service_account
 from google.cloud import bigquery
 
@@ -46,8 +45,6 @@ def run_performance_review_query(query, job_config=None):
   rows = [dict(row) for row in rows_raw]
   return rows
 
-
-@st.cache_data(ttl=6000)
 def get_reviews():
   query = """
     SELECT
@@ -64,7 +61,6 @@ def get_reviews():
   """
   rows = run_reviews_query(query)
   df = pd.DataFrame(rows, columns=['location_id', 'rating', 'create_time', 'address', 'city'])
-
   return df
 
 @st.cache_data(ttl=6000)
@@ -482,7 +478,6 @@ def delete_note(id):
   res = run_query(query, job_config)
   get_notes.clear()
 
-@st.cache_data(ttl=6000)
 def get_performance_reviews():
   query = """
     SELECT
@@ -544,7 +539,6 @@ def get_order_items():
 
   df_all = df_all[df_all['document_number'] != '0']
   df_all = df_all[df_all['status'] != 'canceled']
-
   return df, df_all
 
 def get_voucher_data():
