@@ -354,6 +354,8 @@ def get_reservation_data():
     LEFT JOIN
       `pixelxl-database-dev.reservation_data.reservation_slots_occupancy` reservation_slots_occupancy
       ON res.id = reservation_slots_occupancy.reservation_id
+    WHERE
+      res.deleted_at IS NULL
     GROUP BY
       res.id;
   """
