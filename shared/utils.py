@@ -66,7 +66,7 @@ def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_l
     )
   )
 
-  if show_notes and data['note-content'].notna().any():
+  if show_notes and 'note-content' in data.columns and data['note-content'].notna().any():
 
     note_data = data.loc[data['note-content'].notna()].copy()
     note_data['note_text'] = note_data.apply(
