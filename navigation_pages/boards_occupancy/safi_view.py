@@ -26,8 +26,6 @@ def render_safi_view(
   selected_location_boards_availability = df_location_boards_availability[df_location_boards_availability['boards_availability_dim_location_id'].isin(selected_location['id'])]
   selected_location_hours_availability = df_location_hours_availability[df_location_hours_availability['hours_availability_dim_location_id'].isin(selected_location['id'])]
 
-  print(selected_location_hours_availability)
-
   df = df[df['location_id'].isin(selected_location['id'])]
 
   min_date = df['start_date'].min()
@@ -108,7 +106,9 @@ def render_safi_view(
 
     while (time_taken > 0):
       hour_key = str(f'{hour}.{minutes_multiplier * int(minutes / 60 * 10)}')
-      hours_map[str(date)][hour_key] += slots_taken
+
+      if hour_key in hours_map[str(date)]:
+        hours_map[str(date)][hour_key] += slots_taken
 
       time_taken -= time_unit_in_minutes
 
