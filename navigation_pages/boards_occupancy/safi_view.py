@@ -62,6 +62,7 @@ def render_safi_view(
 
   df['start_date'] = pd.to_datetime(df['start_date'])
   df = df.loc[(df['start_date'] >= selected_week_start) & (df['start_date'] <= selected_week_end)]
+  df = df[(df['location_id'] == 'f1390789-1a26-48bc-8ee7-a40dd1cb02f3') & (df['start_date_hour'] < 20)]
 
   df = df.reset_index()
 
