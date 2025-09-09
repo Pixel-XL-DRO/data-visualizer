@@ -26,6 +26,8 @@ def render_safi_view(
   selected_location_boards_availability = df_location_boards_availability[df_location_boards_availability['boards_availability_dim_location_id'].isin(selected_location['id'])]
   selected_location_hours_availability = df_location_hours_availability[df_location_hours_availability['hours_availability_dim_location_id'].isin(selected_location['id'])]
 
+  print(selected_location_hours_availability)
+
   df = df[df['location_id'].isin(selected_location['id'])]
 
   min_date = df['start_date'].min()
@@ -62,7 +64,6 @@ def render_safi_view(
 
   df['start_date'] = pd.to_datetime(df['start_date'])
   df = df.loc[(df['start_date'] >= selected_week_start) & (df['start_date'] <= selected_week_end)]
-  df = df[(df['location_id'] == 'f1390789-1a26-48bc-8ee7-a40dd1cb02f3') & (df['start_date_hour'] < 20)]
 
   df = df.reset_index()
 
