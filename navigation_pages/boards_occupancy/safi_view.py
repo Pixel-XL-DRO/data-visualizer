@@ -137,11 +137,9 @@ def render_safi_view(
         new_total_boards = np.float64(4)
 
         day_of_week = datetime.strptime(start_date_key, '%Y-%m-%d').weekday()
-        if day_of_week < 4 and parsed_hour == 21:
+        if day_of_week < 5 and parsed_hour == 20:
           total_boards = new_total_boards
-        elif day_of_week == 4 and parsed_hour == 22:
-          total_boards = new_total_boards
-        elif day_of_week == 5 and parsed_hour == 22:
+        elif day_of_week == 5 and parsed_hour == 21:
           total_boards = new_total_boards
         elif day_of_week == 6 and parsed_hour == 20:
           total_boards = new_total_boards
