@@ -7,12 +7,15 @@ import streamlit as st
 import queries
 import utils
 import vouchers_utils
+import vouchers_sidebar
 import auth
 
 with st.spinner():
     df_voucher = queries.get_voucher_data()
 
 df = auth.filter_locations(df_voucher)
+df = vouchers_sidebar.filter_data(df)
+
 df_grouped = vouchers_utils.group_data(df)
 
 st.text("Ilość sprzedanych voucherów według nazwy")
