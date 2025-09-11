@@ -27,6 +27,8 @@ groupBy = 'city' if separate_cities else None
 df_grouped, df_upsell_grouped = dotypos_utils.group_order_items(df, groupBy, moving_average_days)
 df_res = dotypos_utils.calc_earnings_per_reservation(df_reservation, df, groupBy, moving_average_days)
 
+st.markdown("<div style='text-align: center;'><b style='font-size:24px; color: #FFAA33' ><u>Dane nie uwzględniają sprzedaży biletów i zadatków.</u></b></div>", unsafe_allow_html=True)
+
 tab1, tab2, tab3, tab4 = st.tabs(["SPRZEDAŻ BAROWA", "SPRZEDAŻ BAROWA NA RACHUNEK", "SPRZEDAŻ BAROWA NA REZERWACJE", "PRODUKTY"])
 
 with tab1:
