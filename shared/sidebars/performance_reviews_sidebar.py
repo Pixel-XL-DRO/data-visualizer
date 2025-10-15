@@ -14,24 +14,25 @@ def filter_data(df):
   with st.sidebar:
     with st.container(border=True):
       time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=6)
-      if time_range == "Przedział":
-        start_date = st.date_input('Data rozpoczecia')
-        end_date = st.date_input('Data konca')
 
     with st.expander("Średnia krocząca"):
       moving_average_toggle = st.checkbox('Pokazuj', key="t1", value=True, on_change=lambda:utils.chain_toggle_off("t1", "t2","t7"))
       show_only_moving_average = st.checkbox('Pokazuj tylko srednia kroczaca', key="t2", value=False, on_change=lambda:utils.chain_toggle_on("t2", "t1"))
       moving_average_days = st.slider('Ile dni', 1, 30, 7)
+      moving_average_days = moving_average_days - 1 # we have to decrement to adjust for SQL indexing from 0
 
-    with st.expander("Filtry"):
+    with st.expander("Filtry", expanded=True):
       with st.container(border=True):
         location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
-        seperate_cities = st.checkbox('Rozdziel miasta')
+        separate_cities = st.checkbox('Rozdziel miasta')
+      with st.container(border=True):
+        metric_change_days = st.slider('Dni wstecz metryki', 1, 60, 1)
+        metric_display_percent = st.checkbox('Pokazuj metrykę jako procent', key="m1", value=False)
+      with st.container(border=True):
+        display_reviews_above = st.checkbox('Wyświetlaj tylko opinie powyżej 8 ', key="m2", value=False)
 
     if end_date is None:
-      end_date = datetime.now()
-    else:
-      end_date = datetime.combine(end_date, datetime.min.time())
+      end_date = datetime.now() + timedelta(days=1)
 
     if start_date is None:
       if time_range == '7 dni':
@@ -52,10 +53,4 @@ def filter_data(df):
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 
-    df['date'] = pd.to_datetime(df['date']).dt.tz_localize(None)
-
-    df = df[df['city'].isin(location_checkboxes)]
-    df = df[df['date'] >= start_date]
-    df = df[df['date'] <= end_date]
-
-    return (df, seperate_cities, moving_average_toggle, show_only_moving_average, moving_average_days)
+    return (start_date, end_date, location_checkboxes, separate_cities, moving_average_toggle, show_only_moving_average, moving_average_days, metric_change_days, metric_display_percent, display_reviews_above)

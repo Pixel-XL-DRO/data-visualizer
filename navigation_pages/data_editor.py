@@ -102,8 +102,8 @@ with st.expander("Dane notatek "):
 
   st.write("Usuń notatkę")
   with st.container(border=True):
-    note_delete_selectbox = st.selectbox(key="note_delete_selectbox", label="Wybierz notatkę do usunięcia", options=(notes_df['note_city'] + ' | ' + notes_df['content']))
-    note_delete_selected = (notes_df.loc[notes_df['content'] == note_delete_selectbox.split(' | ')[1]]['id']).values[0] if note_delete_selectbox else None
+    note_delete_selectbox = st.selectbox(key="note_delete_selectbox", label="Wybierz notatkę do usunięcia", options=(notes_df['city'] + ' | ' + notes_df['note_content']))
+    note_delete_selected = (notes_df.loc[notes_df['note_content'] == note_delete_selectbox.split(' | ')[1]]['id']).values[0] if note_delete_selectbox else None
     st.button(key="note_delete_button", label="usun", disabled=note_delete_selectbox == None, on_click=lambda: queries.delete_note(note_delete_selected))
 
 

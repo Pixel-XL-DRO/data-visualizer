@@ -1,67 +1,86 @@
 import sys
 sys.path.append("shared")
 sys.path.append("shared/sidebars")
+sys.path.append("shared/queries")
 sys.path.append("utils")
 
 import streamlit as st
 import pandas as pd
-
 import queries
 import utils
 import reservations_sidebar
-import reservations_utils
+import reservations_queries
 import auth
 
-with st.spinner():
-    df = queries.get_reservation_data()
+with st.spinner("Inicjalizacja...", show_time=True):
+
+    df = queries.get_initial_data()
     df_notes = queries.get_notes()
+    df = auth.filter_locations(df)
 
-df = auth.filter_locations(df)
-
-(df, df_unfiltered_by_city, x_axis_type, moving_average_toggle,
+(x_axis_type, moving_average_toggle,
  show_only_moving_average, moving_average_days,
- seperate_cities, show_notes, seperate_attractions, seperate_status,
- seperate_visit_types) = reservations_sidebar.filter_data(df)
+ show_notes, start_date, cities, language, attraction_groups_checkboxes,status_checkboxes,visit_type_groups_checkboxes, groupBy) = reservations_sidebar.filter_data(df)
+notes = df_notes if show_notes else None
 
-groupBy = 'city' if seperate_cities else 'attraction_group' if seperate_attractions else 'status' if seperate_status else 'visit_type' if seperate_visit_types else None
+with st.spinner("Ładowanie danych...", show_time=True):
 
-(df_grouped, reservations_rolling_averages, total_cost_rolling_averages,
- total_people_rolling_averages, boardhours_rolling_averages) = reservations_utils.group_data_and_calculate_moving_average(df, df_notes, x_axis_type, moving_average_days, groupBy)
-df_ahead = reservations_utils.calculate_reservations_ahead(df_unfiltered_by_city)
+    df_reservation_count, df_people_count, df_boardhours = utils.run_in_parallel(
+        (reservations_queries.get_reservations_count,
+         (x_axis_type, start_date, moving_average_days, groupBy,
+          cities, language, attraction_groups_checkboxes,
+          status_checkboxes, visit_type_groups_checkboxes, notes)),
 
-if moving_average_toggle:
-    df_grouped['reservations_ma'] = pd.concat(reservations_rolling_averages)
-    df_grouped['total_cost_ma'] = pd.concat(total_cost_rolling_averages)
-    df_grouped['total_people_ma'] = pd.concat(total_people_rolling_averages)
-    df_grouped['boardhours_taken_ma'] = pd.concat(boardhours_rolling_averages)
+        (reservations_queries.get_people_count,
+         (x_axis_type, start_date, moving_average_days, groupBy,
+          cities, language, attraction_groups_checkboxes,
+          status_checkboxes, visit_type_groups_checkboxes, notes)),
 
-df_grouped[x_axis_type] = df_grouped[x_axis_type].dt.to_timestamp()
-reservations_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", 'reservations' if not show_only_moving_average else None, 'reservations_ma' if moving_average_toggle else None, "Liczba rezerwacji", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
+        (reservations_queries.get_boardhours,
+         (x_axis_type, start_date, moving_average_days, groupBy,
+          cities, language, attraction_groups_checkboxes,
+          status_checkboxes, visit_type_groups_checkboxes, notes))
+    )
+
+reservations_chart = utils.create_chart_new(df_reservation_count, 'date', "Data", 'count' if not show_only_moving_average else None, 'moving_avg' if moving_average_toggle else None, "Liczba rezerwacji", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
 st.plotly_chart(reservations_chart, use_container_width=True)
 
-boards_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", 'boardhours_taken' if not show_only_moving_average else None, 'boardhours_taken_ma' if moving_average_toggle else None, "Liczba zajętych matogodzin", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
-st.plotly_chart(boards_chart, use_container_width=True)
+boardhours_chart = utils.create_chart_new(df_boardhours, 'date', "Data", 'boardhours_taken' if not show_only_moving_average else None, 'moving_avg' if moving_average_toggle else None, "Liczba zajętych matogodzin", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
+st.plotly_chart(boardhours_chart, use_container_width=True)
 
-people_chart = utils.create_chart_new(df_grouped, x_axis_type, "Data", 'total_people' if not show_only_moving_average else None, 'total_people_ma' if moving_average_toggle else None, "Liczba osób", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
-st.plotly_chart(people_chart, use_container_width=True)
+people_count_chart = utils.create_chart_new(df_people_count, 'date', "Data", 'person_count' if not show_only_moving_average else None, 'moving_avg' if moving_average_toggle else None, "Liczba osób", groupBy, 2 if groupBy else 4, "Średnia", show_notes)
+st.plotly_chart(people_count_chart, use_container_width=True)
 
 st.divider()
 st.subheader("Średnia ilość dni rezerwacji w przód")
 
-st.markdown(f"Średni okres między rezerwacją a wizytą: **{df_ahead['mean_days'].mean():.2f}**")
-
 tab1, tab2 = st.tabs(["Średni okres podzielony na miasta", "Liczba rezerwacji podzielona na dni w przód"])
 
 with tab1:
-    reservations_chart = utils.create_bar_chart(df_ahead, 'city', 'Miasto', 'mean_days', 'Średni okres między rezerwacją a wizytą', None)
-    st.altair_chart(reservations_chart, use_container_width=True)
+    @st.fragment
+    def tab_one():
+        with st.spinner("Ładowanie danych...", show_time=True):
+            df_days_ahead = reservations_queries.get_mean_days_ahead(x_axis_type, start_date, cities)
+            true_avg = (df_days_ahead['days'] * df_days_ahead['count']).sum() / df_days_ahead['count'].sum()
+
+        st.markdown(f"Średni okres między rezerwacją a wizytą: **{true_avg:.2f}**")
+
+        reservations_chart = utils.create_bar_chart(df_days_ahead, 'city', 'Miasto', 'days', 'Średni okres między rezerwacją a wizytą', None, moving_average_toggle)
+        st.altair_chart(reservations_chart, use_container_width=True, )
+
+    tab_one()
 
 with tab2:
+    @st.fragment
+    def tab_two():
+        city = st.selectbox('Wybierz miasto', df['city'].unique(), index=0)
+        period = st.selectbox('Wybierz okres', ['7 dni', '14 dni', '1 miesiaca', '2 miesiace'], index=1)
+        period = {'7 dni': 7, '14 dni': 14, '1 miesiaca': 30, '2 miesiace': 60}[period]
 
-    city = st.selectbox('Wybierz miasto', df_ahead['city'].unique(), index=0)
-    period = st.selectbox('Wybierz okres', ['7 dni', '14 dni', '1 miesiaca', '2 miesiace'], index=1)
-    period = {'7 dni': 7, '14 dni': 14, '1 miesiaca': 30, '2 miesiace': 60}[period]
+        with st.spinner("Ładowanie danych...", show_time=True):
+            df_ahead_by_city = reservations_queries.get_days_ahead_by_city(x_axis_type, period, start_date, city)
 
-    df_ahead_by_city = reservations_utils.calculate_reservations_ahead_by_city(df_unfiltered_by_city, city, period)
-    reservations_chart = utils.create_bar_chart(df_ahead_by_city, 'days', 'Dni w przód', 'reservations', 'Liczba rezerwacji', None)
-    st.altair_chart(reservations_chart, use_container_width=True)
+        reservations_chart = utils.create_bar_chart(df_ahead_by_city, 'days', 'Dni w przód', 'reservations', 'Liczba rezerwacji', None)
+        st.altair_chart(reservations_chart, use_container_width=True)
+
+    tab_two()

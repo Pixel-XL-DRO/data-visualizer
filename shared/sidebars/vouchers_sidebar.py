@@ -7,24 +7,32 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+def determine_status(row):
+  if row['is_cancelled']:
+    return 'Anulowane'
+  elif not row['is_payed']:
+    return 'Zrealizowane nieopłacone'
+  return 'Zrealizowane'
+
 def filter_data(df):
   start_date = None
   end_date = None
 
-  df['location'] = df['city'] + ', ' + df['address']
-
   with st.sidebar:
-    time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=3)
-    rating_to_show = st.selectbox('Wybierz ocenę', ["Wszystkie (suma)"] + sorted(df['rating'].unique(), reverse=True), index=1)
-    if time_range == "Przedział":
-      start_date = st.date_input('Data rozpoczecia')
-      end_date = st.date_input('Data konca')
-    location_checkboxes = st.multiselect("Lokalizacje", df['location'].unique(), default=df['location'][0])
+    with st.container(border=True):
+      time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=6)
+      if time_range == "Przedział":
+        start_date = st.date_input('Data rozpoczecia')
+        end_date = st.date_input('Data konca')
 
-    location_checkboxes = [location.split(",")[0] for location in location_checkboxes]
+    with st.expander("Filtry", expanded=True):
+      with st.container(border=True):
+        location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
 
     if end_date is None:
-      end_date = datetime.now() + timedelta(days=1)
+      end_date = datetime.now()
+    else:
+      end_date = datetime.combine(end_date, datetime.min.time())
 
     if start_date is None:
       if time_range == '7 dni':
@@ -40,11 +48,9 @@ def filter_data(df):
       elif time_range == '3 lat':
         start_date = end_date - timedelta(days=1095)
       elif time_range == 'Od poczatku':
-        min_date = df['create_time'].min()
+        min_date = df['voucher_creation_date'].min()
         start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 
-
-
-    return (start_date, end_date, rating_to_show, location_checkboxes)
+    return (df, start_date, end_date, location_checkboxes)

@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from io import BytesIO
+from concurrent.futures import ThreadPoolExecutor
 
 def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label, colorBy, lineStrokeWidth, line_label, show_notes):
   fig = None
@@ -66,11 +67,11 @@ def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_l
     )
   )
 
-  if show_notes and 'note-content' in data.columns and data['note-content'].notna().any():
+  if show_notes and 'note_content' in data.columns and data['note_content'].notna().any():
 
-    note_data = data.loc[data['note-content'].notna()].copy()
+    note_data = data.loc[data['note_content'].notna()].copy()
     note_data['note_text'] = note_data.apply(
-        lambda row: f"{row['city']}: {row['note-content']}", axis=1
+        lambda row: f"{row['city']}: {row['note_content']}", axis=1
     )
 
     grouped_notes = note_data.groupby(x_axis_type)['note_text'].apply(
@@ -119,11 +120,20 @@ def create_chart(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label
        return points
     return line
 
-def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, colorBy, currentValue=None, sort_order=None, x_tick_count=None):
+def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, colorBy, currentValue=None, sort_order=None, x_tick_count=None, all_data_tooltip=False):
 
     x_axis = alt.Axis(labelAngle=0)
     if x_tick_count is not None:
       x_axis.tickCount = x_tick_count
+
+    if all_data_tooltip:
+      tooltips = [alt.Tooltip(c, title=c) for c in data.columns]
+    else:
+    
+      tooltips = [
+        alt.Tooltip(x_axis_type, title=x_axis_label),
+        alt.Tooltip(y_value, title=y_axis_label),
+      ]
 
     base = alt.Chart(data).encode(
       x=alt.X(x_axis_type, title=x_axis_label, axis=x_axis, sort=sort_order),
@@ -131,13 +141,15 @@ def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, col
 
     bar = base.mark_bar(size=10).encode(
       y=alt.Y(y_value, title=y_axis_label),
-      tooltip=[alt.Tooltip(x_axis_type, title=x_axis_label), alt.Tooltip(y_value, title=y_axis_label)],
+      tooltip=tooltips,
       color=alt.condition(
-        alt.datum[x_axis_type] == currentValue,
+        f"datum['{x_axis_type}'] == '{currentValue}'", # hack to avoid different data types
         alt.value('orange'),
         alt.value('blue')
       )
     )
+
+    
 
     return bar
 
@@ -233,18 +245,18 @@ def get_day_of_week_string_shortcut(day_of_week):
 
 def get_month_from_month_number(month_number):
   return {
-    1: "Styczeń",
-    2: "Luty",
-    3: "Marzec",
-    4: "Kwiecień",
-    5: "Maj",
-    6: "Czerwiec",
-    7: "Lipiec",
-    8: "Sierpień",
-    9: "Wrzesień",
-    10: "Październik",
-    11: "Listopad",
-    12: "Grudzień"
+    1: "1. Styczeń",
+    2: "2. Luty",
+    3: "3. Marzec",
+    4: "4. Kwiecień",
+    5: "5. Maj",
+    6: "6. Czerwiec",
+    7: "7. Lipiec",
+    8: "8. Sierpień",
+    9: "9. Wrzesień",
+    10: "10. Październik",
+    11: "11. Listopad",
+    12: "12. Grudzień"
   }[month_number]
 
 def download_button(df, file_name):
@@ -263,3 +275,18 @@ def download_button(df, file_name):
       file_name=f"{file_name}.xlsx",
       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     ))
+
+def run_in_parallel(*funcs):
+
+  results = []
+
+  with ThreadPoolExecutor(max_workers=8) as executor:
+
+    futures = [
+      executor.submit(func, *args) for func, args in funcs
+    ]
+
+    for future in futures:
+      results.append(future.result())
+
+  return results
