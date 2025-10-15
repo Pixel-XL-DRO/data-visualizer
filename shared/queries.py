@@ -17,13 +17,25 @@ performance_reviews_credentials = service_account.Credentials.from_service_accou
   st.secrets["gcp_performance_reviews_account"]
 )
 
+sandbox_credentials = service_account.Credentials.from_service_account_info(
+  st.secrets["gcp_sandbox_account"]
+)
+
 client = bigquery.Client(credentials=credentials)
 reviews_client = bigquery.Client(credentials=reviews_credentials)
 performance_reviews_client = bigquery.Client(credentials=performance_reviews_credentials)
+sandbox_client = bigquery.Client(credentials=sandbox_credentials)
 
 def run_query(query, job_config=None):
 
   query_job = client.query(query, job_config)
+  rows_raw = query_job.result()
+  # dict cause of caching
+  rows = [dict(row) for row in rows_raw]
+  return rows
+def run_sandbox_query(query, job_config=None):
+
+  query_job = sandbox_client.query(query, job_config)
   rows_raw = query_job.result()
   # dict cause of caching
   rows = [dict(row) for row in rows_raw]
@@ -432,8 +444,8 @@ def get_notes():
     SELECT
       notes.id as id,
       notes.date_id as date,
-      notes.content as content,
-      location.city as note_city
+      notes.content as note_content,
+      location.city as city
     FROM
       reservation_data.notes notes
     JOIN
@@ -442,7 +454,7 @@ def get_notes():
       notes.dim_location_id = location.id
   """
   rows = run_query(query)
-  df = pd.DataFrame(rows, columns=['id', 'date', 'content', 'note_city'])
+  df = pd.DataFrame(rows, columns=['id', 'date', 'note_content', 'city'])
 
   return df
 
@@ -543,6 +555,91 @@ def get_order_items():
   df_all = df_all[df_all['status'] != 'canceled']
   return df, df_all
 
+@st.cache_data(ttl=60000)
+def get_initial_data():
+  query = f"""
+    SELECT DISTINCT
+      l.city as city,
+      l.street as street,
+      dvt.attraction_group as attraction_group,
+      dvt.name as visit_type,
+      dc.language as language,
+      ecr.start_date as start_date,
+      ecr.booked_date as booked_date
+    FROM
+      reservation_data.event_create_reservation ecr
+    JOIN
+      reservation_data.dim_client dc
+      ON ecr.client_id = dc.id
+    JOIN
+      reservation_data.dim_location l
+      ON ecr.location_id = l.id
+    JOIN
+      reservation_data.dim_visit_type dvt
+      ON ecr.visit_type_id = dvt.id
+    WHERE
+      ecr.is_cancelled = FALSE
+  """
+
+  rows = run_sandbox_query(query)
+  return pd.DataFrame(rows)
+
+@st.cache_data(ttl=60000)
+def get_vouchers_initial_data():
+  query = f"""
+    SELECT DISTINCT
+      voucher_creation_date,
+      voucher_name,
+      location.city,
+      location.street
+    FROM
+      vouchers_data.voucher voucher
+    JOIN
+      vouchers_data.dim_location location
+    ON
+      voucher.dim_location_id = location.id
+  """
+
+  rows = run_sandbox_query(query)
+  return pd.DataFrame(rows)
+
+@st.cache_data(ttl=60000)
+def get_nps_initial_data():
+  query = f"""
+    SELECT DISTINCT
+      nps.date,
+      location.city,
+      location.street
+    FROM
+      performance_data.mail_review nps
+    JOIN
+      performance_data.dim_location location
+    ON
+      nps.dim_location_id = location.id
+  """
+
+  rows = run_performance_review_query(query)
+  return pd.DataFrame(rows)
+
+@st.cache_data(ttl=60000)
+def get_reviews_initial_data():
+  query = """
+    SELECT DISTINCT
+      ratings.value AS rating,
+      ratings.create_time AS create_time,
+      dim_location.address AS address,
+      dim_location.locality AS city,
+    FROM
+      reviews.star_rating ratings
+    JOIN
+      reviews.dim_location dim_location
+      ON ratings.location_id = dim_location.name
+  """
+  rows = run_reviews_query(query)
+  df = pd.DataFrame(rows, columns=['location_id', 'rating', 'create_time', 'address', 'city'])
+  return df
+
+@st.cache_data(ttl=6000)
 def get_voucher_data():
   query = """
     SELECT
@@ -563,4 +660,3 @@ def get_voucher_data():
   rows = run_query(query)
   df = pd.DataFrame(rows, columns=['id', 'creation_date', 'voucher_name', 'net_amount', 'city', 'street'])
   return df
-

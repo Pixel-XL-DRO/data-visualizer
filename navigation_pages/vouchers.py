@@ -6,15 +6,20 @@ sys.path.append("utils")
 import streamlit as st
 import queries
 import utils
-import vouchers_utils
+import vouchers_sidebar
 import auth
+import vouchers_queries
 
-with st.spinner():
-    df_voucher = queries.get_voucher_data()
 
-df = auth.filter_locations(df_voucher)
-df_grouped = vouchers_utils.group_data(df)
+with st.spinner("Inicjalizacja...", show_time=True):
+    df = queries.get_vouchers_initial_data()
+    df = auth.filter_locations(df)
+
+(df, start_date, end_date, cities) = vouchers_sidebar.filter_data(df)
+
+with st.spinner("Ładowanie danych...", show_time=True):
+    df_vouchers = vouchers_queries.get_vouchers_count(start_date, end_date, cities)
 
 st.text("Ilość sprzedanych voucherów według nazwy")
-voucher_count_chart = utils.create_bar_chart(df_grouped, 'voucher_name', 'Nazwa', 'count', 'Liczba sprzedanych kopii', None)
+voucher_count_chart = utils.create_bar_chart(df_vouchers, 'name', 'Nazwa', 'count', 'Liczba sprzedanych kopii', None)
 st.altair_chart(voucher_count_chart, use_container_width=True)

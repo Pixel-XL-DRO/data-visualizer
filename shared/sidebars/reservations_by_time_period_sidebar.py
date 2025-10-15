@@ -15,6 +15,9 @@ def determine_status(row):
   return 'Zrealizowane'
 
 def ensure_status():
+  if not st.session_state.ms1:
+    st.session_state.ms1 = ["Wszystkie"]
+    return
   if st.session_state.ms1[0] == "Wszystkie":
     st.session_state.ms1 = st.session_state.ms1[1:]
   elif st.session_state.ms1[-1] == "Wszystkie":
@@ -31,9 +34,14 @@ def filter_data(df):
     group_dates_by = st.selectbox('Wybierz grupowanie po dacie', ['Godzina', 'Dzień tygodnia', 'Tydzien roku', 'Dzień miesiaca', 'Miesiac', 'Rok'], index=1)
     time_range = st.selectbox('Wybierz okres', [*years_possible, 'Od poczatku', "Przedział"], index=3)
     if time_range == "Przedział":
-      start_year = st.slider('Rok rozpoczecia', *years_possible)
-      end_year = st.slider('Rok konca', *years_possible)
-    with st.expander("Filtry"):
+      start_year, end_year = st.slider(
+      "Wybierz zakres lat",
+      min_value=2022,
+      max_value=datetime.now().year,
+      value=(2022, datetime.now().year),
+      step=1
+    )
+    with st.expander("Filtry", expanded=True):
       city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
       language_checkboxes = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique())
       attraction_groups_checkboxes = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique())
@@ -46,8 +54,9 @@ def filter_data(df):
       x_axis_type = 'start_date'
 
     if type(time_range) is int:
-      start_date = datetime(time_range, 1, 1)
-
+      min_date = df[x_axis_type].min()
+      start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, day=min_date.day, month=min_date.month, year=min_date.year)
+      
       if time_range == datetime.now().year:
         end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
       else:
@@ -65,18 +74,6 @@ def filter_data(df):
       else:
         end_date = datetime(end_year, 12, 31, 23, 59, 59)
 
-    df['start_date'] = pd.to_datetime(df['start_date']).dt.tz_localize(None)
-    df['booked_date'] = pd.to_datetime(df['booked_date']).dt.tz_localize(None)
+    visit_types = df['visit_type'].unique() if "Wszystkie" in visit_type_groups_checkboxes else df['visit_type'][df['visit_type'].isin(visit_type_groups_checkboxes)].unique()
 
-    df['status'] = df.apply(determine_status, axis=1)
-    df = df[df['status'].isin(status_checkboxes)]
-    df = df[df['city'].isin(city_checkboxes)]
-    df = df[df['language'].isin(language_checkboxes)]
-    df = df[df['attraction_group'].isin(attraction_groups_checkboxes)]
-    df = df if "Wszystkie" in visit_type_groups_checkboxes else df[df['visit_type'].isin(visit_type_groups_checkboxes)]
-
-    df = df[df[x_axis_type] >= start_date]
-    df = df[df[x_axis_type] <= end_date]
-
-
-    return (df, x_axis_type, group_dates_by)
+    return (x_axis_type, group_dates_by, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_types)
