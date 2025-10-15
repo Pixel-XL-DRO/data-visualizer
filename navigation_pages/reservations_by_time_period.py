@@ -37,9 +37,9 @@ st.text("Średnia liczba rezerwacji w danej grupie czasowej")
 reservations_chart = utils.create_bar_chart(df_grouped, 'parsed_period', group_dates_by, 'reservations', 'Rezerwacje', None, current_period)
 st.altair_chart(reservations_chart, use_container_width=True)
 
-st.text("Średni przychód w danej grupie czasowej")
-reservations_chart = utils.create_bar_chart(df_grouped, 'parsed_period', group_dates_by, 'total_cost', 'Przychód (PLN)', None, current_period)
-st.altair_chart(reservations_chart, use_container_width=True)
+st.text("Średnia liczba matogodzin w danej grupie czasowej")
+boardhours_taken_chart = utils.create_bar_chart(df_grouped, 'parsed_period', group_dates_by, 'boardhours_taken', 'Liczba zajętych matogodzin', None, current_period)
+st.altair_chart(boardhours_taken_chart, use_container_width=True)
 
 st.text("Średnia liczba osób w danej grupie czasowej")
 reservations_chart = utils.create_bar_chart(df_grouped, 'parsed_period', group_dates_by, 'total_people', 'Liczba użytkowników', None, current_period)

@@ -3,6 +3,7 @@ import altair as alt
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from io import BytesIO
 
 def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label, colorBy, lineStrokeWidth, line_label, show_notes):
   fig = None
@@ -65,26 +66,27 @@ def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_l
     )
   )
 
-  if show_notes:
-    x_values = []
-    y_values = []
-    text_values = []
-    for i, row in data.iterrows():
-        if 'note-content' in row and pd.notna(row['note-content']):
-            x_values.append(row[x_axis_type])
-            y_values.append(row[line_y])
-            text_values.append(f"{row['city']}: {row['note-content']}")
+  if show_notes and 'note-content' in data.columns and data['note-content'].notna().any():
 
-    for index, value in enumerate(pd.unique(text_values)):
-      city_from_value = value.split(':')[0]
-      fig.add_scatter(
-          x=x_values, y=y_values,
-          mode='markers',
-          text=value,
-          hoverinfo='text',
-          marker=dict(size=8, color="yellow"),
-          name=f"Notatka {city_from_value}",
-      )
+    note_data = data.loc[data['note-content'].notna()].copy()
+    note_data['note_text'] = note_data.apply(
+        lambda row: f"{row['city']}: {row['note-content']}", axis=1
+    )
+
+    grouped_notes = note_data.groupby(x_axis_type)['note_text'].apply(
+        lambda texts: '<br>'.join(texts)
+    ).reset_index().rename(columns={'note_text': 'combined_notes'})
+    note_data = note_data.merge(grouped_notes, on=x_axis_type)
+
+    fig.add_scatter(
+        x=note_data[x_axis_type],
+        y=note_data[line_y],
+        mode='markers',
+        text=note_data['combined_notes'],
+        hoverinfo='text',
+        marker=dict(size=8, color="yellow"),
+        name='Notatki',
+    )
 
   return fig
 
@@ -129,7 +131,7 @@ def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, col
 
     bar = base.mark_bar(size=10).encode(
       y=alt.Y(y_value, title=y_axis_label),
-      tooltip=[x_axis_type, y_value],
+      tooltip=[alt.Tooltip(x_axis_type, title=x_axis_label), alt.Tooltip(y_value, title=y_axis_label)],
       color=alt.condition(
         alt.datum[x_axis_type] == currentValue,
         alt.value('orange'),
@@ -190,10 +192,10 @@ def map_day_of_week_string_to_number(day_of_week_as_string):
   }[day_of_week_as_string]
 
 def format_date(date):
-  split_date = str(date).split('.')
-  day = split_date[0]
+  split_date = str(date).split('-')
+  year = split_date[0]
   month = split_date[1]
-  year = split_date[2]
+  day = split_date[2]
 
   if len(str(day)) == 1:
     day = "0" + str(day)
@@ -201,7 +203,7 @@ def format_date(date):
   if len(str(month)) == 1:
     month = "0" + str(month)
 
-  return f"{day}.{month}.{year}"
+  return f"{day}-{month}-{year}"
 
 def parse_hour(hour):
   split = hour.split('.')
@@ -244,3 +246,20 @@ def get_month_from_month_number(month_number):
     11: "Listopad",
     12: "Grudzień"
   }[month_number]
+
+def download_button(df, file_name):
+
+  output = BytesIO()
+  with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    writer.close()
+    processed_data = output.getvalue()
+
+    return (
+      st.download_button(
+      label="Pobierz plik .xlxs",
+      data=processed_data,
+      icon="⬇️",
+      file_name=f"{file_name}.xlsx",
+      mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ))

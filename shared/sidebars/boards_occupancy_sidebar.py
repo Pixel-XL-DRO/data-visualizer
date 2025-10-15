@@ -32,10 +32,11 @@ def filter_data(df):
     if time_range == "Przedział":
       start_date = st.date_input('Data rozpoczecia')
       end_date = st.date_input('Data konca')
-    # with st.expander("Filtry"):
-    #   with st.container(border=True):
-    #     city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
-    #     seperate_cities = st.checkbox('Rozdziel miasta', key="t3", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t3"))
+    with st.expander("Filtry"):
+      with st.container(border=True):
+        attraction_groups = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique())
+
+    df = df[df['attraction_group'].isin(attraction_groups)]
 
     x_axis_type = 'start_date'
 

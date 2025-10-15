@@ -29,7 +29,7 @@ def filter_data(df):
   with st.sidebar:
     x_axis_type = st.selectbox('Wybierz rodzaj daty', ['Data stworzenia', 'Data rozpoczecia'])
     group_dates_by = st.selectbox('Wybierz grupowanie po dacie', ['Godzina', 'Dzień tygodnia', 'Tydzien roku', 'Dzień miesiaca', 'Miesiac', 'Rok'], index=1)
-    time_range = st.selectbox('Wybierz okres czasu', [*years_possible, 'Od poczatku', "Przedział"], index=3)
+    time_range = st.selectbox('Wybierz okres', [*years_possible, 'Od poczatku', "Przedział"], index=3)
     if time_range == "Przedział":
       start_year = st.slider('Rok rozpoczecia', *years_possible)
       end_year = st.slider('Rok konca', *years_possible)
