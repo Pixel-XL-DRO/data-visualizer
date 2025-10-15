@@ -296,7 +296,7 @@ def get_monthly_nps(city, year):
       (SUM(CASE WHEN category = 'Promoter' THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
       -
       (SUM(CASE WHEN category = 'Detractor' THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
-    ) AS nps
+    ) AS NPS
 
   FROM
     MonthlyCategorizedReviews
@@ -345,12 +345,12 @@ def get_monthly_nps(city, year):
   df = pd.DataFrame(rows)
   df_count = pd.DataFrame(rows2)
 
-  df['liczba ocen / ilosc rezerwacji'] = (df['count'] / df_count['count']) * 100
-  df['miesiac'] = df['month'].map(utils.get_month_from_month_number)
+  df['Procent ocenionych wizyt'] = (df['count'] / df_count['count']) * 100
+  df['Miesiac'] = df['month'].map(utils.get_month_from_month_number)
   df['Liczba ocen'] = df['count']
 
 
-  return df[['nps', 'miesiac', 'Liczba ocen', 'liczba ocen / ilosc rezerwacji']]
+  return df[['NPS', 'Miesiac', 'Liczba ocen', 'Procent ocenionych wizyt']]
 
 
 def get_nps_metric(metric_change_days, metric_display_percent, cities):

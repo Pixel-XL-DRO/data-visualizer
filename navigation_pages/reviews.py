@@ -69,9 +69,9 @@ with tab3:
 
     with st.spinner("Ładowanie danych...", show_time=True):
       df_monthly = performance_reviews_queries.get_monthly_nps(city, year)
-    df_monthly
+
     st.text("Ocena NPS w miesiacu w danym mieście")
-    performance_bar_chart = utils.create_bar_chart(df_monthly, 'miesiac', 'Miesiac', 'nps', 'Wynik NPS', None, None, None, None, True)
+    performance_bar_chart = utils.create_bar_chart(df_monthly, 'Miesiac', 'Miesiac', 'NPS', 'Wynik NPS', None, None, None, None, True)
     st.altair_chart(performance_bar_chart, use_container_width=True)
 
   tab_three()
