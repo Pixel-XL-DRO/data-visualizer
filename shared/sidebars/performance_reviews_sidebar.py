@@ -10,7 +10,6 @@ import numpy as np
 def filter_data(df):
   start_date = None
   end_date = None
-
   with st.sidebar:
     with st.container(border=True):
       time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=6)
@@ -50,6 +49,7 @@ def filter_data(df):
       elif time_range == 'Od poczatku':
         min_date = df['date'].min()
         start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
+        
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 

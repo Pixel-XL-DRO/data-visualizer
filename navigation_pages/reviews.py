@@ -28,16 +28,32 @@ with st.spinner("Ładowanie danych...", show_time=True):
       (performance_reviews_queries.get_NPS, (start_date, end_date, location_checkboxes, moving_average_days, groupBy))
   )
   nps_score, delta_nps, count, delta_count = performance_reviews_queries.get_nps_metric(metric_change_days, metric_display_percent, location_checkboxes)
+  df_all_reviews = performance_reviews_queries.get_percent_of_evaluated_reviews(start_date, end_date, location_checkboxes, metric_change_days)
 
-nps_metric, count_metric = st.columns(2)
+nps_metric, count_metric, reviews_metric = st.columns(3)
 
 with nps_metric:
-
   nps_metric_help = f"Aktualna ocena NPS, zmiana dotyczy aktualnej oceny względem oceny {metric_change_days} dni wstecz"
   st.metric(label="NPS", value=nps_score ,delta=f"{delta_nps}%" if metric_display_percent else delta_nps, help=nps_metric_help)
+
 with count_metric:
   nps_metric_help = f"Aktualna liczba ocen, zmiana dotyczy aktualnej liczby ocen względem liczby ocen {metric_change_days} dni wstecz"
   st.metric(label="Liczba ocen", value=count ,delta=f"{delta_count}%" if metric_display_percent else delta_count, help=nps_metric_help)
+
+with reviews_metric:
+
+  df_nps_cum_rev = df_nps_cum.sort_values('date', ascending=False).reset_index(drop=True)
+  
+  df_nps_cum_rev['review_metric'] = (df_nps_cum_rev['count_cumsum'] / df_all_reviews['count_cumsum']) * 100
+  
+  if metric_display_percent:
+    delta_review = round(((df_nps_cum_rev['review_metric'].iloc[0] - df_nps_cum_rev['review_metric'].iloc[metric_change_days]) / df_nps_cum_rev['review_metric'].iloc[metric_change_days]) * 100, 2)
+  else: 
+    delta_review = round(df_nps_cum_rev['review_metric'].iloc[0] - df_nps_cum_rev['review_metric'].iloc[metric_change_days], 2)
+
+  review_metric_help = f"Aktualna procent ocenionych wizyt, które zostały ocenione. Zmiana dotyczy aktualnej oceny względem oceny {metric_change_days} dni wstecz"
+  st.metric(label="Procent ocenionych wizyt", value=round(df_nps_cum_rev['review_metric'].iloc[0], 2) ,delta=f"{delta_review}%" if metric_display_percent else delta_review, help=nps_metric_help)
+
 
 
 tab1, tab2, tab3 = st.tabs(["Kumulatywne", "Normalne", "Miesieczne"])

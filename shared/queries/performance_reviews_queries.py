@@ -310,7 +310,7 @@ def get_monthly_nps(city, year):
 
   SELECT
     COUNT(DISTINCT ecr.id) AS count,
-    EXTRACT(MONTH FROM ecr.booked_date) AS month
+    EXTRACT(MONTH FROM ecr.start_date) AS month
   FROM
     reservation_data.event_create_reservation ecr
   JOIN
@@ -325,7 +325,7 @@ def get_monthly_nps(city, year):
       WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
       ELSE 'Zrealizowane'
     END IN ('Zrealizowane', 'Zrealizowane nieopłacone')
-    AND EXTRACT(MONTH FROM ecr.booked_date) > 4
+    AND EXTRACT(MONTH FROM ecr.start_date) > 4
   GROUP BY
     month
   ORDER BY
@@ -345,7 +345,7 @@ def get_monthly_nps(city, year):
   df = pd.DataFrame(rows)
   df_count = pd.DataFrame(rows2)
 
-  df['Procent ocenionych wizyt'] = (df['count'] / df_count['count']) * 100
+  df['Procent ocenionych wizyt'] = round((df['count'] / df_count['count']) * 100, 2)
   df['Miesiac'] = df['month'].map(utils.get_month_from_month_number)
   df['Liczba ocen'] = df['count']
 
@@ -412,6 +412,46 @@ LIMIT {metric_change_days + 1};
     delta_count = round(((count_value - df["count_cumsum"].iloc[metric_change_days]) / df["count_cumsum"].iloc[metric_change_days]) * 100, 4)
 
   return round(nps_value, 4), delta_nps, count_value, delta_count
+
+def get_percent_of_evaluated_reviews(start_date, end_date, cities, metric_change_days):
+
+  query = f"""
+  WITH initial AS (
+    SELECT
+      COUNT(DISTINCT ecr.id) AS count,
+      DATE(ecr.start_date) AS day
+    FROM
+      reservation_data.event_create_reservation ecr
+    JOIN
+      reservation_data.dim_location location
+    ON
+      ecr.location_id = location.id
+    WHERE
+      location.city {format_array_for_query(cities)}
+      AND ecr.start_date >= @start_date
+      AND ecr.start_date <= CURRENT_TIMESTAMP
+      AND ecr.is_cancelled = false
+    GROUP BY
+      day
+  )
+  SELECT
+    day,
+    SUM(count) OVER (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS count_cumsum
+  FROM initial
+  ORDER BY day DESC
+  LIMIT {metric_change_days + 1}
+  """
+
+  job_config = bigquery.QueryJobConfig(
+    query_parameters=[
+        bigquery.ScalarQueryParameter("start_date", "TIMESTAMP", start_date)
+    ]
+  )
+
+  rows = run_query(query, job_config)
+  df = pd.DataFrame(rows)
+
+  return df
 
 def format_array_for_query(array):
   return f"IN {tuple(array)}" if len(array) > 1 else f"= '{array[0]}'"
