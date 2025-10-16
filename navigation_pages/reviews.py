@@ -52,7 +52,7 @@ with reviews_metric:
     delta_review = round(df_nps_cum_rev['review_metric'].iloc[0] - df_nps_cum_rev['review_metric'].iloc[metric_change_days], 2)
 
   review_metric_help = f"Aktualna procent ocenionych wizyt, które zostały ocenione. Zmiana dotyczy aktualnej oceny względem oceny {metric_change_days} dni wstecz"
-  st.metric(label="Procent ocenionych wizyt", value=round(df_nps_cum_rev['review_metric'].iloc[0], 2) ,delta=f"{delta_review}%" if metric_display_percent else delta_review, help=nps_metric_help)
+  st.metric(label="Procent ocenionych wizyt", value=round(df_nps_cum_rev['review_metric'].iloc[0], 2) ,delta=f"{delta_review}%" if metric_display_percent else delta_review, help=review_metric_help)
 
 
 
