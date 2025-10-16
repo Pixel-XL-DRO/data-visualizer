@@ -292,11 +292,11 @@ def get_monthly_nps(city, year):
   SELECT
     review_month AS month,
     COUNT(*) AS count,
-    (
+    ROUND((
       (SUM(CASE WHEN category = 'Promoter' THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
       -
       (SUM(CASE WHEN category = 'Detractor' THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
-    ) AS NPS
+    ),2) AS NPS
 
   FROM
     MonthlyCategorizedReviews
