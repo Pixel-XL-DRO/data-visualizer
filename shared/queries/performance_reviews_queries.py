@@ -3,8 +3,7 @@ from google.cloud import bigquery
 from queries import run_performance_review_query
 from queries import run_query
 import utils
-from datetime import datetime
-
+from datetime import timedelta
 def get_reviews_count(since_when, end_when, cities):
 
   cities_condition = format_array_for_query(cities)
@@ -38,7 +37,7 @@ def get_reviews_count(since_when, end_when, cities):
 
   return pd.DataFrame(rows)
 
-def get_performance_reviews(since_when, end_when, cities, display_reviews_above):
+def get_performance_reviews(since_when, end_when, cities):
 
   cities_condition = format_array_for_query(cities)
 
@@ -59,11 +58,6 @@ def get_performance_reviews(since_when, end_when, cities, display_reviews_above)
       AND DATE(date) < DATE(@end_when)
       AND location.city {cities_condition}
       AND review.feedback IS NOT NULL
-      AND (
-      ({display_reviews_above}  AND review.score > 8)
-      OR
-      (NOT {display_reviews_above} AND review.score <= 8)
-      )
     ORDER BY
       review.date DESC
   """
@@ -398,8 +392,36 @@ ORDER BY date desc
 LIMIT {metric_change_days + 1};
   """
 
+  query_res = f"""
+ SELECT
+  date,
+  SUM(daily_count) OVER (ORDER BY date) AS count
+FROM (
+  SELECT
+    DATE(ecr.start_date) AS date,
+    COUNT(DISTINCT ecr.id) AS daily_count
+  FROM
+    reservation_data.event_create_reservation AS ecr
+  JOIN
+    reservation_data.dim_location AS location
+    ON ecr.location_id = location.id
+  WHERE
+    location.city {cities_condition}
+    AND ecr.start_date >= TIMESTAMP('2025-05-11')
+    AND ecr.start_date <= CURRENT_TIMESTAMP()
+    AND ecr.is_cancelled = FALSE
+  GROUP BY
+    date
+) AS daily_counts
+ORDER BY
+  date desc;
+
+  """
+
   rows = run_performance_review_query(query)
   df = pd.DataFrame(rows)
+  rows_res = run_query(query_res)
+  df_res = pd.DataFrame(rows_res)
 
   nps_value = df["nps_cumsum"].iloc[0]
   delta_nps = round(nps_value - df["nps_cumsum"].iloc[metric_change_days], 4)
@@ -407,13 +429,287 @@ LIMIT {metric_change_days + 1};
   count_value = df["count_cumsum"].iloc[0]
   delta_count = int(count_value - df["count_cumsum"].iloc[metric_change_days])
 
+  review_percent = round((df["count_cumsum"].iloc[0] / df_res["count"].iloc[0]) * 100, 2)
+  review_percent_delta = round(review_percent - ((df["count_cumsum"].iloc[metric_change_days] / df_res["count"].iloc[metric_change_days]) * 100), 2)
+
   if metric_display_percent:
-    delta_nps = round(((nps_value - df["nps_cumsum"].iloc[metric_change_days]) / df["nps_cumsum"].iloc[metric_change_days]) * 100, 4)
-    delta_count = round(((count_value - df["count_cumsum"].iloc[metric_change_days]) / df["count_cumsum"].iloc[metric_change_days]) * 100, 4)
+    delta_nps = round(((nps_value - df["nps_cumsum"].iloc[metric_change_days]) / df["nps_cumsum"].iloc[metric_change_days]) * 100, 2)
+    delta_count = round(((count_value - df["count_cumsum"].iloc[metric_change_days]) / df["count_cumsum"].iloc[metric_change_days]) * 100, 2)
+    review_percent_delta = round(((review_percent - ((df["count_cumsum"].iloc[metric_change_days] / df_res["count"].iloc[metric_change_days]) * 100)) / review_percent) * 100, 2)
 
-  return round(nps_value, 4), delta_nps, count_value, delta_count
+  return round(nps_value, 4), delta_nps, count_value, delta_count, review_percent, review_percent_delta
 
-def get_percent_of_evaluated_reviews(start_date, end_date, cities, metric_change_days):
+def get_nps_metric_by_city(metric_change_days, metric_display_percent, cities, start_date):
+
+  cities_condition = format_array_for_query(cities)
+
+  query = f"""
+WITH DailyCategorizedReviews AS (
+  SELECT
+    DISTINCT reservationId,
+    DATE(review.date) AS review_day,
+    location.city,
+    CASE
+      WHEN review.score BETWEEN 0 AND 6 THEN 'Detractor'
+      WHEN review.score BETWEEN 7 AND 8 THEN 'Passive'
+      WHEN review.score BETWEEN 9 AND 10 THEN 'Promoter'
+    END AS category
+  FROM
+    performance_data.mail_review AS review
+  JOIN
+    performance_data.dim_location location
+    ON review.dim_location_id = location.id
+  WHERE
+    location.city {cities_condition}
+),
+DailyNPS AS (
+  SELECT
+    DATE(review_day) AS date,
+    city,
+    COUNT(*) AS count,
+    SUM(CASE WHEN category = 'Promoter' THEN 1 ELSE 0 END) AS promoters,
+    SUM(CASE WHEN category = 'Detractor' THEN 1 ELSE 0 END) AS detractors
+  FROM
+    DailyCategorizedReviews
+  GROUP BY
+    review_day, city
+),
+CumulativeNPS AS (
+  SELECT
+    DATE(date) AS date,
+    city,
+    SUM(count) OVER (PARTITION BY city ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS count_cumsum,
+    (
+      (
+        SUM(promoters) OVER (PARTITION BY city ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+        - SUM(detractors) OVER (PARTITION BY city ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+      ) * 100.0
+      / SUM(count) OVER (PARTITION BY city ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+    ) AS nps_cumsum
+  FROM
+    DailyNPS
+),
+DateRange AS (
+  SELECT
+    city,
+    MIN(date) AS min_date,
+    CURRENT_DATE() AS max_date
+  FROM
+    CumulativeNPS
+  GROUP BY
+    city
+),
+DateCityGrid AS (
+  SELECT
+    city,
+    day AS date
+  FROM
+    DateRange,
+    UNNEST(GENERATE_DATE_ARRAY(min_date, max_date)) AS day
+),
+
+-- Left join to cumulative data (some dates will be missing)
+Joined AS (
+  SELECT
+    g.city,
+    g.date,
+    c.count_cumsum,
+    c.nps_cumsum
+  FROM
+    DateCityGrid g
+  LEFT JOIN
+    CumulativeNPS c
+  ON
+    g.city = c.city
+    AND g.date = c.date
+),
+
+FilledForward AS (
+  SELECT
+    city,
+    date,
+    IFNULL(
+      count_cumsum,
+      LAST_VALUE(count_cumsum IGNORE NULLS)
+        OVER (PARTITION BY city ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+    ) AS count_cumsum,
+    IFNULL(
+      nps_cumsum,
+      LAST_VALUE(nps_cumsum IGNORE NULLS)
+        OVER (PARTITION BY city ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+    ) AS nps_cumsum
+  FROM
+    Joined
+)
+SELECT
+  city,
+  date,
+  count_cumsum,
+  nps_cumsum
+FROM (
+  SELECT
+    *,
+    ROW_NUMBER() OVER (PARTITION BY city ORDER BY date DESC) AS rn
+  FROM
+    FilledForward
+)
+WHERE
+  rn <= {metric_change_days + 1}
+ORDER BY
+  city,
+  date DESC;
+
+  """
+
+  query_res = f"""
+  WITH initial AS (
+  SELECT
+    COUNT(DISTINCT ecr.id) AS count,
+    DATE(ecr.start_date) AS date,
+    location.city AS city
+  FROM
+    reservation_data.event_create_reservation ecr
+  JOIN
+    reservation_data.dim_location location
+  ON
+    ecr.location_id = location.id
+  WHERE
+    location.city {format_array_for_query(cities)}
+    AND ecr.start_date >= TIMESTAMP("2025-05-11") -- START OF NPS
+    AND ecr.start_date <= CURRENT_TIMESTAMP()
+    AND ecr.is_cancelled = false
+  GROUP BY
+    date, location.city
+),
+
+cumulative_sum AS (
+  SELECT
+    date,
+    city,
+    SUM(count) OVER (
+      PARTITION BY city
+      ORDER BY date
+      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS count_cumsum_res
+  FROM
+    initial
+),
+date_city_grid AS (
+  SELECT
+    city,
+    day AS date
+  FROM
+    UNNEST(GENERATE_DATE_ARRAY(
+      DATE_SUB(CURRENT_DATE(), INTERVAL {metric_change_days} DAY),
+      CURRENT_DATE()
+    )) AS day
+  CROSS JOIN (
+    SELECT DISTINCT city FROM cumulative_sum
+  )
+),
+filled AS (
+  SELECT
+    g.date,
+    g.city,
+    c.count_cumsum_res
+  FROM
+    date_city_grid g
+  LEFT JOIN
+    cumulative_sum c
+  ON
+    g.city = c.city AND g.date = c.date
+),
+filled_forward AS (
+  SELECT
+    date,
+    city,
+    IFNULL(
+      count_cumsum_res,
+      LAST_VALUE(count_cumsum_res IGNORE NULLS)
+        OVER (
+          PARTITION BY city
+          ORDER BY date
+          ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        )
+    ) AS count_cumsum_res
+  FROM
+    filled
+)
+SELECT
+  date,
+  city,
+  count_cumsum_res
+FROM
+  filled_forward
+ORDER BY
+  city,
+  date DESC;
+
+  """
+  job_config = bigquery.QueryJobConfig(
+    query_parameters=[
+        bigquery.ScalarQueryParameter("start_date", "TIMESTAMP", start_date),
+    ]
+  )
+
+  rows = run_performance_review_query(query)
+  rows_res = run_query(query_res, job_config)
+
+
+  df = pd.DataFrame(rows)
+  df_res = pd.DataFrame(rows_res)
+
+  max_date = df['date'].max()
+  min_date = max_date - timedelta(days=metric_change_days)
+  dates_to_keep = [min_date, max_date]
+
+  df = df[df['date'].isin(dates_to_keep)]
+  df_res = df_res[df_res['date'].isin(dates_to_keep)]
+
+  all_cities = pd.concat([df['city'], df_res['city']]).unique()
+
+  full_index = pd.MultiIndex.from_product([all_cities, dates_to_keep], names=['city', 'date'])
+  full_df = pd.DataFrame(index=full_index).reset_index()
+
+  df = full_df.merge(df, on=['city', 'date'], how='left').fillna(0)
+  df_res = full_df.merge(df_res, on=['city', 'date'], how='left').fillna(0)
+
+  merged_df = df.merge(
+    df_res[['date', 'city', 'count_cumsum_res']],
+    on=['date', 'city'],
+    how='inner'
+  )
+
+  merged_df = merged_df.sort_values(["city", "date"])
+
+  merged_df["review_percent"] = round(merged_df["count_cumsum"] / merged_df["count_cumsum_res"] * 100, 4)
+
+  if metric_display_percent:
+    merged_df["nps_change"] = merged_df.groupby("city")["nps_cumsum"].transform(
+        lambda x: ((x.diff() / x.shift(1)) * 100).round(2)
+    )
+    merged_df["count_change"] = merged_df.groupby("city")["count_cumsum"].transform(
+        lambda x: ((x.diff() / x.shift(1)) * 100).round(2)
+    )
+    merged_df["review_percent_change"] = merged_df.groupby("city")["review_percent"].transform(
+        lambda x: ((x.diff() / x.shift(1)) * 100).round(2)
+    )
+  else:
+    merged_df["nps_change"] = merged_df.groupby("city")["nps_cumsum"].transform(
+        lambda x: x.diff().round(4)
+    )
+    merged_df["count_change"] = merged_df.groupby("city")["count_cumsum"].transform(
+        lambda x: x.diff()
+    )
+    merged_df["review_percent_change"] = merged_df.groupby("city")["review_percent"].transform(
+        lambda x: x.diff().round(4)
+    )
+
+  merged_df = merged_df[merged_df["date"] == max_date].reset_index(drop=True)
+
+  return merged_df
+
+def get_percent_of_evaluated_reviews(start_date, cities, metric_change_days):
 
   query = f"""
   WITH initial AS (
@@ -428,7 +724,7 @@ def get_percent_of_evaluated_reviews(start_date, end_date, cities, metric_change
       ecr.location_id = location.id
     WHERE
       location.city {format_array_for_query(cities)}
-      AND ecr.start_date >= @start_date
+      AND ecr.start_date >= TIMESTAMP("2025-05-11") -- START OF NPS
       AND ecr.start_date <= CURRENT_TIMESTAMP
       AND ecr.is_cancelled = false
     GROUP BY

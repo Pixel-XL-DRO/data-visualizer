@@ -27,8 +27,6 @@ def filter_data(df):
       with st.container(border=True):
         metric_change_days = st.slider('Dni wstecz metryki', 1, 60, 1)
         metric_display_percent = st.checkbox('Pokazuj metrykę jako procent', key="m1", value=False)
-      with st.container(border=True):
-        display_reviews_above = st.checkbox('Wyświetlaj tylko opinie powyżej 8 ', key="m2", value=False)
 
     if end_date is None:
       end_date = datetime.now() + timedelta(days=1)
@@ -53,4 +51,4 @@ def filter_data(df):
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 
-    return (start_date, end_date, location_checkboxes, separate_cities, moving_average_toggle, show_only_moving_average, moving_average_days, metric_change_days, metric_display_percent, display_reviews_above)
+    return (start_date, end_date, location_checkboxes, separate_cities, moving_average_toggle, show_only_moving_average, moving_average_days, metric_change_days, metric_display_percent)
