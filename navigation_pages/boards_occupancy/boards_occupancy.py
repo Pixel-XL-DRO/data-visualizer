@@ -9,7 +9,7 @@ import streamlit as st
 import queries
 import utils
 import boards_occupancy_sidebar
-
+import auth
 import plan4u_view
 import safi_view
 
@@ -21,6 +21,9 @@ with st.spinner():
   df_location_boards_availability = queries.get_historical_location_boards_availability()
   df_visit_type_availability = queries.get_historical_visit_type_availability()
   df_slots_occupancy = queries.get_slots_occupancy()
+
+df = auth.filter_locations(df)
+df_locations = auth.filter_locations(df_locations)
 
 (df, x_axis_type) = boards_occupancy_sidebar.filter_data(df)
 

@@ -424,7 +424,7 @@ ORDER BY
   df_res = pd.DataFrame(rows_res)
 
   nps_value = df["nps_cumsum"].iloc[0]
-  delta_nps = round(nps_value - df["nps_cumsum"].iloc[metric_change_days], 4)
+  delta_nps = round(nps_value - df["nps_cumsum"].iloc[metric_change_days], 2)
 
   count_value = df["count_cumsum"].iloc[0]
   delta_count = int(count_value - df["count_cumsum"].iloc[metric_change_days])
@@ -437,7 +437,7 @@ ORDER BY
     delta_count = round(((count_value - df["count_cumsum"].iloc[metric_change_days]) / df["count_cumsum"].iloc[metric_change_days]) * 100, 2)
     review_percent_delta = round(((review_percent - ((df["count_cumsum"].iloc[metric_change_days] / df_res["count"].iloc[metric_change_days]) * 100)) / review_percent) * 100, 2)
 
-  return round(nps_value, 4), delta_nps, count_value, delta_count, review_percent, review_percent_delta
+  return round(nps_value, 2), delta_nps, count_value, delta_count, review_percent, review_percent_delta
 
 def get_nps_metric_by_city(metric_change_days, metric_display_percent, cities, start_date):
 
@@ -682,7 +682,7 @@ ORDER BY
 
   merged_df = merged_df.sort_values(["city", "date"])
 
-  merged_df["review_percent"] = round(merged_df["count_cumsum"] / merged_df["count_cumsum_res"] * 100, 4)
+  merged_df["review_percent"] = round(merged_df["count_cumsum"] / merged_df["count_cumsum_res"] * 100, 2)
 
   if metric_display_percent:
     merged_df["nps_change"] = merged_df.groupby("city")["nps_cumsum"].transform(
@@ -696,58 +696,18 @@ ORDER BY
     )
   else:
     merged_df["nps_change"] = merged_df.groupby("city")["nps_cumsum"].transform(
-        lambda x: x.diff().round(4)
+        lambda x: x.diff().round(2)
     )
     merged_df["count_change"] = merged_df.groupby("city")["count_cumsum"].transform(
         lambda x: x.diff()
     )
     merged_df["review_percent_change"] = merged_df.groupby("city")["review_percent"].transform(
-        lambda x: x.diff().round(4)
+        lambda x: x.diff().round(2)
     )
 
   merged_df = merged_df[merged_df["date"] == max_date].reset_index(drop=True)
 
   return merged_df
-
-def get_percent_of_evaluated_reviews(start_date, cities, metric_change_days):
-
-  query = f"""
-  WITH initial AS (
-    SELECT
-      COUNT(DISTINCT ecr.id) AS count,
-      DATE(ecr.start_date) AS day
-    FROM
-      reservation_data.event_create_reservation ecr
-    JOIN
-      reservation_data.dim_location location
-    ON
-      ecr.location_id = location.id
-    WHERE
-      location.city {format_array_for_query(cities)}
-      AND ecr.start_date >= TIMESTAMP("2025-05-11") -- START OF NPS
-      AND ecr.start_date <= CURRENT_TIMESTAMP
-      AND ecr.is_cancelled = false
-    GROUP BY
-      day
-  )
-  SELECT
-    day,
-    SUM(count) OVER (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS count_cumsum
-  FROM initial
-  ORDER BY day DESC
-  LIMIT {metric_change_days + 1}
-  """
-
-  job_config = bigquery.QueryJobConfig(
-    query_parameters=[
-        bigquery.ScalarQueryParameter("start_date", "TIMESTAMP", start_date)
-    ]
-  )
-
-  rows = run_query(query, job_config)
-  df = pd.DataFrame(rows)
-
-  return df
 
 def format_array_for_query(array):
   return f"IN {tuple(array)}" if len(array) > 1 else f"= '{array[0]}'"

@@ -22,10 +22,7 @@ def filter_data(df):
       with st.container(border=True):
         location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
         separate_cities = st.checkbox('Rozdziel miasta')
-      with st.container(border=True):
-        metric_change_days = st.slider('Dni wstecz metryki', min_value=1, max_value=60, value=1, step=1, key="m2")
-        metric_display_percent = st.checkbox('Pokazuj metrykę jako procent', key="m1", value=False)
-
+        
     if end_date is None:
       end_date = datetime.now() + timedelta(days=1)
 
@@ -49,4 +46,4 @@ def filter_data(df):
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 
-    return (start_date, end_date, location_checkboxes, separate_cities, moving_average_toggle, show_only_moving_average, moving_average_days, metric_change_days, metric_display_percent)
+    return (start_date, end_date, location_checkboxes, separate_cities, moving_average_toggle, show_only_moving_average, moving_average_days)
