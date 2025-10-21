@@ -4,8 +4,6 @@ sys.path.append("shared")
 from datetime import datetime, timedelta
 import utils
 import streamlit as st
-import pandas as pd
-import numpy as np
 
 def filter_data(df):
   start_date = None
@@ -25,7 +23,7 @@ def filter_data(df):
         location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
         separate_cities = st.checkbox('Rozdziel miasta')
       with st.container(border=True):
-        metric_change_days = st.slider('Dni wstecz metryki', 1, 60, 1)
+        metric_change_days = st.slider('Dni wstecz metryki', min_value=1, max_value=60, value=1, step=1, key="m2")
         metric_display_percent = st.checkbox('Pokazuj metrykę jako procent', key="m1", value=False)
 
     if end_date is None:
