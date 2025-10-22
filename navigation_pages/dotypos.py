@@ -3,91 +3,104 @@ import sys
 sys.path.append("shared")
 sys.path.append("shared/sidebars")
 sys.path.append("utils")
-import dotypos_utils
+
 import streamlit as st
-import datetime
 import pandas as pd
 import dotypos_sidebar
 import queries
+import dotypos_queries
 import utils
 import auth
-from datetime import datetime
+from datetime import timedelta
 
-with st.spinner():
-    df,_ = queries.get_order_items()
-    df_reservation = queries.get_reservation_data()
-
-df = auth.filter_locations(df)
-df_reservation = auth.filter_locations(df_reservation)
+with st.spinner("Inicjalizacja...", show_time=True):
+    df, df_items = queries.get_dotypos_initial_data()
+    df = auth.filter_locations(df)
 
 # side bar
-(df, df_reservation, separate_cities, show_only_moving_average, moving_average_days, moving_average_toggle) = dotypos_sidebar.filter_data(df, df_reservation)
-groupBy = 'city' if separate_cities else None
+(groupBy, show_only_moving_average, moving_average_days, moving_average_toggle, cities, start_date) = dotypos_sidebar.filter_data(df)
 
-df_grouped, df_upsell_grouped = dotypos_utils.group_order_items(df, groupBy, moving_average_days)
-df_res = dotypos_utils.calc_earnings_per_reservation(df_reservation, df, groupBy, moving_average_days)
+with st.spinner("Ładowanie danych...", show_time=True):
+    df_bar, df_sale, df_res = utils.run_in_parallel(
+        (dotypos_queries.get_order_items, (start_date, cities, moving_average_days, groupBy)),
+        (dotypos_queries.get_order_items_per_sale, (start_date, cities, moving_average_days, groupBy)),
+        (dotypos_queries.get_order_items_per_reservation, (start_date, cities, moving_average_days, groupBy)),
+    )
 
 tab1, tab2, tab3, tab4 = st.tabs(["SPRZEDAŻ BAROWA", "SPRZEDAŻ BAROWA NA RACHUNEK", "SPRZEDAŻ BAROWA NA REZERWACJE", "PRODUKTY"])
 
 with tab1:
 
-    total_brutto_chart = utils.create_chart_new(df_grouped, df_grouped['date_only'], "Data", 'brutto' if not show_only_moving_average else None, 'brutto_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa brutto [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia sprzedaż barowa brutto", False)
-    st.plotly_chart(total_brutto_chart, use_container_width=True)
+    @st.fragment
+    def tab_one():
+        total_brutto_chart = utils.create_chart_new(df_bar, 'date', "Data", 'brutto' if not show_only_moving_average else None, 'brutto_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa brutto [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia sprzedaż barowa brutto", False)
+        st.plotly_chart(total_brutto_chart, use_container_width=True)
 
-    total_netto_chart = utils.create_chart_new(df_grouped, df_grouped['date_only'], "Data", 'netto' if not show_only_moving_average else None, 'netto_rolling_avg', "Sprzedaż barowa netto [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia sprzedaż barowa netto", False)
-    st.plotly_chart(total_netto_chart, use_container_width=True)
+        total_netto_chart = utils.create_chart_new(df_bar, 'date', "Data", 'netto' if not show_only_moving_average else None, 'netto_rolling_avg', "Sprzedaż barowa netto [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia sprzedaż barowa netto", False)
+        st.plotly_chart(total_netto_chart, use_container_width=True)
 
-    utils.download_button(df_grouped, "sprzedaz_barowa")
+        utils.download_button(df_bar, "sprzedaz_barowa")
+    tab_one()
 
 with tab2:
 
-    brutto_per_visit_chart = utils.create_chart_new(df_upsell_grouped, df_upsell_grouped['date_only'], "Data",  'brutto_by_quantity' if not show_only_moving_average else None, 'avg_brutto_per_purchase' if moving_average_toggle else None, "Sprzedaż barowa brutto na rachunek [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia", False)
-    st.plotly_chart(brutto_per_visit_chart, use_container_width=True)
+    @st.fragment
+    def tab_two():
+        brutto_per_visit_chart = utils.create_chart_new(df_sale, 'date', "Data",  'brutto' if not show_only_moving_average else None, 'brutto_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa brutto na rachunek [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia", False)
+        st.plotly_chart(brutto_per_visit_chart, use_container_width=True)
 
-    netto_per_visit_chart = utils.create_chart_new(df_upsell_grouped, df_upsell_grouped['date_only'], "Data", 'netto_by_quantity' if not show_only_moving_average else None, 'avg_netto_per_purchase' if moving_average_toggle else None, "Sprzedaż barowa netto na rachunek [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia", False)
-    st.plotly_chart(netto_per_visit_chart, use_container_width=True)
+        netto_per_visit_chart = utils.create_chart_new(df_sale, 'date', "Data", 'netto' if not show_only_moving_average else None, 'netto_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa netto na rachunek [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia", False)
+        st.plotly_chart(netto_per_visit_chart, use_container_width=True)
 
-    utils.download_button(df_upsell_grouped, "sprzedaz_na_wizyte")
+        utils.download_button(df_sale, "sprzedaz_na_wizyte")
+    tab_two()
 
 with tab3:
+    @st.fragment
+    def tab_three():
 
-    reservation_count_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data", 'count' if not show_only_moving_average else None, 'count_rolling_avg' if moving_average_toggle else None, "ilosc rezerwacji", groupBy, 2 if groupBy else 4, "Średnia", False)
-    st.plotly_chart(reservation_count_chart, use_container_width=True)
+        reservation_count_chart = utils.create_chart_new(df_res, 'date', "Data", 'res_count' if not show_only_moving_average else None, 'res_moving_avg' if moving_average_toggle else None, "ilosc odbytych rezerwacji", groupBy, 2 if groupBy else 4, "Średnia", False)
+        st.plotly_chart(reservation_count_chart, use_container_width=True)
 
-    brutto_per_reservation_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data",  'mean_brutto_per_reservation' if not show_only_moving_average else None, 'mean_brutto_per_reservation_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa brutto na rezerwacje [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia", False)
-    st.plotly_chart(brutto_per_reservation_chart, use_container_width=True)
+        brutto_per_reservation_chart = utils.create_chart_new(df_res, 'date', "Data",  'brutto_per_reservation' if not show_only_moving_average else None, 'brutto_per_reservation_moving_avg' if moving_average_toggle else None, "Sprzedaż barowa brutto na rezerwacje [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia", False)
+        st.plotly_chart(brutto_per_reservation_chart, use_container_width=True)
 
-    netto_per_reservation_chart = utils.create_chart_new(df_res, df_res['start_date'], "Data", 'mean_netto_per_reservation' if not show_only_moving_average else None, 'mean_netto_per_reservation_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa netto na rezerwacje [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia", False)
-    st.plotly_chart(netto_per_reservation_chart, use_container_width=True)
+        netto_per_reservation_chart = utils.create_chart_new(df_res, 'date', "Data", 'netto_per_reservation' if not show_only_moving_average else None, 'netto_per_reservation_moving_avg' if moving_average_toggle else None, "Sprzedaż barowa netto na rezerwacje [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia", False)
+        st.plotly_chart(netto_per_reservation_chart, use_container_width=True)
 
-    utils.download_button(df_res, "sprzedaz_na_rezerwacje")
+        utils.download_button(df_res, "sprzedaz_na_rezerwacje")
+    tab_three()
 
 with tab4:
+    
+    @st.fragment
+    def tab_four():
+        col1, col2 = st.columns(2)
 
-    col1, col2 = st.columns(2)
+        min_date = df['creation_date'].min()
+        max_date = df['creation_date'].max()
+        with col1:
+            current_period_start = st.date_input('Od kiedy', value=min_date, min_value=min_date, max_value=max_date - timedelta(days=1)) # first of february is the date we fully adapted dotypos
 
-    with col1:
-        current_period_start = st.date_input('Od kiedy', value=df['creation_date'].min()) # first of february is the date we fully adapted dotypos
+        with col2:
+            current_period_end = st.date_input('Do kiedy', value=max_date +  + timedelta(days=1), min_value=min_date + timedelta(days=1), max_value=max_date +  + timedelta(days=1))
 
-    with col2:
-        current_period_end = st.date_input('Do kiedy', value=datetime.now())
+        items = st.multiselect("Produkty", df_items['name'].unique(), default=None)
+        
+        current_period_start = pd.to_datetime(current_period_start)
+        current_period_end = pd.to_datetime(current_period_end)
 
-    current_period_start = pd.to_datetime(current_period_start)
-    current_period_end = pd.to_datetime(current_period_end)
+        with st.spinner("Ładowanie danych", show_time=True):
+            df_sales, df_sold_items = utils.run_in_parallel(
+                (dotypos_queries.get_items_sales_per_day, (current_period_start, current_period_end, moving_average_days, cities, items, groupBy)),
+                (dotypos_queries.get_items_sold, (current_period_start, current_period_end, cities, items, groupBy))
+            )
 
-    df_filtered = df.loc[
-        (df['creation_date'] >= current_period_start) &
-        (df['creation_date'] <= current_period_end)
-    ]
+        items_chart  = utils.create_chart_new(df_sales, 'date', "Data", 'count' if not show_only_moving_average else None, 'count_moving_avg' if moving_average_toggle else None, "Ilość sprzedaży na dany dzień", groupBy, 2 if groupBy else 4, "Średnia ilość sprzedaży", False)
+        st.plotly_chart(items_chart, use_container_width=True)
 
-    items = st.multiselect("Produkty", df_filtered['name'].unique(), default=None)
-    df_filtered = df_filtered if len(items) == 0 or not items else df_filtered[df_filtered['name'].isin(items)]
+        df_sold_items
 
-    df_items, df_filt = dotypos_utils.calc_items(df_filtered, groupBy, moving_average_days)
-
-    items_chart  = utils.create_chart_new(df_items, 'creation_date', "Data", 'quantity' if not show_only_moving_average else None, 'quantity_ma' if moving_average_toggle else None, "Ilość sprzedaży na dany dzień", groupBy, 2 if groupBy else 4, "Średnia ilość sprzedaży", False)
-    st.plotly_chart(items_chart, use_container_width=True)
-
-    df_filt
-
-    utils.download_button(df_filt, "produkty")
+        utils.download_button(df_sold_items, "produkty")
+    
+    tab_four()

@@ -1,8 +1,6 @@
 import pandas as pd
 from google.cloud import bigquery
 from queries import run_query
-import streamlit as st
-from datetime import datetime
 import utils
 
 day_of_week_map = {

@@ -14,7 +14,7 @@ def determine_status(row):
     return 'Zrealizowane nieopłacone'
   return 'Zrealizowane'
 
-def filter_data(df, df_res):
+def filter_data(df):
   start_date = None
   end_date = None
 
@@ -34,9 +34,7 @@ def filter_data(df, df_res):
       with st.container(border=True):
         location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
         separate_cities = st.checkbox('Rozdziel miasta')
-      with st.container(border=True):
-        status_checkboxes = st.multiselect("Status", ["Zrealizowane", "Anulowane", "Zrealizowane nieopłacone"], default=["Zrealizowane", "Zrealizowane nieopłacone"])
-
+  
     if end_date is None:
       end_date = datetime.now()
     else:
@@ -61,13 +59,6 @@ def filter_data(df, df_res):
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 
-    df['creation_date'] = pd.to_datetime(df['creation_date']).dt.tz_localize(None)
-
-    df = df[df['city'].isin(location_checkboxes)]
-    df = df[df['creation_date'] >= start_date]
-    df = df[df['creation_date'] <= end_date]
-    df = df[df['category'] != 'UNDEFINED']
-    df_res['status'] = df_res.apply(determine_status, axis=1)
-    df_res = df_res[df_res['status'].isin(status_checkboxes)]
-
-    return (df, df_res, separate_cities, show_only_moving_average, moving_average_days, moving_average_toggle)
+    groupBy = 'city' if separate_cities else None
+    moving_average_days = moving_average_days - 1 # we have to decrement to adjust for SQL indexing from 0
+    return (groupBy, show_only_moving_average, moving_average_days, moving_average_toggle, location_checkboxes, start_date)

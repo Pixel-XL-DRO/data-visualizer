@@ -660,3 +660,37 @@ def get_voucher_data():
   rows = run_query(query)
   df = pd.DataFrame(rows, columns=['id', 'creation_date', 'voucher_name', 'net_amount', 'city', 'street'])
   return df
+@st.cache_data(ttl=60000)
+def get_dotypos_initial_data():
+  query = f"""
+    SELECT DISTINCT
+      o.creation_date,
+      o.status,
+      l.city,
+      l.street,
+    FROM
+      POS_system_data.order o
+    JOIN
+      POS_system_data.dim_location l
+    ON
+      o.dim_location_id = l.id  
+    WHERE
+      DATE(o.creation_date) >= DATE("2025-02-01") -- START OF DOTYPOS  
+  """
+
+  query_items = f"""
+  SELECT DISTINCT
+    i.name
+  FROM 
+    POS_system_data.item i
+  WHERE
+    NOT REGEXP_CONTAINS(i.name, '(?i)bilet|zadatek|voucher|integracja|uczestnik|urodzin')  
+  """
+
+  rows = run_query(query)
+  rows_items = run_query(query_items)
+
+  df = pd.DataFrame(rows)
+  df_items = pd.DataFrame(rows_items)
+
+  return df, df_items

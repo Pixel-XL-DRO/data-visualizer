@@ -290,3 +290,6 @@ def run_in_parallel(*funcs):
       results.append(future.result())
 
   return results
+
+def format_array_for_query(array):
+  return f"IN {tuple(array)}" if len(array) > 1 else f"= '{array[0]}'"

@@ -54,7 +54,8 @@ def filter_data(df):
       x_axis_type = 'start_date'
 
     if type(time_range) is int:
-      min_date = df[x_axis_type].min()
+      df_year = df[df[x_axis_type].dt.year == time_range]
+      min_date = df_year[x_axis_type].min() 
       start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, day=min_date.day, month=min_date.month, year=min_date.year)
       
       if time_range == datetime.now().year:
