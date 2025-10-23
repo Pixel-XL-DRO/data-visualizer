@@ -5,14 +5,6 @@ from datetime import datetime, timedelta
 import utils
 import streamlit as st
 import pandas as pd
-import numpy as np
-
-def determine_status(row):
-  if row['is_cancelled']:
-    return 'Anulowane'
-  elif not row['is_payed']:
-    return 'Zrealizowane nieopłacone'
-  return 'Zrealizowane'
 
 def filter_data(df):
   start_date = None
@@ -30,11 +22,11 @@ def filter_data(df):
       show_only_moving_average = st.checkbox('Pokazuj tylko srednia kroczaca', key="t2", value=False, on_change=lambda:utils.chain_toggle_on("t2", "t1"))
       moving_average_days = st.slider('Ile dni', 1, 30, 7)
 
-    with st.expander("Filtry"):
+    with st.expander("Filtry", expanded=True):
       with st.container(border=True):
         location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
         separate_cities = st.checkbox('Rozdziel miasta')
-  
+
     if end_date is None:
       end_date = datetime.now()
     else:
@@ -54,7 +46,7 @@ def filter_data(df):
       elif time_range == '3 lat':
         start_date = end_date - timedelta(days=1095)
       elif time_range == 'Od poczatku':
-        min_date = df['creation_date'].min()
+        min_date = df['min_creation_date'].min()
         start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
     else:
       start_date = datetime.combine(start_date, datetime.min.time())

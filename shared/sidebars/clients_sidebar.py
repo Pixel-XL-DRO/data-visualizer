@@ -34,7 +34,7 @@ def filter_data(df):
       start_date = st.date_input('Data rozpoczecia')
       end_date = st.date_input('Data konca')
 
-    with st.expander("Filtry"):
+    with st.expander("Filtry", expanded=True):
       with st.container(border=True):
         city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
         seperate_cities = st.checkbox('Rozdziel miasta', key="t3", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t3"))

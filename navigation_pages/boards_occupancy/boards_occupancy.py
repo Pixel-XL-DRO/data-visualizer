@@ -13,17 +13,20 @@ import auth
 import plan4u_view
 import safi_view
 
-with st.spinner():
-  df = queries.get_reservation_data()
-  df_locations = queries.get_locations_data()
-  df_visit_types = queries.get_visit_types_data()
-  df_location_hours_availability = queries.get_historical_location_hours_availability()
-  df_location_boards_availability = queries.get_historical_location_boards_availability()
-  df_visit_type_availability = queries.get_historical_visit_type_availability()
-  df_slots_occupancy = queries.get_slots_occupancy()
+with st.spinner("Ładowanie danych...", show_time=True):
 
-df = auth.filter_locations(df)
-df_locations = auth.filter_locations(df_locations)
+  df, df_locations, df_visit_types, df_location_hours_availability, df_location_boards_availability, df_visit_type_availability, df_slots_occupancy = utils.run_in_parallel(
+    (queries.get_reservation_data, ()),
+    (queries.get_locations_data, ()),
+    (queries.get_visit_types_data, ()),
+    (queries.get_historical_location_hours_availability, ()),
+    (queries.get_historical_location_boards_availability, ()),
+    (queries.get_historical_visit_type_availability, ()),
+    (queries.get_slots_occupancy, ()),
+  )
+
+  df = auth.filter_locations(df)
+  df_locations = auth.filter_locations(df_locations)
 
 (df, x_axis_type) = boards_occupancy_sidebar.filter_data(df)
 
@@ -65,3 +68,5 @@ else:
     df_slots_occupancy,
     city_selection
   )
+
+utils.lazy_load_initials()

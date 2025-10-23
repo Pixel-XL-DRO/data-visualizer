@@ -18,6 +18,9 @@ def filter_data(df):
   start_date = None
   end_date = None
 
+  if df.empty:
+    return (start_date, end_date, [])
+
   with st.sidebar:
     with st.container(border=True):
       time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=6)
@@ -53,4 +56,4 @@ def filter_data(df):
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 
-    return (df, start_date, end_date, location_checkboxes)
+    return (start_date, end_date, location_checkboxes)

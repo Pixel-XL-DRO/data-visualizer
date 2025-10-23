@@ -33,7 +33,7 @@ def filter_data(df):
       moving_average_days = st.slider('Ile dni', 1, 30, 7)
     with st.expander("Notatki"):
       show_notes = st.checkbox('Pokazuj notatki', key="t7", value=False, on_change=lambda:utils.chain_toggle_on("t7","t1","t2"))
-    with st.expander("Filtry"):
+    with st.expander("Filtry", expanded=True):
       with st.container(border=True):
         city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
         seperate_cities = st.checkbox('Rozdziel miasta', key="t3", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t3"))

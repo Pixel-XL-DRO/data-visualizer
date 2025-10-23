@@ -35,7 +35,7 @@ def filter_online_data(df):
             t2 = st.checkbox('Pokazuj tylko srednia kroczaca', key="online_t2", value=False, on_change=lambda: utils.chain_toggle_on("online_t2", "online_t1"))
             days_count = st.slider('Ile dni', 1, 30, 7)
 
-        with st.expander("Filtry"):
+        with st.expander("Filtry", expanded=True):
             with st.container(border=True):
                 cities = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique(), key="online_cities")
                 separate_cities = st.checkbox('Rozdziel miasta', key="online_sep", on_change=lambda: utils.make_sure_only_one_toggle_is_on(["online_sep", "online_attr_sep", "online_status_sep", "online_visit_sep"], "online_sep"))

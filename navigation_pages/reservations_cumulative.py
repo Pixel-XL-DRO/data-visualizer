@@ -9,12 +9,6 @@ import queries
 import utils
 import reservations_cumulative_sidebar
 import reservations_cumulative_queries
-def determine_status(row):
-  if row['is_cancelled']:
-    return 'Anulowane'
-  elif not row['is_payed']:
-    return 'Zrealizowane nieopłacone'
-  return 'Zrealizowane'
 
 with st.spinner("Inicjalizacja...", show_time=True):
   df = queries.get_initial_data()
@@ -44,3 +38,4 @@ st.plotly_chart(reservations_chart, use_container_width=True)
 reservations_chart = utils.create_chart_new(df_people, 'date', "Data", None, 'cumulative_people_taken', "Kumulujaca sie liczba osób", groupBy, 2 if groupBy else 4, "Liczba osób", False)
 st.plotly_chart(reservations_chart, use_container_width=True)
 
+utils.lazy_load_initials()

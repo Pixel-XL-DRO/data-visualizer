@@ -558,14 +558,14 @@ def get_order_items():
 @st.cache_data(ttl=60000)
 def get_initial_data():
   query = f"""
-    SELECT DISTINCT
+    SELECT
       l.city as city,
       l.street as street,
       dvt.attraction_group as attraction_group,
       dvt.name as visit_type,
       dc.language as language,
-      ecr.start_date as start_date,
-      ecr.booked_date as booked_date
+      MIN(ecr.start_date) as start_date,
+      MIN(ecr.booked_date) as booked_date
     FROM
       reservation_data.event_create_reservation ecr
     JOIN
@@ -579,6 +579,12 @@ def get_initial_data():
       ON ecr.visit_type_id = dvt.id
     WHERE
       ecr.is_cancelled = FALSE
+    GROUP BY
+      l.city,
+      l.street,
+      dvt.attraction_group,
+      dvt.name,
+      dc.language  
   """
 
   rows = run_sandbox_query(query)
@@ -588,7 +594,7 @@ def get_initial_data():
 def get_vouchers_initial_data():
   query = f"""
     SELECT DISTINCT
-      voucher_creation_date,
+      MIN(voucher_creation_date) as voucher_creation_date,
       voucher_name,
       location.city,
       location.street
@@ -598,6 +604,10 @@ def get_vouchers_initial_data():
       vouchers_data.dim_location location
     ON
       voucher.dim_location_id = location.id
+    GROUP BY
+      voucher_name,
+      location.city,
+      location.street  
   """
 
   rows = run_sandbox_query(query)
@@ -606,8 +616,8 @@ def get_vouchers_initial_data():
 @st.cache_data(ttl=60000)
 def get_nps_initial_data():
   query = f"""
-    SELECT DISTINCT
-      nps.date,
+    SELECT
+      MIN(nps.date) AS date,
       location.city,
       location.street
     FROM
@@ -616,6 +626,9 @@ def get_nps_initial_data():
       performance_data.dim_location location
     ON
       nps.dim_location_id = location.id
+    GROUP BY
+      location.city,
+      location.street      
   """
 
   rows = run_performance_review_query(query)
@@ -624,9 +637,9 @@ def get_nps_initial_data():
 @st.cache_data(ttl=60000)
 def get_reviews_initial_data():
   query = """
-    SELECT DISTINCT
+    SELECT 
       ratings.value AS rating,
-      ratings.create_time AS create_time,
+      MIN(ratings.create_time) AS create_time,
       dim_location.address AS address,
       dim_location.locality AS city,
     FROM
@@ -634,9 +647,13 @@ def get_reviews_initial_data():
     JOIN
       reviews.dim_location dim_location
       ON ratings.location_id = dim_location.name
+    GROUP BY
+      ratings.value,
+      dim_location.address,
+      dim_location.locality 
   """
   rows = run_reviews_query(query)
-  df = pd.DataFrame(rows, columns=['location_id', 'rating', 'create_time', 'address', 'city'])
+  df = pd.DataFrame(rows, columns=['rating', 'create_time', 'address', 'city'])
   return df
 
 @st.cache_data(ttl=6000)
@@ -663,19 +680,24 @@ def get_voucher_data():
 @st.cache_data(ttl=60000)
 def get_dotypos_initial_data():
   query = f"""
-    SELECT DISTINCT
-      o.creation_date,
+    SELECT
+      MAX(o.creation_date) AS max_creation_date,
+      MIN(o.creation_date) AS min_creation_date,
       o.status,
       l.city,
-      l.street,
+      l.street
     FROM
       POS_system_data.order o
     JOIN
       POS_system_data.dim_location l
     ON
-      o.dim_location_id = l.id  
+      o.dim_location_id = l.id
     WHERE
-      DATE(o.creation_date) >= DATE("2025-02-01") -- START OF DOTYPOS  
+      DATE(o.creation_date) >= DATE("2025-02-01") -- START OF DOTYPOS
+    GROUP BY
+      o.status,
+      l.city,
+      l.street
   """
 
   query_items = f"""
@@ -690,7 +712,7 @@ def get_dotypos_initial_data():
   rows = run_query(query)
   rows_items = run_query(query_items)
 
-  df = pd.DataFrame(rows)
+  df_dotypos = pd.DataFrame(rows)
   df_items = pd.DataFrame(rows_items)
 
-  return df, df_items
+  return df_dotypos, df_items

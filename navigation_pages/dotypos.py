@@ -72,13 +72,13 @@ with tab3:
     tab_three()
 
 with tab4:
-    
+
     @st.fragment
     def tab_four():
         col1, col2 = st.columns(2)
 
-        min_date = df['creation_date'].min()
-        max_date = df['creation_date'].max()
+        min_date = df['min_creation_date'].min()
+        max_date = df['max_creation_date'].max()
         with col1:
             current_period_start = st.date_input('Od kiedy', value=min_date, min_value=min_date, max_value=max_date - timedelta(days=1)) # first of february is the date we fully adapted dotypos
 
@@ -86,7 +86,7 @@ with tab4:
             current_period_end = st.date_input('Do kiedy', value=max_date +  + timedelta(days=1), min_value=min_date + timedelta(days=1), max_value=max_date +  + timedelta(days=1))
 
         items = st.multiselect("Produkty", df_items['name'].unique(), default=None)
-        
+
         current_period_start = pd.to_datetime(current_period_start)
         current_period_end = pd.to_datetime(current_period_end)
 
@@ -102,5 +102,7 @@ with tab4:
         df_sold_items
 
         utils.download_button(df_sold_items, "produkty")
-    
+
     tab_four()
+
+utils.lazy_load_initials()

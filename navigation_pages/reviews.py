@@ -182,7 +182,7 @@ def reviews_table():
     "Wybierz zakres ocen",
     min_value=0,
     max_value=10,
-    value=(0, 8),
+    value=(0, 10),
     step=1,
     width=200
   )
@@ -193,3 +193,5 @@ def reviews_table():
   st.table(df_reviews_filtered)
 
 reviews_table()
+
+utils.lazy_load_initials()

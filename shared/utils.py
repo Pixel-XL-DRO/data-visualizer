@@ -2,9 +2,9 @@ import streamlit as st
 import altair as alt
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
+import queries
 
 def create_chart_new(data, x_axis_type, x_axis_label, points_y, line_y, y_axis_label, colorBy, lineStrokeWidth, line_label, show_notes):
   fig = None
@@ -293,3 +293,17 @@ def run_in_parallel(*funcs):
 
 def format_array_for_query(array):
   return f"IN {tuple(array)}" if len(array) > 1 else f"= '{array[0]}'"
+
+def lazy_load_initials():
+  
+    def load():
+      _ = run_in_parallel(
+        (queries.get_initial_data, ()),
+        (queries.get_notes, ()),
+        (queries.get_dotypos_initial_data, ()),
+        (queries.get_reviews_initial_data, ()),
+        (queries.get_nps_initial_data, ()),
+        (queries.get_vouchers_initial_data, ()),
+      )
+    with st.spinner("Pobieranie danych w tle..."):
+      load()

@@ -31,7 +31,7 @@ def filter_data(df):
       moving_average_toggle = st.checkbox('Pokazuj', key="t1", value=True, on_change=lambda:utils.chain_toggle_off("t1", "t2","t7"))
       show_only_moving_average = st.checkbox('Pokazuj tylko srednia kroczaca', key="t2", value=False, on_change=lambda:utils.chain_toggle_on("t2", "t1"))
       moving_average_days = st.slider('Ile dni', 1, 30, 7)
-    with st.expander("Filtry"):
+    with st.expander("Filtry", expanded=True):
       with st.container(border=True):
         city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
         seperate_cities = st.checkbox('Rozdziel miasta', key="t3", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t3"))
@@ -71,7 +71,7 @@ def filter_data(df):
       elif time_range == '3 lat':
         start_date = end_date - timedelta(days=1095)
       elif time_range == 'Od poczatku':
-        min_date = df['booked_date'].min()
+        min_date = df[x_axis_type].min()
         start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
     else:
       start_date = datetime.combine(start_date, datetime.min.time())

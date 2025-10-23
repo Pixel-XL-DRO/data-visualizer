@@ -84,3 +84,5 @@ with tab2:
         st.altair_chart(reservations_chart, use_container_width=True)
 
     tab_two()
+
+utils.lazy_load_initials()

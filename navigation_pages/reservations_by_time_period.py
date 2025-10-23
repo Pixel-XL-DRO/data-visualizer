@@ -13,13 +13,6 @@ import utils
 import reservations_by_time_period_sidebar
 import reservations_by_time_period_queries
 
-def determine_status(row):
-  if row['is_cancelled']:
-    return 'Anulowane'
-  elif not row['is_payed']:
-    return 'Zrealizowane nieopłacone'
-  return 'Zrealizowane'
-
 with st.spinner("Inicjalizacja...", show_time=True):
   df = queries.get_initial_data()
 
@@ -67,3 +60,5 @@ st.altair_chart(boardhours_taken_chart, use_container_width=True)
 st.text("Średnia liczba osób w danej grupie czasowej")
 reservations_chart = utils.create_bar_chart(df_people, 'period', group_dates_by, 'avg_people', 'Liczba użytkowników', None, df_people['current_period'][0])
 st.altair_chart(reservations_chart, use_container_width=True)
+
+utils.lazy_load_initials()

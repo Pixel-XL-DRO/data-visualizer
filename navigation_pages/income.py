@@ -12,15 +12,16 @@ import auth
 import extra_streamlit_components as stx
 
 
-with st.spinner():
-    df = queries.get_reservation_data()
-    _, df_dotypos = queries.get_order_items()
-    df_voucher = queries.get_voucher_data()
+with st.spinner("Ładowanie danych...", show_time=True):
+    df, (_, df_dotypos), df_voucher = utils.run_in_parallel(
+        (queries.get_reservation_data, ()),
+        (queries.get_order_items, ()),
+        (queries.get_voucher_data, ()),
+    )
 
-df = auth.filter_locations(df)
-df_dotypos = auth.filter_locations(df_dotypos)
-df_voucher = auth.filter_locations(df_voucher)
-
+    df = auth.filter_locations(df)
+    df_dotypos = auth.filter_locations(df_dotypos)
+    df_voucher = auth.filter_locations(df_voucher)
 
 def render_online_view(df):
     (df, group_by, show_only_moving_average, moving_average_days, moving_average_toggle, group_dates_by, start_date, end_date, x_axis) = income_sidebar.filter_online_data(df)
@@ -124,3 +125,5 @@ elif current_tab_id == '3':
     render_voucher_view(df_voucher)
 elif current_tab_id == '4':
     render_total_view(df, df_dotypos)
+
+utils.lazy_load_initials()

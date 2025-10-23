@@ -2,10 +2,8 @@ import sys
 sys.path.append("shared")
 
 from datetime import datetime, timedelta
-import utils
 import streamlit as st
 import pandas as pd
-import numpy as np
 
 def filter_data(df):
   start_date = None
@@ -44,7 +42,5 @@ def filter_data(df):
         start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
-
-
 
     return (start_date, end_date, rating_to_show, location_checkboxes)

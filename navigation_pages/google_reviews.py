@@ -35,3 +35,5 @@ with tab2:
 
   reviews_chart = utils.create_bar_chart(df_daily, 'day', "Data", 'count', "Liczba ocen", None)
   st.altair_chart(reviews_chart, use_container_width=True)
+
+utils.lazy_load_initials()

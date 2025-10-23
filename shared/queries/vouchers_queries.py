@@ -4,6 +4,9 @@ from queries import run_query
 
 def get_vouchers_count(since_when, end_when, cities):
 
+  if not cities:  
+    return pd.DataFrame(columns=["count", "name"])
+
   cities_condition = format_array_for_query(cities)
 
   query = f"""
