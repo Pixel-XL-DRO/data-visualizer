@@ -102,7 +102,8 @@ def render_plan4u_view(
     minutes_multiplier = 1 if datetime_slot.minute > 0 and time_taken / 60 != 1 else 0
 
     hour_key = str(f'{hour}.{minutes_multiplier * int(time_taken / 60 * 10)}')
-    hours_map[str(date)][hour_key] += slots_taken
+    if hour_key in hours_map[str(date)]:
+      hours_map[str(date)][hour_key] += slots_taken  
   heatmap_data = []
 
   for start_date_key, hours_data in hours_map.items():
