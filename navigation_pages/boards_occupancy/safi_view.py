@@ -106,9 +106,7 @@ def render_safi_view(
 
     while (time_taken > 0):
       hour_key = str(f'{hour}.{minutes_multiplier * int(minutes / 60 * 10)}')
-
-      if hour_key in hours_map[str(date)]:
-        hours_map[str(date)][hour_key] += slots_taken
+      hours_map[str(date)][hour_key] += slots_taken
 
       time_taken -= time_unit_in_minutes
 

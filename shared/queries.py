@@ -75,7 +75,7 @@ def get_reviews():
   df = pd.DataFrame(rows, columns=['location_id', 'rating', 'create_time', 'address', 'city'])
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_locations_data():
   query = """
     SELECT
@@ -92,7 +92,7 @@ def get_locations_data():
 
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_historical_location_hours_availability():
   query = """
     SELECT
@@ -110,7 +110,7 @@ def get_historical_location_hours_availability():
 
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_historical_location_boards_availability():
   query = """
     SELECT
@@ -127,7 +127,7 @@ def get_historical_location_boards_availability():
 
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_visit_types_data():
   query = """
     SELECT
@@ -143,7 +143,7 @@ def get_visit_types_data():
 
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_historical_visit_type_availability():
   query = """
     SELECT
@@ -161,7 +161,7 @@ def get_historical_visit_type_availability():
 
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_slots_occupancy():
   query = """
     SELECT
@@ -185,7 +185,7 @@ def refresh_data_editor_data():
   get_historical_location_boards_availability.clear()
   get_historical_visit_type_availability.clear()
   get_notes.clear()
-
+@st.cache_data(ttl=28800)
 def add_historical_location_hours_availability(location_id, since_when, day_of_week, number_of_hours, starting_hour):
   query = """
       UPDATE
@@ -227,7 +227,7 @@ def add_historical_location_hours_availability(location_id, since_when, day_of_w
   )
   run_query(query, job_config)
   get_historical_location_hours_availability.clear()
-
+@st.cache_data(ttl=28800)
 def add_historical_location_boards_availability(location_id, since_when, number_of_boards, time_unit_in_hours):
   query = """
       UPDATE
@@ -266,6 +266,7 @@ def add_historical_location_boards_availability(location_id, since_when, number_
   run_query(query, job_config)
   get_historical_location_boards_availability.clear()
 
+@st.cache_data(ttl=28800)
 def add_historical_visit_type_availability(visit_type_id, since_when, number_of_boards_per_time_unit, duration_in_time_units):
   query = """
       UPDATE
@@ -304,7 +305,7 @@ def add_historical_visit_type_availability(visit_type_id, since_when, number_of_
   run_query(query, job_config)
   get_historical_visit_type_availability.clear()
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_reservation_data():
   query = """
     SELECT
@@ -438,7 +439,7 @@ def mock_price_and_people(day_of_week, visit_type, city, additional_items_cost, 
     return (max((2899 + additional_items_cost), current_price), 50)
   return (current_price, current_number_of_people)
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_notes():
   query = """
     SELECT
@@ -511,7 +512,7 @@ def get_performance_reviews():
   df = pd.DataFrame(rows, columns=['reservationId', 'feedback', 'score', 'city', 'date'])
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_order_items():
   query = """
     SELECT
