@@ -48,7 +48,7 @@ def get_reservations_cumulative(date_type, since_when, end_date, groupBy, cities
         AND language {language_condition}
         AND dvt.name {visit_type_condition}
         AND dvt.attraction_group {attraction_condition}
-        AND city {cities_condition}
+        AND street {cities_condition}
         AND CASE
             WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
             WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
@@ -81,7 +81,11 @@ ORDER BY
   end_date = end_date.date()
 
   df = df[df['date'] >= since_when]
-  df = df[df['date'] < end_date]
+  df = df[df['date'] <= end_date]
+
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location) 
+
 
   return df
 
@@ -138,7 +142,7 @@ def get_reservations_boardhours_cumulative(date_type, since_when, end_date, grou
         AND language {language_condition}
         AND dvt.name {visit_type_condition}
         AND dvt.attraction_group {attraction_condition}
-        AND city {cities_condition}
+        AND street {cities_condition}
         AND CASE
             WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
             WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
@@ -176,7 +180,10 @@ ORDER BY
   end_date = end_date.date()
 
   df = df[df['date'] >= since_when]
-  df = df[df['date'] < end_date]
+  df = df[df['date'] <= end_date]
+
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location) 
 
   return df
 
@@ -273,7 +280,7 @@ def get_reservations_people_cumulative(date_type, since_when, end_date, groupBy,
         AND language {language_condition}
         AND dvt.name {visit_type_condition}
         AND dvt.attraction_group {attraction_condition}
-        AND city {cities_condition}
+        AND street {cities_condition}
         AND CASE
             WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
             WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
@@ -311,7 +318,10 @@ ORDER BY
   end_date = end_date.date()
 
   df = df[df['date'] >= since_when]
-  df = df[df['date'] < end_date]
+  df = df[df['date'] <= end_date]
+
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location) 
 
   return df
 

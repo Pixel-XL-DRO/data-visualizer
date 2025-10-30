@@ -4,7 +4,7 @@ from queries import run_query
 
 def get_vouchers_count(since_when, end_when, cities):
 
-  if not cities:  
+  if cities is None or len(cities) == 0:
     return pd.DataFrame(columns=["count", "name"])
 
   cities_condition = format_array_for_query(cities)
@@ -20,7 +20,7 @@ def get_vouchers_count(since_when, end_when, cities):
     ON
       voucher.dim_location_id = location.id
     WHERE
-      location.city {cities_condition}
+      location.street {cities_condition}
       AND DATE(voucher_creation_date) >= DATE(@since_when)
       AND DATE(voucher_creation_date) < DATE(@end_when)
     GROUP BY

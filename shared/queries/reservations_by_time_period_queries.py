@@ -131,7 +131,7 @@ def get_reservations_by_time_period(date_type, since_when, end_when, status, cit
       END {status_condition}
       AND dc.language {language_condition}
       AND dvt.name {visit_type_condition}
-      AND dl.city {cities_condition}
+      AND dl.street {cities_condition}
       AND dvt.attraction_group {attraction_condition}
       {optional_where}
     GROUP BY {optional_groping} period
@@ -293,7 +293,7 @@ def get_boardhours_by_time_period(date_type, since_when, end_when, status, citie
       END {status_condition}
       AND dc.language {language_condition}
       AND dvt.name {visit_type_condition}
-      AND dl.city {cities_condition}
+      AND dl.street {cities_condition}
       AND dvt.attraction_group {attraction_condition}
       {optional_where}
     GROUP BY {optional_groping} period
@@ -492,7 +492,7 @@ def get_people_by_time_period(date_type, since_when, end_when, status, cities, l
       END {status_condition}
       AND dc.language {language_condition}
       AND dvt.name {visit_type_condition}
-      AND dl.city {cities_condition}
+      AND dl.street {cities_condition}
       AND dvt.attraction_group {attraction_condition}
       {optional_where}
     GROUP BY {optional_groping} period

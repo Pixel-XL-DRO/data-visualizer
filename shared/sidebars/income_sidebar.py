@@ -16,6 +16,8 @@ def ensure_status():
 def filter_online_data(df):
     years_possible = list(range(2022, datetime.now().year + 1))
 
+    df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
+
     with st.sidebar:
 
         group_dates_by = st.selectbox('Wybierz grupowanie po dacie', ['Godzina', 'Dzień tygodnia', 'Tydzien roku', 'Dzień miesiaca', 'Miesiac', 'Rok'], index=1, key='online_grouping')
@@ -37,7 +39,7 @@ def filter_online_data(df):
 
         with st.expander("Filtry", expanded=True):
             with st.container(border=True):
-                cities = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique(), key="online_cities")
+                cities = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique(), key="online_cities")
                 separate_cities = st.checkbox('Rozdziel miasta', key="online_sep", on_change=lambda: utils.make_sure_only_one_toggle_is_on(["online_sep", "online_attr_sep", "online_status_sep", "online_visit_sep"], "online_sep"))
 
             with st.container(border=True):
@@ -55,7 +57,9 @@ def filter_online_data(df):
                 ms1 = st.multiselect('Typy wizyty', np.concatenate([df['visit_type'].unique(), np.array(["Wszystkie"])]), default="Wszystkie", on_change=ensure_status, key="online_ms1")
                 separate_visit_types = st.checkbox('Rozdziel typy wizyty', key="online_visit_sep", on_change=lambda: utils.make_sure_only_one_toggle_is_on(["online_sep", "online_attr_sep", "online_status_sep", "online_visit_sep"], "online_visit_sep"))
 
-            group_by = 'city' if separate_cities else 'attraction_group' if separate_attractions else 'status' if separate_status else 'visit_type' if separate_visit_types else None
+            group_by = 'street' if separate_cities else 'attraction_group' if separate_attractions else 'status' if separate_status else 'visit_type' if separate_visit_types else None
+
+            cities = df['street'][df['location'].isin(cities)].unique()
 
     def determine_status(row):
         if row['is_cancelled']:
@@ -67,14 +71,11 @@ def filter_online_data(df):
 
     df['status'] = df.apply(determine_status, axis=1)
     df = df[df['status'].isin(status)]
-    df = df[df['city'].isin(cities)]
+    df = df[df['street'].isin(cities)]
     df = df[df['language'].isin(languages)]
     df = df[df['attraction_group'].isin(attractions)]
     if "Wszystkie" not in ms1:
         df = df[df['visit_type'].isin(ms1)]
-
-    # df['booked_date'] = pd.to_datetime(df['booked_date']).dt.tz_localize(None)
-    # df = df[(df['booked_date'] >= start) & (df['booked_date'] <= end)]
 
     if time_range == 'Od poczatku':
         start = pd.to_datetime(df[date_type]).dt.tz_localize(None).min()
@@ -92,6 +93,8 @@ def filter_online_data(df):
 def filter_pos_data(df_dotypos):
     years_possible = list(range(2025, datetime.now().year + 1))
 
+    df_dotypos['location'] = df_dotypos['street'].map(utils.street_to_location).fillna(df_dotypos['street'])
+
     with st.sidebar:
         group_dates_by = st.selectbox('Wybierz grupowanie po dacie',
                                       ['Godzina', 'Dzień tygodnia', 'Tydzien roku', 'Dzień miesiaca', 'Miesiac', 'Rok'],
@@ -108,14 +111,12 @@ def filter_pos_data(df_dotypos):
 
         with st.expander("Filtry"):
             with st.container(border=True):
-                cities = st.multiselect("Miasta", df_dotypos['city'].unique(), default=df_dotypos['city'].unique(), key="pos_cities")
+                cities = st.multiselect("Miasta", df_dotypos['location'].unique(), default=df_dotypos['location'].unique(), key="pos_cities")
                 separate_cities = st.checkbox('Rozdziel miasta', key="pos_sep")
 
 
-    # df_dotypos['creation_date'] = pd.to_datetime(df_dotypos['creation_date']).dt.tz_localize(None)
-    # df_dotypos = df_dotypos[(df_dotypos['creation_date'] >= start) & (df_dotypos['creation_date'] <= end)]
-    df_dotypos = df_dotypos[df_dotypos['city'].isin(cities)]
-
+    cities = df_dotypos['street'][df_dotypos['location'].isin(cities)].unique()
+    df_dotypos = df_dotypos[df_dotypos['street'].isin(cities)]
     if time_range == 'Od poczatku':
         start = pd.to_datetime(df_dotypos['creation_date']).dt.tz_localize(None).min()
         end = pd.to_datetime(df_dotypos['creation_date']).dt.tz_localize(None).max()
@@ -132,6 +133,8 @@ def filter_pos_data(df_dotypos):
 def filter_total_data(df, df_dotypos):
     years_possible = list(range(2022, datetime.now().year + 1))
 
+    df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
+
     with st.sidebar:
         group_dates_by = st.selectbox('Wybierz grupowanie po dacie', ['Godzina', 'Dzień tygodnia', 'Tydzien roku', 'Dzień miesiaca', 'Miesiac', 'Rok'],index=1, key='total_grouping')
 
@@ -145,7 +148,7 @@ def filter_total_data(df, df_dotypos):
 
         with st.expander("Filtry"):
             with st.container(border=True):
-                cities = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique(), key="total_cities")
+                cities = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique(), key="total_cities")
                 separate_cities = st.checkbox('Rozdziel miasta', key="total_sep")
             with st.container(border=True):
                 status = st.multiselect("Status", ["Zrealizowane", "Anulowane", "Zrealizowane nieopłacone"], default=["Zrealizowane", "Zrealizowane nieopłacone"], key="total_status")
@@ -159,16 +162,18 @@ def filter_total_data(df, df_dotypos):
         else:
             return 'Zrealizowane'
 
+    cities = df['street'][df['location'].isin(cities)].unique()
+
     df['status'] = df.apply(determine_status, axis=1)
     df = df[df['status'].isin(status)]
-    df = df[df['city'].isin(cities)]
+    df = df[df['street'].isin(cities)]
 
     df['booked_date'] = pd.to_datetime(df['booked_date']).dt.tz_localize(None)
     # df = df[(df['booked_date'] >= start) & (df['booked_date'] <= end)]
 
     df_dotypos['creation_date'] = pd.to_datetime(df_dotypos['creation_date']).dt.tz_localize(None)
     # df_dotypos = df_dotypos[(df_dotypos['creation_date'] >= start) & (df_dotypos['creation_date'] <= end)]
-    df_dotypos = df_dotypos[df_dotypos['city'].isin(cities)]
+    df_dotypos = df_dotypos[df_dotypos['street'].isin(cities)]
 
     if time_range == 'Od poczatku':
         start = pd.to_datetime(df['booked_date']).dt.tz_localize(None).min()
@@ -184,6 +189,8 @@ def filter_total_data(df, df_dotypos):
 def filter_voucher_data(df_voucher):
     years_possible = list(range(2023, datetime.now().year + 1))
 
+    df_voucher['location'] = df_voucher['street'].map(utils.street_to_location).fillna(df_voucher['street'])
+
     with st.sidebar:
         group_dates_by = st.selectbox('Wybierz grupowanie po dacie', [ 'Dzień tygodnia', 'Tydzien roku', 'Dzień miesiaca', 'Miesiac', 'Rok'],index=1, key='voucher_grouping')
 
@@ -197,11 +204,11 @@ def filter_voucher_data(df_voucher):
 
         with st.expander("Filtry"):
             with st.container(border=True):
-                cities = st.multiselect("Miasta", df_voucher['city'].unique(), default=df_voucher['city'].unique(), key="voucher_cities")
+                cities = st.multiselect("Miasta", df_voucher['location'].unique(), default=df_voucher['location'].unique(), key="voucher_cities")
                 separate_cities = st.checkbox('Rozdziel miasta', key="voucher_sep")
 
-
-    df_voucher = df_voucher[df_voucher['city'].isin(cities)]
+    cities = df_voucher['street'][df_voucher['location'].isin(cities)].unique()
+    df_voucher = df_voucher[df_voucher['street'].isin(cities)]
 
     if time_range == 'Od poczatku':
         start = pd.to_datetime(df_voucher['creation_date']).dt.tz_localize(None).min()

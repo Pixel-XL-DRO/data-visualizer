@@ -611,7 +611,7 @@ def get_vouchers_initial_data():
       location.street  
   """
 
-  rows = run_sandbox_query(query)
+  rows = run_query(query)
   return pd.DataFrame(rows)
 
 @st.cache_data(ttl=60000)

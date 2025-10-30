@@ -21,6 +21,8 @@ def filter_data(df):
   start_date = None
   end_date = None
 
+  df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
+
   with st.sidebar:
     x_axis_type = st.selectbox('Wybierz rodzaj daty', ['Data stworzenia', 'Data rozpoczecia'])
     time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku', "Przedział"], index=2)
@@ -35,7 +37,7 @@ def filter_data(df):
       show_notes = st.checkbox('Pokazuj notatki', key="t7", value=False, on_change=lambda:utils.chain_toggle_on("t7","t1","t2"))
     with st.expander("Filtry", expanded=True):
       with st.container(border=True):
-        city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
+        city_checkboxes = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique())
         seperate_cities = st.checkbox('Rozdziel miasta', key="t3", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t3"))
       language_checkboxes = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique())
       with st.container(border=True):
@@ -77,13 +79,13 @@ def filter_data(df):
         start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
-    cities = df['city'][df['city'].isin(city_checkboxes)].unique()
+    cities = df['street'][df['location'].isin(city_checkboxes)].unique()
     language = df['language'][df['language'].isin(language_checkboxes)].unique()
     visit_types = df['visit_type'].unique() if "Wszystkie" in visit_type_groups_checkboxes else df['visit_type'][df['visit_type'].isin(visit_type_groups_checkboxes)].unique()
 
     moving_average_days -= 1 # sql index starts from 0 so we have to subtract 1
 
-    groupBy = 'city' if seperate_cities else 'attraction_group' if seperate_attractions else 'status' if seperate_status else 'visit_type' if seperate_visit_types else None
+    groupBy = 'street' if seperate_cities else 'attraction_group' if seperate_attractions else 'status' if seperate_status else 'visit_type' if seperate_visit_types else None
 
     return (x_axis_type, moving_average_toggle,
       show_only_moving_average, moving_average_days,

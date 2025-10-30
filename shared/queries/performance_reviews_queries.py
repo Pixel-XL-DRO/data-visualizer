@@ -21,7 +21,7 @@ def get_reviews_count(since_when, end_when, cities):
     WHERE
       DATE(date) >= DATE(@since_when)
       AND DATE(date) < DATE(@end_when)
-      AND l.city {cities_condition}
+      AND l.street {cities_condition}
     GROUP BY
       r.score
   """
@@ -44,7 +44,7 @@ def get_performance_reviews(since_when, end_when, cities):
   query = f"""
     SELECT
       review.date as Data,
-      location.city as Miasto,
+      location.street as Miasto,
       review.score as Ocena,
       review.feedback as Feedback,
     FROM
@@ -56,7 +56,7 @@ def get_performance_reviews(since_when, end_when, cities):
     WHERE
       DATE(date) >= DATE(@since_when)
       AND DATE(date) < DATE(@end_when)
-      AND location.city {cities_condition}
+      AND location.street {cities_condition}
       AND review.feedback IS NOT NULL
     ORDER BY
       review.date DESC
@@ -71,6 +71,9 @@ def get_performance_reviews(since_when, end_when, cities):
 
   rows = run_performance_review_query(query, job_config)
   df = pd.DataFrame(rows)
+
+  df['Miasto'] = df['Miasto'].replace(utils.street_to_location)   
+
   return df
 
 def get_cumulative_NPS(since_when, end_when, cities, groupBy):
@@ -99,7 +102,7 @@ def get_cumulative_NPS(since_when, end_when, cities, groupBy):
   ON
     review.dim_location_id = location.id
   WHERE
-    location.city {cities_condition}
+    location.street {cities_condition}
 ),
 DailyNPS AS (
   SELECT
@@ -142,6 +145,9 @@ ORDER BY
   df = df[df['date'] >= since_when]
   df = df[df['date'] < end_when]
 
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location) 
+
   return df
 def get_NPS(since_when, end_when, cities, moving_average_days, groupBy):
 
@@ -167,7 +173,7 @@ def get_NPS(since_when, end_when, cities, moving_average_days, groupBy):
   ON
     review.dim_location_id = location.id
   WHERE
-    location.city {cities_condition}
+    location.street {cities_condition}
     AND DATE(review.date) >= DATE(@since_when)
     AND DATE(review.date) < DATE(@end_when)
 ),
@@ -222,6 +228,9 @@ ORDER BY
 
   rows = run_performance_review_query(query, job_config)
   df = pd.DataFrame(rows)
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location) 
+
   return df
 
 def get_cumulative_count(since_when, end_when, cities):
@@ -232,7 +241,7 @@ def get_cumulative_count(since_when, end_when, cities):
     SELECT
   review.date AS Data,
   COUNT(review.score) OVER (
-    PARTITION BY location.city
+    PARTITION BY location.street
     ORDER BY review.date
     ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
   ) AS cumulative_count
@@ -243,7 +252,7 @@ JOIN
 ON
   review.dim_location_id = location.id
 WHERE
-  location.city {cities_condition}
+  location.street {cities_condition}
 ORDER BY
   review.date;
 
@@ -261,7 +270,7 @@ ORDER BY
 
   return df
 
-def get_monthly_nps(city, year):
+def get_monthly_nps(street, year):
 
   query = f"""
     WITH MonthlyCategorizedReviews AS (
@@ -280,7 +289,7 @@ def get_monthly_nps(city, year):
   ON
     review.dim_location_id = location.id
   WHERE
-    location.city = @city
+    location.street = @street
     AND EXTRACT(YEAR FROM review.date) = CAST(@year AS INT64)
 )
   SELECT
@@ -312,7 +321,7 @@ def get_monthly_nps(city, year):
   ON
     ecr.location_id = location.id
   WHERE
-    location.city = @city
+    location.street = @street
     AND EXTRACT(YEAR FROM ecr.booked_date) = CAST(@year AS INT64)
     AND CASE
       WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
@@ -328,7 +337,7 @@ def get_monthly_nps(city, year):
 
   job_config = bigquery.QueryJobConfig(
     query_parameters=[
-        bigquery.ScalarQueryParameter("city", "STRING", city),
+        bigquery.ScalarQueryParameter("street", "STRING", street),
         bigquery.ScalarQueryParameter("year", "STRING", year),
     ]
   )
@@ -338,7 +347,7 @@ def get_monthly_nps(city, year):
 
   df = pd.DataFrame(rows)
   df_count = pd.DataFrame(rows2)
-
+  
   df['Procent ocenionych wizyt'] = round((df['count'] / df_count['count']) * 100, 2)
   df['Miesiac'] = df['month'].map(utils.get_month_from_month_number)
   df['Liczba ocen'] = df['count']
@@ -367,7 +376,7 @@ def get_nps_metric(metric_change_days, metric_display_percent, cities):
   ON
     review.dim_location_id = location.id
   WHERE
-    location.city {cities_condition}
+    location.street {cities_condition}
 ),
 DailyNPS AS (
   SELECT
@@ -406,7 +415,7 @@ FROM (
     reservation_data.dim_location AS location
     ON ecr.location_id = location.id
   WHERE
-    location.city {cities_condition}
+    location.street {cities_condition}
     AND ecr.start_date >= TIMESTAMP('2025-05-11')
     AND ecr.start_date <= CURRENT_TIMESTAMP()
     AND ecr.is_cancelled = FALSE
@@ -448,7 +457,7 @@ WITH DailyCategorizedReviews AS (
   SELECT
     DISTINCT reservationId,
     DATE(review.date) AS review_day,
-    location.city,
+    location.street,
     CASE
       WHEN review.score BETWEEN 0 AND 6 THEN 'Detractor'
       WHEN review.score BETWEEN 7 AND 8 THEN 'Passive'
@@ -460,48 +469,48 @@ WITH DailyCategorizedReviews AS (
     performance_data.dim_location location
     ON review.dim_location_id = location.id
   WHERE
-    location.city {cities_condition}
+    location.street {cities_condition}
 ),
 DailyNPS AS (
   SELECT
     DATE(review_day) AS date,
-    city,
+    street,
     COUNT(*) AS count,
     SUM(CASE WHEN category = 'Promoter' THEN 1 ELSE 0 END) AS promoters,
     SUM(CASE WHEN category = 'Detractor' THEN 1 ELSE 0 END) AS detractors
   FROM
     DailyCategorizedReviews
   GROUP BY
-    review_day, city
+    review_day, street
 ),
 CumulativeNPS AS (
   SELECT
     DATE(date) AS date,
-    city,
-    SUM(count) OVER (PARTITION BY city ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS count_cumsum,
+    street,
+    SUM(count) OVER (PARTITION BY street ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS count_cumsum,
     (
       (
-        SUM(promoters) OVER (PARTITION BY city ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
-        - SUM(detractors) OVER (PARTITION BY city ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+        SUM(promoters) OVER (PARTITION BY street ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+        - SUM(detractors) OVER (PARTITION BY street ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
       ) * 100.0
-      / SUM(count) OVER (PARTITION BY city ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+      / SUM(count) OVER (PARTITION BY street ORDER BY DATE(date) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
     ) AS nps_cumsum
   FROM
     DailyNPS
 ),
 DateRange AS (
   SELECT
-    city,
+    street,
     MIN(date) AS min_date,
     CURRENT_DATE() AS max_date
   FROM
     CumulativeNPS
   GROUP BY
-    city
+    street
 ),
 DateCityGrid AS (
   SELECT
-    city,
+    street,
     day AS date
   FROM
     DateRange,
@@ -511,7 +520,7 @@ DateCityGrid AS (
 -- Left join to cumulative data (some dates will be missing)
 Joined AS (
   SELECT
-    g.city,
+    g.street,
     g.date,
     c.count_cumsum,
     c.nps_cumsum
@@ -520,43 +529,43 @@ Joined AS (
   LEFT JOIN
     CumulativeNPS c
   ON
-    g.city = c.city
+    g.street = c.street
     AND g.date = c.date
 ),
 
 FilledForward AS (
   SELECT
-    city,
+    street,
     date,
     IFNULL(
       count_cumsum,
       LAST_VALUE(count_cumsum IGNORE NULLS)
-        OVER (PARTITION BY city ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+        OVER (PARTITION BY street ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
     ) AS count_cumsum,
     IFNULL(
       nps_cumsum,
       LAST_VALUE(nps_cumsum IGNORE NULLS)
-        OVER (PARTITION BY city ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+        OVER (PARTITION BY street ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
     ) AS nps_cumsum
   FROM
     Joined
 )
 SELECT
-  city,
+  street,
   date,
   count_cumsum,
   nps_cumsum
 FROM (
   SELECT
     *,
-    ROW_NUMBER() OVER (PARTITION BY city ORDER BY date DESC) AS rn
+    ROW_NUMBER() OVER (PARTITION BY street ORDER BY date DESC) AS rn
   FROM
     FilledForward
 )
 WHERE
   rn <= {metric_change_days + 1}
 ORDER BY
-  city,
+  street,
   date DESC;
 
   """
@@ -566,7 +575,7 @@ ORDER BY
   SELECT
     COUNT(DISTINCT ecr.id) AS count,
     DATE(ecr.start_date) AS date,
-    location.city AS city
+    location.street AS street
   FROM
     reservation_data.event_create_reservation ecr
   JOIN
@@ -574,20 +583,20 @@ ORDER BY
   ON
     ecr.location_id = location.id
   WHERE
-    location.city {format_array_for_query(cities)}
+    location.street {format_array_for_query(cities)}
     AND ecr.start_date >= TIMESTAMP("2025-05-11") -- START OF NPS
     AND ecr.start_date <= CURRENT_TIMESTAMP()
     AND ecr.is_cancelled = false
   GROUP BY
-    date, location.city
+    date, location.street
 ),
 
 cumulative_sum AS (
   SELECT
     date,
-    city,
+    street,
     SUM(count) OVER (
-      PARTITION BY city
+      PARTITION BY street
       ORDER BY date
       ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
     ) AS count_cumsum_res
@@ -596,7 +605,7 @@ cumulative_sum AS (
 ),
 date_city_grid AS (
   SELECT
-    city,
+    street,
     day AS date
   FROM
     UNNEST(GENERATE_DATE_ARRAY(
@@ -604,30 +613,30 @@ date_city_grid AS (
       CURRENT_DATE()
     )) AS day
   CROSS JOIN (
-    SELECT DISTINCT city FROM cumulative_sum
+    SELECT DISTINCT street FROM cumulative_sum
   )
 ),
 filled AS (
   SELECT
     g.date,
-    g.city,
+    g.street,
     c.count_cumsum_res
   FROM
     date_city_grid g
   LEFT JOIN
     cumulative_sum c
   ON
-    g.city = c.city AND g.date = c.date
+    g.street = c.street AND g.date = c.date
 ),
 filled_forward AS (
   SELECT
     date,
-    city,
+    street,
     IFNULL(
       count_cumsum_res,
       LAST_VALUE(count_cumsum_res IGNORE NULLS)
         OVER (
-          PARTITION BY city
+          PARTITION BY street
           ORDER BY date
           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
         )
@@ -637,12 +646,12 @@ filled_forward AS (
 )
 SELECT
   date,
-  city,
+  street,
   count_cumsum_res
 FROM
   filled_forward
 ORDER BY
-  city,
+  street,
   date DESC;
 
   """
@@ -666,46 +675,47 @@ ORDER BY
   df = df[df['date'].isin(dates_to_keep)]
   df_res = df_res[df_res['date'].isin(dates_to_keep)]
 
-  all_cities = pd.concat([df['city'], df_res['city']]).unique()
-
-  full_index = pd.MultiIndex.from_product([all_cities, dates_to_keep], names=['city', 'date'])
+  all_cities = pd.concat([df['street'], df_res['street']]).unique()
+  full_index = pd.MultiIndex.from_product([all_cities, dates_to_keep], names=['street', 'date'])
   full_df = pd.DataFrame(index=full_index).reset_index()
 
-  df = full_df.merge(df, on=['city', 'date'], how='left').fillna(0)
-  df_res = full_df.merge(df_res, on=['city', 'date'], how='left').fillna(0)
+  df = full_df.merge(df, on=['street', 'date'], how='left').fillna(0)
+  df_res = full_df.merge(df_res, on=['street', 'date'], how='left').fillna(0)
 
   merged_df = df.merge(
-    df_res[['date', 'city', 'count_cumsum_res']],
-    on=['date', 'city'],
+    df_res[['date', 'street', 'count_cumsum_res']],
+    on=['date', 'street'],
     how='inner'
   )
 
-  merged_df = merged_df.sort_values(["city", "date"])
+  merged_df = merged_df.sort_values(["street", "date"])
 
   merged_df["review_percent"] = round(merged_df["count_cumsum"] / merged_df["count_cumsum_res"] * 100, 2)
 
   if metric_display_percent:
-    merged_df["nps_change"] = merged_df.groupby("city")["nps_cumsum"].transform(
+    merged_df["nps_change"] = merged_df.groupby("street")["nps_cumsum"].transform(
         lambda x: ((x.diff() / x.shift(1)) * 100).round(2)
     )
-    merged_df["count_change"] = merged_df.groupby("city")["count_cumsum"].transform(
+    merged_df["count_change"] = merged_df.groupby("street")["count_cumsum"].transform(
         lambda x: ((x.diff() / x.shift(1)) * 100).round(2)
     )
-    merged_df["review_percent_change"] = merged_df.groupby("city")["review_percent"].transform(
+    merged_df["review_percent_change"] = merged_df.groupby("street")["review_percent"].transform(
         lambda x: ((x.diff() / x.shift(1)) * 100).round(2)
     )
   else:
-    merged_df["nps_change"] = merged_df.groupby("city")["nps_cumsum"].transform(
+    merged_df["nps_change"] = merged_df.groupby("street")["nps_cumsum"].transform(
         lambda x: x.diff().round(2)
     )
-    merged_df["count_change"] = merged_df.groupby("city")["count_cumsum"].transform(
+    merged_df["count_change"] = merged_df.groupby("street")["count_cumsum"].transform(
         lambda x: x.diff()
     )
-    merged_df["review_percent_change"] = merged_df.groupby("city")["review_percent"].transform(
+    merged_df["review_percent_change"] = merged_df.groupby("street")["review_percent"].transform(
         lambda x: x.diff().round(2)
     )
 
   merged_df = merged_df[merged_df["date"] == max_date].reset_index(drop=True)
+
+  merged_df['street'] = merged_df['street'].replace(utils.street_to_location) 
 
   return merged_df
 

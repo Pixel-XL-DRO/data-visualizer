@@ -307,3 +307,14 @@ def lazy_load_initials():
       )
     with st.spinner("Pobieranie danych w tle..."):
       load()
+
+street_to_location = {
+  "arkadia": "Warszawa, Arkadia",
+  "grunwaldzka": "Gdańsk, Grunwaldzka 472F",
+  "sokolska": "Katowice, Sokolska 31",
+  "swidnicka": "Wrocław, Świdnicka 12",
+  "swietego-marcina": "Poznań, Świety Marcin 46/50",
+  "lubicz": "Kraków, Lubicz 17A",
+  "ogrodowa": "Łódź, Ogrodowa 8",
+  "kijowska": "Warszawa, Kijowska 3",
+}       

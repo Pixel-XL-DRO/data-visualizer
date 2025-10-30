@@ -1,5 +1,5 @@
 import pandas as pd
-
+import utils
 def group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, grouping_field, start_date, end_date, x_axis='booked_date'):
     df_dotypos['brutto'] = pd.to_numeric(df_dotypos['brutto'], errors='coerce')
     df_dotypos['date'] = pd.to_datetime(df_dotypos['start_date']).dt.date
@@ -22,7 +22,7 @@ def group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, group
     if grouping_field:
 
 
-        if grouping_field != 'city':
+        if grouping_field != 'street':
 
             df_online = df.groupby(['date', grouping_field]).agg(
                 total_online_sum=('whole_cost_with_voucher', 'sum')
@@ -76,6 +76,11 @@ def group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, group
             df_total['total_reservations_sum_ma'] = df_total.groupby(grouping_field)['total_reservations_sum'].transform(
                 lambda x: x.rolling(moving_average_days, min_periods=1).mean()
             )
+
+            df_online['street'] = df_online['street'].replace(utils.street_to_location)
+            df_pos['street'] = df_pos['street'].replace(utils.street_to_location)
+            df_total['street'] = df_total['street'].replace(utils.street_to_location)
+            df_voucher_grouped['street'] = df_voucher_grouped['street'].replace(utils.street_to_location)
 
     else:
 

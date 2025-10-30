@@ -44,9 +44,11 @@ for location_id in df['location_id'].unique():
       st.error(f"location {location['city']} {location['street']} for {utils.map_day_of_week_number_to_string(day_of_week)} not associated with hours availability")
       st.stop()
 
-city_selection = st.selectbox('Wybierz miasto', df_locations['city'].unique())
+df_locations['location'] = df_locations['street'].map(utils.street_to_location).fillna(df_locations['street'])
+city_selection = st.selectbox('Wybierz miasto', df_locations['location'].unique())
+selected_city = df_locations['street'][df_locations['location'] == city_selection].iloc[0]
 
-if city_selection != "krakow" and city_selection != "lodz":
+if selected_city != "lubicz" and selected_city != "ogrodowa":
   plan4u_view.render_plan4u_view(
     df,
     df_locations,
@@ -55,7 +57,7 @@ if city_selection != "krakow" and city_selection != "lodz":
     df_location_boards_availability,
     df_visit_type_availability,
     df_slots_occupancy,
-    city_selection
+    selected_city
   )
 else:
   safi_view.render_safi_view(
@@ -66,7 +68,7 @@ else:
     df_location_boards_availability,
     df_visit_type_availability,
     df_slots_occupancy,
-    city_selection
+    selected_city
   )
 
 utils.lazy_load_initials()
