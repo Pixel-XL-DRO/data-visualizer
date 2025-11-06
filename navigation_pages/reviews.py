@@ -16,7 +16,7 @@ with st.spinner("Inicjalizacja...", show_time=True):
 
 (start_date, end_date, location_checkboxes, separate_cities, moving_average_toggle, show_only_moving_average, moving_average_days) = performance_reviews_sidebar.filter_data(df)
 
-groupBy = 'city' if separate_cities else None
+groupBy = 'street' if separate_cities else None
 
 with st.spinner("Ładowanie danych...", show_time=True):
 
@@ -38,7 +38,7 @@ with tab1:
       st.session_state.metric_change_days = 1
     if 'metric_display_percent' not in st.session_state:
       st.session_state.metric_display_percent = False
-      
+
     metric_change_days = st.session_state["metric_change_days"]
     metric_display_percent = st.session_state["metric_display_percent"]
 
@@ -102,18 +102,22 @@ with tab1:
 
         with nps_cities:
 
-          for city in df_metrics_by_city['city'].unique():
+          st.write("### NPS")
 
-            city_condition = df_metrics_by_city['city'] == city
+          for city in df_metrics_by_city['street'].unique():
+
+            city_condition = df_metrics_by_city['street'] == city
 
             nps_metric_city_help = f"Aktualna ocena NPS w mieście {city}. Zmiana dotyczy aktualnej oceny względem oceny {metric_change_days} dni wstecz"
             st.metric(label=f"{city.upper()} NPS ", value=round(df_metrics_by_city[city_condition]['nps_cumsum'].iloc[0], 2) ,delta=f"{df_metrics_by_city[city_condition]['nps_change'].iloc[0]}%" if metric_display_percent else df_metrics_by_city[city_condition]['nps_change'].iloc[0], help=nps_metric_city_help, delta_color="off" if df_metrics_by_city[city_condition]['nps_change'].iloc[0] == 0 else "normal")
 
         with count_cities:
 
-          for city in df_metrics_by_city['city'].unique():
+          st.write("### Liczba ocen")
 
-            city_condition = df_metrics_by_city['city'] == city
+          for city in df_metrics_by_city['street'].unique():
+
+            city_condition = df_metrics_by_city['street'] == city
 
             nps_metric_city_help = f"Aktualna liczba ocen w mieście {city}. Zmiana dotyczy aktualnej oceny względem oceny {metric_change_days} dni wstecz"
 
@@ -121,11 +125,13 @@ with tab1:
 
         with reviewed_cities:
 
-          for city in df_metrics_by_city['city'].unique():
+          st.write("### Procent ocenionych wizyt")
 
-            city_condition = df_metrics_by_city['city'] == city
+          for city in df_metrics_by_city['street'].unique():
 
-            nps_metric_city_help = f"Aktualna procent ocenionych wizyt w mieście {city}. Zmiana dotyczy aktualnej oceny względem oceny {metric_change_days} dni wstecz"
+            city_condition = df_metrics_by_city['street'] == city
+
+            nps_metric_city_help = f"Aktualny procent ocenionych wizyt w mieście {city}. Zmiana dotyczy aktualnej oceny względem oceny {metric_change_days} dni wstecz"
 
             st.metric(label=f"{city.upper()} PROCENT OCENIONYCH WIZYT", value=round(df_metrics_by_city[city_condition]['review_percent'].iloc[0], 2) ,delta=f"{df_metrics_by_city[city_condition]['review_percent_change'].iloc[0]}%" if metric_display_percent else df_metrics_by_city[city_condition]['review_percent_change'].iloc[0], help=nps_metric_city_help, delta_color="off" if df_metrics_by_city[city_condition]['review_percent_change'].iloc[0] == 0 else "normal")
       cities_view()
@@ -153,11 +159,15 @@ with tab4:
   @st.fragment
   def tab_three():
 
-    city = st.selectbox('Wybierz miasto', df['city'].unique(), index=0)
+    df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
+
+    city = st.selectbox('Wybierz miasto', df['location'].unique(), index=0)
     year = st.selectbox('Wybierz rok', df['date'].dt.year.unique(), index=0)
 
+    street = df['street'][df['location'] == city].iloc[0]
+
     with st.spinner("Ładowanie danych...", show_time=True):
-      df_monthly = performance_reviews_queries.get_monthly_nps(city, year)
+      df_monthly = performance_reviews_queries.get_monthly_nps(street, year)
 
     st.text("Ocena NPS w miesiacu w danym mieście")
     performance_bar_chart = utils.create_bar_chart(df_monthly, 'Miesiac', 'Miesiac', 'NPS', 'Wynik NPS', None, None, None, None, True)

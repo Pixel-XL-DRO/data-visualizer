@@ -49,7 +49,7 @@ def render_pos_view(df_dotypos):
         df_dotypos = df_dotypos[mask]
 
     (df_dotypos, separate_cities, show_only_moving_average, moving_average_days, moving_average_toggle, group_dates_by, start_date, end_date) = income_sidebar.filter_pos_data(df_dotypos)
-    groupBy = 'city' if separate_cities else None
+    groupBy = 'street' if separate_cities else None
 
     _, df_pos, _, _ = income_utils.group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, groupBy, start_date, end_date)
     df_by_weekday = income_utils.average_by_weekday(df, df_dotypos, df_voucher, groupBy, group_dates_by, start_date, end_date)
@@ -77,7 +77,7 @@ def render_total_view(df, df_dotypos):
         df_dotypos = df_dotypos[mask]
 
     (df, df_dotypos, separate_cities, show_only_moving_average, moving_average_days, moving_average_toggle, group_dates_by, start_date, end_date) = income_sidebar.filter_total_data(df, df_dotypos)
-    groupBy = 'city' if separate_cities else None
+    groupBy = 'street' if separate_cities else None
 
     _, _, df_total, _ = income_utils.group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, groupBy, start_date, end_date)
     df_by_weekday = income_utils.average_by_weekday(df, df_dotypos, df_voucher, groupBy, group_dates_by, start_date, end_date)
@@ -95,7 +95,7 @@ def render_total_view(df, df_dotypos):
 def render_voucher_view(df_voucher):
 
     (df_voucher, separate_cities, show_only_moving_average, moving_average_days, moving_average_toggle, group_dates_by, start_date, end_date) = income_sidebar.filter_voucher_data(df_voucher)
-    groupBy = 'city' if separate_cities else None
+    groupBy = 'street' if separate_cities else None
 
     _, _, _, df_voucher_grouped = income_utils.group_data_cumulative(df, df_dotypos, df_voucher, moving_average_days, groupBy, start_date, end_date)
     df_by_weekday = income_utils.average_by_weekday(df, df_dotypos, df_voucher, groupBy, group_dates_by, start_date, end_date)

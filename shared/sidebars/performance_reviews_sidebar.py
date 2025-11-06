@@ -8,6 +8,9 @@ import streamlit as st
 def filter_data(df):
   start_date = None
   end_date = None
+
+  df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
+
   with st.sidebar:
     with st.container(border=True):
       time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=6)
@@ -20,7 +23,7 @@ def filter_data(df):
 
     with st.expander("Filtry", expanded=True):
       with st.container(border=True):
-        location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
+        location_checkboxes = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique())
         separate_cities = st.checkbox('Rozdziel miasta')
         
     if end_date is None:
@@ -46,4 +49,6 @@ def filter_data(df):
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 
-    return (start_date, end_date, location_checkboxes, separate_cities, moving_average_toggle, show_only_moving_average, moving_average_days)
+    cities = df['street'][df['location'].isin(location_checkboxes)].unique()
+
+    return (start_date, end_date, cities, separate_cities, moving_average_toggle, show_only_moving_average, moving_average_days)

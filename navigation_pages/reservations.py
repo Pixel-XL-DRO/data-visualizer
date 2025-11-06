@@ -73,12 +73,15 @@ with tab1:
 with tab2:
     @st.fragment
     def tab_two():
-        city = st.selectbox('Wybierz miasto', df['city'].unique(), index=0)
+
+        df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
+        street = st.selectbox('Wybierz miasto', df['location'].unique(), index=0)
         period = st.selectbox('Wybierz okres', ['7 dni', '14 dni', '1 miesiaca', '2 miesiace'], index=1)
         period = {'7 dni': 7, '14 dni': 14, '1 miesiaca': 30, '2 miesiace': 60}[period]
+        street = df['street'][df['location'] == street].iloc[0]
 
         with st.spinner("Ładowanie danych...", show_time=True):
-            df_ahead_by_city = reservations_queries.get_days_ahead_by_city(x_axis_type, period, start_date, city)
+            df_ahead_by_city = reservations_queries.get_days_ahead_by_city(x_axis_type, period, start_date, street)
 
         reservations_chart = utils.create_bar_chart(df_ahead_by_city, 'days', 'Dni w przód', 'reservations', 'Liczba rezerwacji', None)
         st.altair_chart(reservations_chart, use_container_width=True)

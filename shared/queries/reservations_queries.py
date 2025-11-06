@@ -2,6 +2,7 @@ import pandas as pd
 from google.cloud import bigquery
 from queries import run_query
 import time
+import utils
 from datetime import datetime
 def get_reservations_count(date_type, since_when, moving_average_days, groupBy, cities, language, attraction_groups, status, visit_type_groups, notes=None):
 
@@ -51,7 +52,7 @@ def get_reservations_count(date_type, since_when, moving_average_days, groupBy, 
       AND language {language_condition}
       AND dvt.name {visit_type_condition}
       AND dvt.attraction_group {attraction_condition}
-      AND city {cities_condition}
+      AND street {cities_condition}
       AND CASE
         WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
         WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
@@ -95,6 +96,9 @@ def get_reservations_count(date_type, since_when, moving_average_days, groupBy, 
     notes["date"] = pd.to_datetime(notes["date"], utc=True)
     df["date"] = pd.to_datetime(df["date"], utc=True)
     df = df.merge(notes, how='left', on=['date', 'city'] if groupBy == 'city' else 'date')
+
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location) 
 
   return df
 
@@ -195,7 +199,7 @@ def get_people_count(date_type, since_when, moving_average_days, groupBy, cities
       AND DATE({date_type}) < DATE('{timestamp_now}')
       AND language {language_condition}
       AND dvt.name {visit_type_condition}
-      AND city {cities_condition}
+      AND street {cities_condition}
       AND dvt.attraction_group {attraction_condition}
       AND CASE
         WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
@@ -240,6 +244,9 @@ def get_people_count(date_type, since_when, moving_average_days, groupBy, cities
     notes["date"] = pd.to_datetime(notes["date"], utc=True)
     df["date"] = pd.to_datetime(df["date"], utc=True)
     df = df.merge(notes, how='left', on=['date', 'city'] if groupBy == 'city' else 'date')
+
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location)
 
   return df
 
@@ -301,7 +308,7 @@ def get_boardhours(date_type, since_when, moving_average_days, groupBy, cities, 
       AND DATE({date_type}) < DATE('{timestamp_now}')
       AND language {language_condition}
       AND dvt.name {visit_type_condition}
-      AND city {cities_condition}
+      AND street {cities_condition}
       AND dvt.attraction_group {attraction_condition}
       AND CASE
         WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
@@ -347,6 +354,9 @@ def get_boardhours(date_type, since_when, moving_average_days, groupBy, cities, 
     df["date"] = pd.to_datetime(df["date"], utc=True)
     df = df.merge(notes, how='left', on=['date', 'city'] if groupBy == 'city' else 'date')
 
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location)
+
   return df
 
 def get_mean_days_ahead(date_type, since_when,cities):
@@ -372,7 +382,7 @@ def get_mean_days_ahead(date_type, since_when,cities):
     AND
       ecr.deleted_at IS NULL
     AND
-      dl.city {cities_condition}
+      dl.street {cities_condition}
     GROUP BY
       dl.city
   """
@@ -388,7 +398,7 @@ def get_mean_days_ahead(date_type, since_when,cities):
 
   return df
 
-def get_days_ahead_by_city(date_type, period, since_when, city):
+def get_days_ahead_by_city(date_type, period, since_when, street):
   timestamp_now = datetime.fromtimestamp(time.time())
 
   query = f"""
@@ -406,7 +416,7 @@ def get_days_ahead_by_city(date_type, period, since_when, city):
     ON
       dl.id = ecr.location_id
     WHERE
-      dl.city = @city
+      dl.street = @street
     AND
       DATE_DIFF(DATE(ecr.start_date), DATE(ecr.booked_date), DAY) >= 0
     AND
@@ -424,7 +434,7 @@ def get_days_ahead_by_city(date_type, period, since_when, city):
   job_config = bigquery.QueryJobConfig(
     query_parameters=[
         bigquery.ScalarQueryParameter("since_when", "TIMESTAMP", since_when),
-        bigquery.ScalarQueryParameter("city", "STRING", city),
+        bigquery.ScalarQueryParameter("street", "STRING", street),
     ]
   )
 

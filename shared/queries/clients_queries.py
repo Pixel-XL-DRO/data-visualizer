@@ -3,10 +3,11 @@ import pandas as pd
 from google.cloud import bigquery
 from datetime import datetime
 import time
+import utils
 
-def get_retention_data(date_type, since_when, groupBy, cities, language, attraction_groups, status, visit_type_groups, notes=None):
+def get_retention_data(date_type, since_when, groupBy, streets, language, attraction_groups, status, visit_type_groups, notes=None):
 
-  cities_condition = format_array_for_query(cities)
+  streets_condition = format_array_for_query(streets)
   language_condition = format_array_for_query(language)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
@@ -22,11 +23,9 @@ def get_retention_data(date_type, since_when, groupBy, cities, language, attract
     groupBy_select = f", dvt.attraction_group AS {groupBy}"
   elif groupBy == "visit_type":
     groupBy_select = f", dvt.name AS {groupBy}"
-  elif groupBy == "city":
-    groupBy_select = f", dl.city AS {groupBy}"
-    groupBy_select2 = f", city AS {groupBy}"
-
-  timestamp_now = datetime.fromtimestamp(time.time())
+  elif groupBy == "street":
+    groupBy_select = f", dl.street AS {groupBy}"
+    groupBy_select2 = f", street AS {groupBy}"
 
   query = f"""
 WITH client_first_appearance AS (
@@ -85,7 +84,7 @@ reservations_with_client_type AS (
     dvt.id = ecr.visit_type_id
   WHERE
     ecr.deleted_at IS NULL
-    AND dl.city {cities_condition}
+    AND dl.street {streets_condition}
     AND dc.language {language_condition}
     AND dvt.name {visit_type_condition}
     AND dvt.attraction_group {attraction_condition}
@@ -145,8 +144,11 @@ ORDER BY
   )
   rows = run_query(query, job_config)
   df = pd.DataFrame(rows)
-
+  
   df['date'] = df.apply(lambda row: f"{int(row['year']) if pd.notna(row['year']) else ''} {row['month_name']}", axis=1)
+  
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location)
 
   return df
 

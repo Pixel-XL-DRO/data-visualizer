@@ -28,6 +28,7 @@ def filter_data(df):
   end_date = None
 
   years_possible = list(range(2022, datetime.now().year + 1))
+  df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
 
   with st.sidebar:
     x_axis_type = st.selectbox('Wybierz rodzaj daty', ['Data stworzenia', 'Data rozpoczecia'])
@@ -42,7 +43,7 @@ def filter_data(df):
       step=1
     )
     with st.expander("Filtry", expanded=True):
-      city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
+      city_checkboxes = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique())
       language_checkboxes = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique())
       attraction_groups_checkboxes = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique())
       status_checkboxes = st.multiselect("Status", ["Zrealizowane", "Anulowane", "Zrealizowane nieopłacone"], default=["Zrealizowane", "Zrealizowane nieopłacone"])
@@ -75,6 +76,7 @@ def filter_data(df):
       else:
         end_date = datetime(end_year, 12, 31, 23, 59, 59)
 
+    cities = df['street'][df['location'].isin(city_checkboxes)].unique()
     visit_types = df['visit_type'].unique() if "Wszystkie" in visit_type_groups_checkboxes else df['visit_type'][df['visit_type'].isin(visit_type_groups_checkboxes)].unique()
 
-    return (x_axis_type, group_dates_by, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_types)
+    return (x_axis_type, group_dates_by, start_date, end_date, status_checkboxes, cities, language_checkboxes, attraction_groups_checkboxes, visit_types)

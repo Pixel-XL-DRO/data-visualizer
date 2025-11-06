@@ -22,7 +22,7 @@ def render_safi_view(
   city_selection
   ):
 
-  selected_location = df_locations[df_locations['city'] == city_selection]
+  selected_location = df_locations[df_locations['street'] == city_selection]
   selected_location_boards_availability = df_location_boards_availability[df_location_boards_availability['boards_availability_dim_location_id'].isin(selected_location['id'])]
   selected_location_hours_availability = df_location_hours_availability[df_location_hours_availability['hours_availability_dim_location_id'].isin(selected_location['id'])]
 

@@ -3,14 +3,14 @@ from google.cloud import bigquery
 from queries import run_query
 import time
 from datetime import datetime
-from utils import format_array_for_query
+import utils
 
 def get_order_items(since_when, cities, moving_average_days, groupBy):
 
-  cities_condition = format_array_for_query(cities)
+  cities_condition = utils.format_array_for_query(cities)
   
   groupBy_select = f", {groupBy}" if groupBy else ""
-  groupBy_grouping = f", city" if groupBy else ""
+  groupBy_grouping = f", street" if groupBy else ""
   groupBy_partition = f"PARTITION BY {groupBy}" if groupBy else ""
 
   query = f"""
@@ -30,7 +30,7 @@ def get_order_items(since_when, cities, moving_average_days, groupBy):
     POS_system_data.item i ON order_items.item_id = i.id  
   WHERE 
     DATE(o.creation_date) >= DATE(@since_when)  
-    AND city {cities_condition}
+    AND street {cities_condition}
     AND NOT REGEXP_CONTAINS(i.name, '(?i)bilet|zadatek|voucher|integracja|uczestnik|urodzin')
     AND o.document_number NOT LIKE '0'
   ),
@@ -86,14 +86,17 @@ def get_order_items(since_when, cities, moving_average_days, groupBy):
   rows =run_query(query, job_config)
 
   df = pd.DataFrame(rows)
-  
+
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location) 
+
   return df
 def get_order_items_per_sale(since_when, cities, moving_average_days, groupBy):
 
-  cities_condition = format_array_for_query(cities)
+  cities_condition = utils.format_array_for_query(cities)
   
   groupBy_select = f", {groupBy}" if groupBy else ""
-  groupBy_grouping = f", city" if groupBy else ""
+  groupBy_grouping = f", street" if groupBy else ""
   groupBy_partition = f"PARTITION BY {groupBy}" if groupBy else ""
 
   query = f"""
@@ -113,7 +116,7 @@ def get_order_items_per_sale(since_when, cities, moving_average_days, groupBy):
     POS_system_data.item i ON order_items.item_id = i.id  
   WHERE 
     DATE(o.creation_date) >= DATE(@since_when)  
-    AND city {cities_condition}
+    AND street {cities_condition}
     AND NOT REGEXP_CONTAINS(i.name, '(?i)bilet|zadatek|voucher|integracja|uczestnik|urodzin')
     AND o.document_number NOT LIKE '0'
   ),
@@ -170,13 +173,16 @@ def get_order_items_per_sale(since_when, cities, moving_average_days, groupBy):
 
   df = pd.DataFrame(rows)
 
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location) 
+
   return df
 
 def get_order_items_per_reservation(start_date, cities, moving_average_days, groupBy):
 
   df = get_order_items(start_date, cities, moving_average_days, groupBy)
 
-  cities_condition = format_array_for_query(cities)
+  cities_condition = utils.format_array_for_query(cities)
 
   groupBy_condition  = f", {groupBy}" if groupBy else ""
   groupBy_select = f", {groupBy}" if groupBy else ""
@@ -206,7 +212,7 @@ def get_order_items_per_reservation(start_date, cities, moving_average_days, gro
       ecr.deleted_at IS NULL
       AND DATE(ecr.start_date) >= DATE(@since_when)
       AND DATE(ecr.start_date) < CURRENT_DATE
-      AND city {cities_condition}
+      AND street {cities_condition}
       AND CASE
         WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
         WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
@@ -247,12 +253,13 @@ def get_order_items_per_reservation(start_date, cities, moving_average_days, gro
   rows = run_query(query, job_config)
 
   df_res = pd.DataFrame(rows)
-
+  if groupBy == 'street':
+    df_res['street'] = df_res['street'].replace(utils.street_to_location) 
   df = df.merge(df_res, how='left', on=['date', groupBy])
 
   df['netto_per_reservation'] = df['netto'] / df['res_count']
   df['brutto_per_reservation'] = df['brutto'] / df['res_count']
-
+  
   moving_average_days = moving_average_days + 1
   if groupBy:
     df['netto_per_reservation_moving_avg'] = df.groupby(groupBy)['netto_per_reservation'].transform(
@@ -273,11 +280,11 @@ def get_order_items_per_reservation(start_date, cities, moving_average_days, gro
 
 def get_items_sales_per_day(start_date, end_date, moving_average_days, cities, items, groupBy): 
 
-  cities_condition = format_array_for_query(cities)
-  items_condition = f"AND name {format_array_for_query(items)}" if items else ""
+  cities_condition = utils.format_array_for_query(cities)
+  items_condition = f"AND name {utils.format_array_for_query(items)}" if items else ""
 
   groupBy_select = f", {groupBy}" if groupBy else ""
-  groupBy_grouping = f", city" if groupBy else ""
+  groupBy_grouping = f", street" if groupBy else ""
   groupBy_partition = f"PARTITION BY {groupBy}" if groupBy else ""
 
   query = f"""
@@ -303,7 +310,7 @@ def get_items_sales_per_day(start_date, end_date, moving_average_days, cities, i
   WHERE
     DATE(o.creation_date) >= DATE(@since_when)
     AND DATE(o.creation_date) < DATE(@end_when)
-    AND l.city {cities_condition}
+    AND l.street {cities_condition}
     AND NOT REGEXP_CONTAINS(i.name, '(?i)bilet|zadatek|voucher|integracja|uczestnik|urodzin')
     AND o.document_number NOT LIKE '0'
     {items_condition}
@@ -343,13 +350,16 @@ def get_items_sales_per_day(start_date, end_date, moving_average_days, cities, i
 
   df = pd.DataFrame(rows)
 
+  if groupBy:
+    df['street'] = df['street'].replace(utils.street_to_location) 
+
   return df
 
 
 def get_items_sold(start_date, end_date, cities, items, groupBy):
 
-  cities_condition = format_array_for_query(cities)
-  items_condition = f"AND name {format_array_for_query(items)}" if items else ""  
+  cities_condition = utils.format_array_for_query(cities)
+  items_condition = f"AND name {utils.format_array_for_query(items)}" if items else ""  
 
   groupBy_select = f", {groupBy}" if groupBy else ""
 
@@ -379,7 +389,7 @@ def get_items_sold(start_date, end_date, cities, items, groupBy):
   WHERE 
     DATE(o.creation_date) >= DATE(@since_when)
     AND DATE(o.creation_date) < DATE(@end_when)
-    AND l.city {cities_condition}
+    AND l.street {cities_condition}
     AND o.document_number NOT LIKE '0'
     {items_condition}  
   GROUP BY
@@ -399,5 +409,7 @@ def get_items_sold(start_date, end_date, cities, items, groupBy):
   rows = run_query(query, job_config)
 
   df = pd.DataFrame(rows)
+  if groupBy:
+    df['street'] = df['street'].replace(utils.street_to_location) 
 
   return df
