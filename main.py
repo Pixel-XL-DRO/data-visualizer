@@ -12,7 +12,7 @@ def logout():
   if st.button("Wyloguj się"):
     st.logout()
 
-auth.authorize(["admin", "manager", "super-admin"])
+auth.authorize(["admin", "manager", "super-admin", "marketing"])
 
 logout_page = st.Page(logout, title="Wyloguj się", icon=":material/logout:")
 
@@ -43,6 +43,11 @@ pages_by_role = {
   },
   "manager": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, dotypos, income, vouchers],
+    "Opinie": [google_reviews_page, reviews_page],
+    "Konto": [logout_page]
+  },
+  "marketing": {
+    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, vouchers],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
   }
