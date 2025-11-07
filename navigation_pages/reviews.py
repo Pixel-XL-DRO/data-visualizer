@@ -200,6 +200,8 @@ def reviews_table():
   df_reviews_filtered = df_reviews[
       df_reviews.apply(lambda x: start_score <= x['Ocena'] <= end_score, axis=1)
   ]
+
+  df_reviews_filtered.rename(columns={'Feedback': 'Co wpłyneło na twoją opinię?'}, inplace=True)
   st.table(df_reviews_filtered)
 
 reviews_table()
