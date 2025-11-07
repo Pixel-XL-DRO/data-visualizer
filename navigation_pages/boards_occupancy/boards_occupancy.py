@@ -28,6 +28,9 @@ with st.spinner("Ładowanie danych...", show_time=True):
   df = auth.filter_locations(df)
   df_locations = auth.filter_locations(df_locations)
 
+df_locations = df_locations[df_locations['street'] != 'kijowska']
+df = df[df['location_id'] != '9fb2cd5b-9b2b-4416-b0d7-a5c9fecc4f7a']
+#filtering out warszawa before start
 (df, x_axis_type) = boards_occupancy_sidebar.filter_data(df)
 
 for location_id in df['location_id'].unique():
