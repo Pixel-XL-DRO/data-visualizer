@@ -588,7 +588,7 @@ def get_initial_data():
       dc.language  
   """
 
-  rows = run_sandbox_query(query)
+  rows = run_query(query)
   return pd.DataFrame(rows)
 
 @st.cache_data(ttl=60000)
