@@ -50,14 +50,14 @@ def render_plan4u_view(
 
   if selected_week_start - pd.Timedelta(days=7) >= min_date:
     with col1:
-      st.button("<=", on_click=lambda: update_week_offset(1))
+      st.button(":material/arrow_back:", on_click=lambda: update_week_offset(1))
 
   with col2:
     st.write(f"{selected_week_start.day}.{selected_week_start.month}.{selected_week_start.year} - {selected_week_end.day}.{selected_week_end.month}.{selected_week_end.year}" )
 
   if True or st.session_state.week_offset > 0:
     with col3:
-      st.button("=>", on_click=lambda: update_week_offset(-1))
+      st.button(":material/arrow_forward:", on_click=lambda: update_week_offset(-1))
 
   df['start_date'] = pd.to_datetime(df['start_date'])
   df = df.loc[(df['start_date'] >= selected_week_start) & (df['start_date'] <= selected_week_end)]
@@ -104,43 +104,46 @@ def render_plan4u_view(
     hours_map[str(date)][hour_key] += slots_taken  
   heatmap_data = []
 
-  for start_date_key, hours_data in hours_map.items():
-    for hour, slots_taken in hours_data.items():
-      formatted_date = utils.format_date(start_date_key)
+  try:
 
-      display_date = pd.to_datetime(formatted_date, format='%d-%m-%Y').strftime('%d.%m')
-      day_name = utils.get_day_of_week_string_shortcut(datetime.strptime(start_date_key, '%Y-%m-%d').weekday())
-      display_label = f"{display_date}, {day_name}"
+    for start_date_key, hours_data in hours_map.items():
+      for hour, slots_taken in hours_data.items():
+        formatted_date = utils.format_date(start_date_key)
 
-      reservation_date = pd.to_datetime(start_date_key, format='%Y-%m-%d').tz_localize('UTC')
+        display_date = pd.to_datetime(formatted_date, format='%d-%m-%Y').strftime('%d.%m')
+        day_name = utils.get_day_of_week_string_shortcut(datetime.strptime(start_date_key, '%Y-%m-%d').weekday())
+        display_label = f"{display_date}, {day_name}"
 
-      selected_location_boards_availability_filtered = selected_location_boards_availability.loc[(selected_location_boards_availability['boards_availability_since_when'] <= reservation_date) & (selected_location_boards_availability['boards_availability_until_when'].isnull() | (selected_location_boards_availability['boards_availability_until_when'] >= reservation_date))].iloc[0]
-      total_boards = selected_location_boards_availability_filtered['boards_availability_number_of_boards']
+        reservation_date = pd.to_datetime(start_date_key, format='%Y-%m-%d').tz_localize('UTC')
 
-      if (selected_location.city.iloc[0] == "katowice" or selected_location.city.iloc[0] == "gdansk" or selected_location.city.iloc[0] == "poznan"):
-        parsed_hour = int(float(hour))
-        new_total_boards = np.float64(4)
+        selected_location_boards_availability_filtered = selected_location_boards_availability.loc[(selected_location_boards_availability['boards_availability_since_when'] <= reservation_date) & (selected_location_boards_availability['boards_availability_until_when'].isnull() | (selected_location_boards_availability['boards_availability_until_when'] >= reservation_date))].iloc[0]
+        total_boards = selected_location_boards_availability_filtered['boards_availability_number_of_boards']
 
-        day_of_week = datetime.strptime(start_date_key, '%Y-%m-%d').weekday()
-        if day_of_week < 4 and parsed_hour == 21:
-          total_boards = new_total_boards
-        elif day_of_week == 4 and parsed_hour == 22:
-          total_boards = new_total_boards
-        elif day_of_week == 5 and parsed_hour == 23:
-          total_boards = new_total_boards
-        elif day_of_week == 6 and parsed_hour == 20:
-          total_boards = new_total_boards
+        if (selected_location.city.iloc[0] == "katowice" or selected_location.city.iloc[0] == "gdansk" or selected_location.city.iloc[0] == "poznan"):
+          parsed_hour = int(float(hour))
+          new_total_boards = np.float64(4)
 
-      heatmap_data.append({
-        'start_date_key': formatted_date,
-        'display_label': display_label,
-        'start_date_hour': utils.parse_hour(hour),
-        'slots_taken': slots_taken,
-        # TODO: revert
-        # 'boards_occupancy': (slots_taken / total_boards * 100).clip(max=100).round(0)
-        'boards_occupancy': (slots_taken / total_boards * 100).round(0)
-      })
+          day_of_week = datetime.strptime(start_date_key, '%Y-%m-%d').weekday()
+          if day_of_week < 4 and parsed_hour == 21:
+            total_boards = new_total_boards
+          elif day_of_week == 4 and parsed_hour == 22:
+            total_boards = new_total_boards
+          elif day_of_week == 5 and parsed_hour == 23:
+            total_boards = new_total_boards
+          elif day_of_week == 6 and parsed_hour == 20:
+            total_boards = new_total_boards
 
+        heatmap_data.append({
+          'start_date_key': formatted_date,
+          'display_label': display_label,
+          'start_date_hour': utils.parse_hour(hour),
+          'slots_taken': slots_taken,
+          # TODO: revert
+          # 'boards_occupancy': (slots_taken / total_boards * 100).clip(max=100).round(0)
+          'boards_occupancy': (slots_taken / total_boards * 100).round(0)
+        })
+  except:
+    pass
 
   heatmap_df = pd.DataFrame(heatmap_data)
 

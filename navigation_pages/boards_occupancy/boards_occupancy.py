@@ -13,6 +13,8 @@ import auth
 import plan4u_view
 import safi_view
 
+SAFI_CITIES = ["lubicz", "ogrodowa", "kijowska"]
+
 with st.spinner("Ładowanie danych...", show_time=True):
 
   df, df_locations, df_visit_types, df_location_hours_availability, df_location_boards_availability, df_visit_type_availability, df_slots_occupancy = utils.run_in_parallel(
@@ -28,9 +30,6 @@ with st.spinner("Ładowanie danych...", show_time=True):
   df = auth.filter_locations(df)
   df_locations = auth.filter_locations(df_locations)
 
-df_locations = df_locations[df_locations['street'] != 'kijowska']
-df = df[df['location_id'] != '9fb2cd5b-9b2b-4416-b0d7-a5c9fecc4f7a']
-#filtering out warszawa before start
 (df, x_axis_type) = boards_occupancy_sidebar.filter_data(df)
 
 for location_id in df['location_id'].unique():
@@ -51,7 +50,7 @@ df_locations['location'] = df_locations['street'].map(utils.street_to_location).
 city_selection = st.selectbox('Wybierz miasto', df_locations['location'].unique())
 selected_city = df_locations['street'][df_locations['location'] == city_selection].iloc[0]
 
-if selected_city != "lubicz" and selected_city != "ogrodowa":
+if not selected_city in SAFI_CITIES:
   plan4u_view.render_plan4u_view(
     df,
     df_locations,
