@@ -42,13 +42,15 @@ def render_plan4u_view(
       st.session_state.week_offset -= 1
     elif offset == 1 and current_week_start - pd.Timedelta(days=7 * (st.session_state.week_offset + 1)) >= min_date:
       st.session_state.week_offset += 1
+    else:
+      st.session_state.week_offset -= offset
 
   selected_week_start = current_week_start - pd.Timedelta(days=7 * st.session_state.week_offset)
   selected_week_end = (selected_week_start + pd.Timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999)
 
   col1, col2, col3 = st.columns(3)
 
-  if selected_week_start - pd.Timedelta(days=7) >= min_date:
+  if selected_week_start.date() > min_date.date():
     with col1:
       st.button(":material/arrow_back:", on_click=lambda: update_week_offset(1))
 
@@ -100,8 +102,8 @@ def render_plan4u_view(
     minutes_multiplier = 1 if datetime_slot.minute > 0 and time_taken / 60 != 1 else 0
 
     hour_key = str(f'{hour}.{minutes_multiplier * int(time_taken / 60 * 10)}')
-    
-    hours_map[str(date)][hour_key] += slots_taken  
+
+    hours_map[str(date)][hour_key] += slots_taken
   heatmap_data = []
 
   try:
@@ -148,6 +150,10 @@ def render_plan4u_view(
   heatmap_df = pd.DataFrame(heatmap_data)
 
   if heatmap_df.empty:
+    st.write(f"W aktualnym przedziale nie wykryto mapowania rezerwacji")
+    st.write(f"Najbliższe rezerwacje są w tygodniu :orange[{min_date.date()} - {min_date.date() + pd.Timedelta(days=7)}]")
+    st.button("Przejdź :material/fast_forward:", on_click=lambda: update_week_offset((min_date - selected_week_start).days // 7))
+
     raise Exception("Pusty zbiór danych. Popraw zakres dat.")
 
   date_sort_order = sorted(heatmap_df['start_date_key'].unique(), key=lambda x: pd.to_datetime(x, format='%d-%m-%Y'))

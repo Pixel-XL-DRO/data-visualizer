@@ -43,6 +43,8 @@ def render_safi_view(
       st.session_state.week_offset -= 1
     elif offset == 1 and current_week_start - pd.Timedelta(days=7 * (st.session_state.week_offset)) >= min_date:
       st.session_state.week_offset += 1
+    else:
+      st.session_state.week_offset -= offset
 
   selected_week_start = current_week_start - pd.Timedelta(days=7 * st.session_state.week_offset)
   selected_week_end = (selected_week_start + pd.Timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999)
@@ -155,10 +157,13 @@ def render_safi_view(
         })
   except:
     pass
-
   heatmap_df = pd.DataFrame(heatmap_data)
 
   if heatmap_df.empty:
+    st.write(f"W aktualnym przedziale nie wykryto mapowania rezerwacji")
+    st.write(f"Najbliższe rezerwacje są w tygodniu :orange[{min_date.date()} - {min_date.date() + pd.Timedelta(days=7)}]")
+    st.button("Przejdź :material/fast_forward:", on_click=lambda: update_week_offset((min_date - selected_week_start).days // 7))
+
     raise Exception("Pusty zbiór danych. Popraw zakres dat.")
 
   date_sort_order = sorted(heatmap_df['start_date_key'].unique(), key=lambda x: pd.to_datetime(x, format='%d-%m-%Y'))
