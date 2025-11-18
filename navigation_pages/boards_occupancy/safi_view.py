@@ -11,6 +11,29 @@ from datetime import datetime
 
 import utils
 
+NUMPY_FOUR = np.float64(4) # for now every city has 4 boards that start at last hour
+
+LAST_HOURS_AVAILABILITY = {
+    "krakow": {
+        0: {20: NUMPY_FOUR},
+        1: {20: NUMPY_FOUR},
+        2: {20: NUMPY_FOUR},
+        3: {20: NUMPY_FOUR},
+        4: {21: NUMPY_FOUR},
+        5: {21: NUMPY_FOUR},
+        6: {20: NUMPY_FOUR},
+    },
+    "poznan": {
+        0: {21: NUMPY_FOUR},
+        1: {21: NUMPY_FOUR},
+        2: {21: NUMPY_FOUR},
+        3: {21: NUMPY_FOUR},
+        4: {22: NUMPY_FOUR},
+        5: {22: NUMPY_FOUR},
+        6: {21: NUMPY_FOUR},
+    }
+}
+
 def render_safi_view(
   df,
   df_locations,
@@ -21,13 +44,13 @@ def render_safi_view(
   df_slots_occupancy,
   city_selection
   ):
-
+  
   selected_location = df_locations[df_locations['street'] == city_selection]
   selected_location_boards_availability = df_location_boards_availability[df_location_boards_availability['boards_availability_dim_location_id'].isin(selected_location['id'])]
   selected_location_hours_availability = df_location_hours_availability[df_location_hours_availability['hours_availability_dim_location_id'].isin(selected_location['id'])]
 
   df = df[df['location_id'].isin(selected_location['id'])]
-
+  
   min_date = df['start_date'].min()
   max_date = df['start_date'].max()
 
@@ -70,7 +93,6 @@ def render_safi_view(
   current_location_boards_availability = selected_location_boards_availability[selected_location_boards_availability['boards_availability_until_when'].isnull()]
   current_location_hours_availability = selected_location_hours_availability[selected_location_hours_availability['hours_availability_until_when'].isnull()]
   current_location_slots_occupancy = df_slots_occupancy[df_slots_occupancy['slots_occupancy_reservation_id'].isin(df['id'])]
-
   time_unit_in_hours = current_location_boards_availability['boards_availability_time_unit_in_hours'].values[0]
 
   hours_map = {}
@@ -95,8 +117,26 @@ def render_safi_view(
   time_unit_in_minutes = int(time_unit_in_hours * 60)
 
   for _, reservation in df.iterrows():
-    slots_taken = reservation['reservation_slots_taken']
-    time_taken = reservation['reservation_time_taken']
+
+
+    if reservation['reservation_system'] == "plan4u":
+      current_slot = df_slots_occupancy[df_slots_occupancy['slots_occupancy_reservation_id'] == reservation['id']]
+      
+      time_sum = 0
+      slots_sum = 0
+      
+      for _, slot in current_slot.iterrows():
+        time_sum += slot['slots_occupancy_time_taken']
+        slots_sum += slot['slots_occupancy_slots_taken']
+      
+      time_taken = time_sum
+      slots_taken = slots_sum / (time_taken / 60)
+      
+    else:
+      slots_taken = reservation['reservation_slots_taken']
+      time_taken = reservation['reservation_time_taken'] 
+
+      
     start_date = reservation['start_date']
 
     date = start_date.date()
@@ -108,15 +148,15 @@ def render_safi_view(
 
     while (time_taken > 0):
       hour_key = str(f'{hour}.{minutes_multiplier * int(minutes / 60 * 10)}')
-      hours_map[str(date)][hour_key] += slots_taken
-
+      hours_map[str(date)][hour_key] += slots_taken 
+      
       time_taken -= time_unit_in_minutes
 
       minutes += time_unit_in_minutes
       if minutes >= 60:
         hour += 1
         minutes -= 60
-
+    
   heatmap_data = []
 
   try:
@@ -134,17 +174,14 @@ def render_safi_view(
         selected_location_boards_availability_filtered = selected_location_boards_availability.loc[(selected_location_boards_availability['boards_availability_since_when'] <= reservation_date) & (selected_location_boards_availability['boards_availability_until_when'].isnull() | (selected_location_boards_availability['boards_availability_until_when'] >= reservation_date))].iloc[0]
         total_boards = selected_location_boards_availability_filtered['boards_availability_number_of_boards']
 
-        if (selected_location.city.iloc[0] == "krakow"):
-          parsed_hour = int(float(hour))
-          new_total_boards = np.float64(4)
+        city = selected_location.city.iloc[0]
+        parsed_hour = int(float(hour))
+        day_of_week = datetime.strptime(start_date_key, '%Y-%m-%d').weekday()
 
-          day_of_week = datetime.strptime(start_date_key, '%Y-%m-%d').weekday()
-          if day_of_week < 5 and parsed_hour == 20:
-            total_boards = new_total_boards
-          elif day_of_week == 5 and parsed_hour == 21:
-            total_boards = new_total_boards
-          elif day_of_week == 6 and parsed_hour == 20:
-            total_boards = new_total_boards
+        new_slots_taken = LAST_HOURS_AVAILABILITY.get(city, {}).get(day_of_week, {}).get(parsed_hour)
+
+        if new_slots_taken:
+          total_boards = new_slots_taken
 
         heatmap_data.append({
           'start_date_key': formatted_date,

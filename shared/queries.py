@@ -321,6 +321,8 @@ def get_reservation_data():
       ANY_VALUE(res.additional_items_cost) AS additional_items_cost,
       ANY_VALUE(res.time_taken) AS reservation_time_taken,
       ANY_VALUE(res.slots_taken) AS reservation_slots_taken,
+      ANY_VALUE(res.reservation_system) AS reservation_system,
+      ANY_VALUE(res.reservation_external_id) AS reservation_external_id,
       ANY_VALUE(start_date.date) AS start_date,
       ANY_VALUE(booked_date.date) AS booked_date,
       ANY_VALUE(start_date.hour) AS start_date_hour,

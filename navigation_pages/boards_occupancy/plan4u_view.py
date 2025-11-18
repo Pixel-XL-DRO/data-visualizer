@@ -11,6 +11,39 @@ from datetime import datetime
 
 import utils
 
+NUMPY_FOUR = np.float64(4) # for now every city has 4 boards that start at last hour
+
+LAST_HOURS_AVAILABILITY = {
+    "katowice": {
+        0: {21: NUMPY_FOUR},
+        1: {21: NUMPY_FOUR},
+        2: {21: NUMPY_FOUR},
+        3: {21: NUMPY_FOUR},
+        4: {21: NUMPY_FOUR},
+        5: {21: NUMPY_FOUR},
+        6: {19: NUMPY_FOUR},
+    },
+    "gdansk": {
+        0: {21: NUMPY_FOUR},
+        1: {21: NUMPY_FOUR},
+        2: {21: NUMPY_FOUR},
+        3: {21: NUMPY_FOUR},
+        4: {22: NUMPY_FOUR},
+        5: {22: NUMPY_FOUR},
+        6: {21: NUMPY_FOUR},
+    },
+    "poznan": { # TODO: REMOVE WHEN POZNAN SAFI WILL BE READY
+        0: {21: NUMPY_FOUR},
+        1: {21: NUMPY_FOUR},
+        2: {21: NUMPY_FOUR},
+        3: {21: NUMPY_FOUR},
+        4: {22: NUMPY_FOUR},
+        5: {22: NUMPY_FOUR},
+        6: {21: NUMPY_FOUR},
+    }
+}
+
+
 def render_plan4u_view(
   df,
   df_locations,
@@ -26,7 +59,7 @@ def render_plan4u_view(
   selected_location_hours_availability = df_location_hours_availability[df_location_hours_availability['hours_availability_dim_location_id'].isin(selected_location['id'])]
 
   df = df[df['location_id'].isin(selected_location['id'])]
-
+  
   min_date = df['start_date'].min()
   max_date = df['start_date'].max()
 
@@ -95,7 +128,7 @@ def render_plan4u_view(
     datetime_slot = slot['slots_occupancy_datetime_slot']
     slots_taken = slot['slots_occupancy_slots_taken']
     time_taken = slot['slots_occupancy_time_taken']
-
+    
     date = datetime_slot.date()
     hour = datetime_slot.hour
 
@@ -121,19 +154,14 @@ def render_plan4u_view(
         selected_location_boards_availability_filtered = selected_location_boards_availability.loc[(selected_location_boards_availability['boards_availability_since_when'] <= reservation_date) & (selected_location_boards_availability['boards_availability_until_when'].isnull() | (selected_location_boards_availability['boards_availability_until_when'] >= reservation_date))].iloc[0]
         total_boards = selected_location_boards_availability_filtered['boards_availability_number_of_boards']
 
-        if (selected_location.city.iloc[0] == "katowice" or selected_location.city.iloc[0] == "gdansk" or selected_location.city.iloc[0] == "poznan"):
-          parsed_hour = int(float(hour))
-          new_total_boards = np.float64(4)
+        city = selected_location.city.iloc[0]
+        parsed_hour = int(float(hour))
+        day_of_week = datetime.strptime(start_date_key, '%Y-%m-%d').weekday()
 
-          day_of_week = datetime.strptime(start_date_key, '%Y-%m-%d').weekday()
-          if day_of_week < 4 and parsed_hour == 21:
-            total_boards = new_total_boards
-          elif day_of_week == 4 and parsed_hour == 22:
-            total_boards = new_total_boards
-          elif day_of_week == 5 and parsed_hour == 23:
-            total_boards = new_total_boards
-          elif day_of_week == 6 and parsed_hour == 20:
-            total_boards = new_total_boards
+        new_slots_taken = LAST_HOURS_AVAILABILITY.get(city, {}).get(day_of_week, {}).get(parsed_hour)
+
+        if new_slots_taken: 
+          total_boards = new_slots_taken
 
         heatmap_data.append({
           'start_date_key': formatted_date,
