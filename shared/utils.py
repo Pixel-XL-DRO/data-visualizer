@@ -132,7 +132,7 @@ def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, col
     
       tooltips = [
         alt.Tooltip(x_axis_type, title=x_axis_label),
-        alt.Tooltip(y_value, title=y_axis_label),
+        alt.Tooltip(y_value, title=y_axis_label, format=".5~s"),
       ]
 
     base = alt.Chart(data).encode(
@@ -140,7 +140,7 @@ def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, col
     ).interactive()
 
     bar = base.mark_bar(size=10).encode(
-      y=alt.Y(y_value, title=y_axis_label),
+      y=alt.Y(y_value, title=y_axis_label,axis=alt.Axis(format=".3~s")),
       tooltip=tooltips,
       color=alt.condition(
         f"datum['{x_axis_type}'] == '{currentValue}'", # hack to avoid different data types
@@ -191,6 +191,16 @@ def map_day_of_week_number_to_string(day_of_week_as_number):
     5: "Piatek",
     6: "Sobota"
   }[day_of_week_as_number]
+
+day_of_week_map = {
+  1: "7. Niedziela",
+  2: "1. Poniedzialek",
+  3: "2. Wtorek",
+  4: "3. Sroda",
+  5: "4. Czwartek",
+  6: "5. Piatek",
+  7: "6. Sobota"
+}
 
 def map_day_of_week_string_to_number(day_of_week_as_string):
   return {
@@ -318,3 +328,13 @@ street_to_location = {
   "ogrodowa": "Łódź, Ogrodowa 8",
   "kijowska": "Warszawa, Kijowska 3",
 }       
+
+def parse_grouping_period(period):
+  return {
+      "Miesiac": "MONTH",
+      "Dzień tygodnia": "DAYOFWEEK",
+      "Tydzien roku": "ISOWEEK",
+      "Rok": "YEAR",
+      "Godzina": "HOUR",
+      "Dzień miesiaca": "DAY"
+  }[period], period
