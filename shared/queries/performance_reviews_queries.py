@@ -181,8 +181,6 @@ DailyNPS AS (
   SELECT
     review_day AS date,
     COUNT(*) AS count,
-    SUM(CASE WHEN category = 'Promoter' THEN 1 ELSE 0 END) AS promoters,
-    SUM(CASE WHEN category = 'Detractor' THEN 1 ELSE 0 END) AS detractors,
     (
       (SUM(CASE WHEN category = 'Promoter' THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
       -
@@ -198,8 +196,6 @@ SELECT
   date
   {groupBy_condition},
   count,
-  promoters,
-  detractors,
   nps,
   CASE
     WHEN ROW_NUMBER() OVER (
@@ -300,7 +296,6 @@ def get_monthly_nps(street, year):
       -
       (SUM(CASE WHEN category = 'Detractor' THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
     ),2) AS NPS
-
   FROM
     MonthlyCategorizedReviews
   GROUP BY

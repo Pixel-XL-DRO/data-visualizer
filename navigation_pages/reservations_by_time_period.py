@@ -21,18 +21,7 @@ df = auth.filter_locations(df)
 # side bar
 (x_axis_type, group_dates_by, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_type_groups_checkboxes) = reservations_by_time_period_sidebar.filter_data(df)
 
-if group_dates_by == "Miesiac":
-    grouping_period = "MONTH"
-if group_dates_by == "Dzień tygodnia":
-    grouping_period = "DAYOFWEEK"
-if group_dates_by == "Tydzien roku":
-    grouping_period = "ISOWEEK"
-if group_dates_by == "Rok":
-    grouping_period = "YEAR"
-if group_dates_by == "Godzina":
-    grouping_period = "HOUR"
-if group_dates_by == "Dzień miesiaca":
-    grouping_period = "DAY"
+grouping_period, group_dates_by = utils.parse_grouping_period(group_dates_by)
 
 with st.spinner("Ładowanie danych...", show_time=True):
 

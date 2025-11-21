@@ -597,7 +597,8 @@ def get_initial_data():
 def get_vouchers_initial_data():
   query = f"""
     SELECT DISTINCT
-      MIN(voucher_creation_date) as voucher_creation_date,
+      MIN(voucher_creation_date) as min_creation_date,
+      MAX(voucher_creation_date) as max_creation_date,
       voucher_name,
       location.city,
       location.street
