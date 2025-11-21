@@ -45,7 +45,7 @@ def get_total_income_by_period(grouping_period, start, end, date_type, cities, l
 
   df_all = pd.concat([df, df_pos, df_voucher], ignore_index=True)
   
-  df_final = df_all.groupby(["period"], as_index=False).agg({
+  df_final = df_all.groupby(["period"], as_index=False, sort=False).agg({
     "avg_count": "sum",
     "current_period": "first"     
   })

@@ -31,15 +31,6 @@ LAST_HOURS_AVAILABILITY = {
         4: {22: NUMPY_FOUR},
         5: {22: NUMPY_FOUR},
         6: {21: NUMPY_FOUR},
-    },
-    "poznan": { # TODO: REMOVE WHEN POZNAN SAFI WILL BE READY
-        0: {21: NUMPY_FOUR},
-        1: {21: NUMPY_FOUR},
-        2: {21: NUMPY_FOUR},
-        3: {21: NUMPY_FOUR},
-        4: {22: NUMPY_FOUR},
-        5: {22: NUMPY_FOUR},
-        6: {21: NUMPY_FOUR},
     }
 }
 

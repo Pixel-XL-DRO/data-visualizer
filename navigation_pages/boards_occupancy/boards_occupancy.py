@@ -13,7 +13,7 @@ import auth
 import plan4u_view
 import safi_view
 
-SAFI_CITIES = ["lubicz", "ogrodowa", "kijowska"] # add "swietego-marcina" when it will be ready
+SAFI_CITIES = ["lubicz", "ogrodowa", "kijowska", "swietego-marcina"] 
 
 with st.spinner("Ładowanie danych...", show_time=True):
 
