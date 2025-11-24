@@ -162,17 +162,29 @@ def get_historical_visit_type_availability():
   return df
 
 @st.cache_data(ttl=28800)
-def get_slots_occupancy():
-  query = """
+def get_slots_occupancy(selected_week_start, selected_week_end):
+  query = f"""
     SELECT
       reservation_id AS slots_occupancy_reservation_id,
       slots_taken AS slots_occupancy_slots_taken,
       time_taken AS slots_occupancy_time_taken,
-      datetime_slot AS slots_occupancy_datetime_slot
+      DATETIME(datetime_slot) AS slots_occupancy_datetime_slot
     FROM
       reservation_data.reservation_slots_occupancy
+    WHERE
+      DATETIME(datetime_slot) >= @start
+    AND     
+      DATETIME(datetime_slot) <= @end
   """
-  rows = run_query(query)
+
+  job_config = bigquery.QueryJobConfig(
+    query_parameters=[
+        bigquery.ScalarQueryParameter("start", "DATETIME", selected_week_start),
+        bigquery.ScalarQueryParameter("end", "DATETIME", selected_week_end),
+    ]
+  )
+
+  rows = run_query(query, job_config)
 
   df = pd.DataFrame(rows, columns=['slots_occupancy_reservation_id', 'slots_occupancy_slots_taken', 'slots_occupancy_time_taken', 'slots_occupancy_datetime_slot'])
 
@@ -567,8 +579,8 @@ def get_initial_data():
       dvt.attraction_group as attraction_group,
       dvt.name as visit_type,
       dc.language as language,
-      MIN(ecr.start_date) as start_date,
-      MIN(ecr.booked_date) as booked_date
+      DATETIME(MIN(ecr.start_date)) as start_date,
+      DATETIME(MIN(ecr.booked_date)) as booked_date
     FROM
       reservation_data.event_create_reservation ecr
     JOIN

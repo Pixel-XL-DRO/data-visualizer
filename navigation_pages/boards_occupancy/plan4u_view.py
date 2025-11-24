@@ -2,14 +2,16 @@ import math
 import sys
 
 sys.path.append("utils")
+sys.path.append("shared")
 
 import streamlit as st
 import pandas as pd
 import altair as alt
 import numpy as np
 from datetime import datetime
-
+import boards_occupancy_queries
 import utils
+import queries
 
 NUMPY_FOUR = np.float64(4) # for now every city has 4 boards that start at last hour
 
@@ -36,26 +38,21 @@ LAST_HOURS_AVAILABILITY = {
 
 
 def render_plan4u_view(
-  df,
+  df_initial,
   df_locations,
-  df_visit_types,
   df_location_hours_availability,
   df_location_boards_availability,
-  df_visit_type_availability,
-  df_slots_occupancy,
-  city_selection
+  city_selection,
+  attraction_groups
   ):
   selected_location = df_locations[df_locations['street'] == city_selection]
   selected_location_boards_availability = df_location_boards_availability[df_location_boards_availability['boards_availability_dim_location_id'].isin(selected_location['id'])]
   selected_location_hours_availability = df_location_hours_availability[df_location_hours_availability['hours_availability_dim_location_id'].isin(selected_location['id'])]
 
-  df = df[df['location_id'].isin(selected_location['id'])]
-  
-  min_date = df['start_date'].min()
-  max_date = df['start_date'].max()
+  min_date = df_initial['start_date'].min()
 
   if 'week_offset' not in st.session_state:
-      st.session_state.week_offset = 0
+    st.session_state.week_offset = 0
 
   # show since yesterday - since we dont have data for today
   yesterday = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - pd.Timedelta(days=1)
@@ -64,7 +61,7 @@ def render_plan4u_view(
   def update_week_offset(offset):
     if offset == -1:
       st.session_state.week_offset -= 1
-    elif offset == 1 and current_week_start - pd.Timedelta(days=7 * (st.session_state.week_offset + 1)) >= min_date:
+    elif offset == 1 and current_week_start - pd.Timedelta(days=7 * (st.session_state.week_offset)) >= min_date:
       st.session_state.week_offset += 1
     else:
       st.session_state.week_offset -= offset
@@ -84,16 +81,17 @@ def render_plan4u_view(
   if True or st.session_state.week_offset > 0:
     with col3:
       st.button(":material/arrow_forward:", on_click=lambda: update_week_offset(-1))
-
-  df['start_date'] = pd.to_datetime(df['start_date'])
-  df = df.loc[(df['start_date'] >= selected_week_start) & (df['start_date'] <= selected_week_end)]
-
-  df = df.reset_index()
-
+  
+  with st.spinner("Ładowanie danych...", show_time=True):
+    df, df_slots_occupancy = utils.run_in_parallel(
+      (boards_occupancy_queries.get_reservations_data, (city_selection, attraction_groups, selected_week_start, selected_week_end)),
+      (queries.get_slots_occupancy, (selected_week_start, selected_week_end))
+    )
+  
   current_location_boards_availability = selected_location_boards_availability[selected_location_boards_availability['boards_availability_until_when'].isnull()]
   current_location_hours_availability = selected_location_hours_availability[selected_location_hours_availability['hours_availability_until_when'].isnull()]
-  current_location_slots_occupancy = df_slots_occupancy[df_slots_occupancy['slots_occupancy_reservation_id'].isin(df['id'])]
-
+  current_location_slots_occupancy = df_slots_occupancy[(df_slots_occupancy['slots_occupancy_reservation_id'].isin(df['id']))]
+  
   time_unit_in_hours = current_location_boards_availability['boards_availability_time_unit_in_hours'].values[0]
 
   hours_map = {}
@@ -174,8 +172,6 @@ def render_plan4u_view(
     st.button("Przejdź :material/fast_forward:", on_click=lambda: update_week_offset((min_date - selected_week_start).days // 7))
 
     raise Exception("Pusty zbiór danych. Popraw zakres dat.")
-
-  date_sort_order = sorted(heatmap_df['start_date_key'].unique(), key=lambda x: pd.to_datetime(x, format='%d-%m-%Y'))
 
   heatmap_df['sort_key'] = pd.to_datetime(heatmap_df['start_date_key'], format='%d-%m-%Y')
 
