@@ -2,13 +2,15 @@ import math
 import sys
 
 sys.path.append("utils")
+sys.path.append("shared")
 
 import streamlit as st
 import pandas as pd
 import altair as alt
 import numpy as np
 from datetime import datetime
-
+import boards_occupancy_queries
+import queries
 import utils
 
 NUMPY_FOUR = np.float64(4) # for now every city has 4 boards that start at last hour
@@ -35,27 +37,22 @@ LAST_HOURS_AVAILABILITY = {
 }
 
 def render_safi_view(
-  df,
+  df_initial,
   df_locations,
-  df_visit_types,
   df_location_hours_availability,
   df_location_boards_availability,
-  df_visit_type_availability,
-  df_slots_occupancy,
-  city_selection
+  city_selection,
+  attraction_groups,
   ):
   
   selected_location = df_locations[df_locations['street'] == city_selection]
   selected_location_boards_availability = df_location_boards_availability[df_location_boards_availability['boards_availability_dim_location_id'].isin(selected_location['id'])]
   selected_location_hours_availability = df_location_hours_availability[df_location_hours_availability['hours_availability_dim_location_id'].isin(selected_location['id'])]
 
-  df = df[df['location_id'].isin(selected_location['id'])]
-  
-  min_date = df['start_date'].min()
-  max_date = df['start_date'].max()
+  min_date = df_initial['start_date'].min()
 
   if 'week_offset' not in st.session_state:
-      st.session_state.week_offset = 0
+    st.session_state.week_offset = 0
 
   # show since yesterday - since we dont have data for today
   yesterday = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - pd.Timedelta(days=1)
@@ -85,14 +82,15 @@ def render_safi_view(
     with col3:
       st.button(":material/arrow_forward:", on_click=lambda: update_week_offset(-1))
 
-  df['start_date'] = pd.to_datetime(df['start_date'])
-  df = df.loc[(df['start_date'] >= selected_week_start) & (df['start_date'] <= selected_week_end)]
+  with st.spinner("Ładowanie danych...", show_time=True):
 
-  df = df.reset_index()
+    df, df_slots_occupancy = utils.run_in_parallel(
+      (boards_occupancy_queries.get_reservations_data, (city_selection, attraction_groups, selected_week_start, selected_week_end)),
+      (queries.get_slots_occupancy, (selected_week_start, selected_week_end))
+    )
 
   current_location_boards_availability = selected_location_boards_availability[selected_location_boards_availability['boards_availability_until_when'].isnull()]
   current_location_hours_availability = selected_location_hours_availability[selected_location_hours_availability['hours_availability_until_when'].isnull()]
-  current_location_slots_occupancy = df_slots_occupancy[df_slots_occupancy['slots_occupancy_reservation_id'].isin(df['id'])]
   time_unit_in_hours = current_location_boards_availability['boards_availability_time_unit_in_hours'].values[0]
 
   hours_map = {}
@@ -118,25 +116,27 @@ def render_safi_view(
 
   for _, reservation in df.iterrows():
 
-
     if reservation['reservation_system'] == "plan4u":
       current_slot = df_slots_occupancy[df_slots_occupancy['slots_occupancy_reservation_id'] == reservation['id']]
       
       time_sum = 0
       slots_sum = 0
-      
+
       for _, slot in current_slot.iterrows():
         time_sum += slot['slots_occupancy_time_taken']
         slots_sum += slot['slots_occupancy_slots_taken']
-      
+
       time_taken = time_sum
+
+      if time_taken == 0:
+        continue
+
       slots_taken = slots_sum / (time_taken / 60)
-      
+
     else:
       slots_taken = reservation['reservation_slots_taken']
-      time_taken = reservation['reservation_time_taken'] 
+      time_taken = reservation['reservation_time_taken']
 
-      
     start_date = reservation['start_date']
 
     date = start_date.date()
@@ -148,15 +148,15 @@ def render_safi_view(
 
     while (time_taken > 0):
       hour_key = str(f'{hour}.{minutes_multiplier * int(minutes / 60 * 10)}')
-      hours_map[str(date)][hour_key] += slots_taken 
-      
+      hours_map[str(date)][hour_key] += slots_taken
+
       time_taken -= time_unit_in_minutes
 
       minutes += time_unit_in_minutes
       if minutes >= 60:
         hour += 1
         minutes -= 60
-    
+
   heatmap_data = []
 
   try:
@@ -202,8 +202,6 @@ def render_safi_view(
     st.button("Przejdź :material/fast_forward:", on_click=lambda: update_week_offset((min_date - selected_week_start).days // 7))
 
     raise Exception("Pusty zbiór danych. Popraw zakres dat.")
-
-  date_sort_order = sorted(heatmap_df['start_date_key'].unique(), key=lambda x: pd.to_datetime(x, format='%d-%m-%Y'))
 
   heatmap_df['sort_key'] = pd.to_datetime(heatmap_df['start_date_key'], format='%d-%m-%Y')
 
