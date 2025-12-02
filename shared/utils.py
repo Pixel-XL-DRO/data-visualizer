@@ -129,10 +129,9 @@ def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, col
     if all_data_tooltip:
       tooltips = [alt.Tooltip(c, title=c) for c in data.columns]
     else:
-    
       tooltips = [
         alt.Tooltip(x_axis_type, title=x_axis_label),
-        alt.Tooltip(y_value, title=y_axis_label, format=".5~s"),
+        alt.Tooltip(y_value, title=y_axis_label, format=",.3~f"),
       ]
 
     base = alt.Chart(data).encode(
@@ -140,7 +139,7 @@ def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, col
     ).interactive()
 
     bar = base.mark_bar(size=10).encode(
-      y=alt.Y(y_value, title=y_axis_label,axis=alt.Axis(format=".3~s")),
+      y=alt.Y(y_value, title=y_axis_label,axis=alt.Axis(format=",.3~f")),
       tooltip=tooltips,
       color=alt.condition(
         f"datum['{x_axis_type}'] == '{currentValue}'", # hack to avoid different data types
