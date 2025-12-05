@@ -40,7 +40,7 @@ def get_reviews_count(since_when, end_when, cities):
 def get_performance_reviews(since_when, end_when, cities):
 
   cities_condition = format_array_for_query(cities)
-
+  
   query = f"""
     SELECT
       review.date as Data,
@@ -71,6 +71,9 @@ def get_performance_reviews(since_when, end_when, cities):
 
   rows = run_performance_review_query(query, job_config)
   df = pd.DataFrame(rows)
+
+  if df.empty:
+    return df
 
   df['Miasto'] = df['Miasto'].replace(utils.street_to_location)   
 

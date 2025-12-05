@@ -255,7 +255,7 @@ def get_order_items_per_reservation(start_date, cities, moving_average_days, gro
   df_res = pd.DataFrame(rows)
   if groupBy == 'street':
     df_res['street'] = df_res['street'].replace(utils.street_to_location) 
-  df = df.merge(df_res, how='left', on=['date', groupBy])
+  df = df.merge(df_res, how='outer', on=['date', groupBy])
 
   df['netto_per_reservation'] = df['netto'] / df['res_count']
   df['brutto_per_reservation'] = df['brutto'] / df['res_count']

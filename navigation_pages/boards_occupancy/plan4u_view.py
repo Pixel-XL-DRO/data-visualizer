@@ -16,15 +16,6 @@ import queries
 NUMPY_FOUR = np.float64(4) # for now every city has 4 boards that start at last hour
 
 LAST_HOURS_AVAILABILITY = {
-    "katowice": {
-        0: {21: NUMPY_FOUR},
-        1: {21: NUMPY_FOUR},
-        2: {21: NUMPY_FOUR},
-        3: {21: NUMPY_FOUR},
-        4: {21: NUMPY_FOUR},
-        5: {21: NUMPY_FOUR},
-        6: {19: NUMPY_FOUR},
-    },
     "gdansk": {
         0: {21: NUMPY_FOUR},
         1: {21: NUMPY_FOUR},

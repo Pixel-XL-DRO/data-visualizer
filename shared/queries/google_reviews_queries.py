@@ -23,7 +23,7 @@ def get_google_reviews_monthly(since_when, end_when, rating, cities):
     WHERE
       ratings.create_time >= @since_when
       AND ratings.create_time < @end_when
-      AND dim_location.locality {cities_condition}
+      AND dim_location.address {cities_condition}
       {rating_condition}
     GROUP BY
       month_year
@@ -62,13 +62,12 @@ def get_google_reviews_daily(since_when, end_when, rating, cities):
     WHERE
       ratings.create_time >= @since_when
       AND ratings.create_time < @end_when
-      AND dim_location.locality {cities_condition}
+      AND dim_location.address {cities_condition}
       {rating_condition}
     GROUP BY
       day
     ORDER BY
       PARSE_DATE('%d/%m/%Y', day);
-
   """
 
   job_config = bigquery.QueryJobConfig(
