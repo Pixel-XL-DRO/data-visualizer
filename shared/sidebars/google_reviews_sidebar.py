@@ -19,7 +19,7 @@ def filter_data(df):
       end_date = st.date_input('Data konca')
     location_checkboxes = st.multiselect("Lokalizacje", df['location'].unique(), default=df['location'][0])
 
-    location_checkboxes = [location.split(", ")[1] for location in location_checkboxes]
+    location_checkboxes = [location.split(", ", 1)[1] for location in location_checkboxes]
     
     if end_date is None:
       end_date = datetime.now() + timedelta(days=1)
