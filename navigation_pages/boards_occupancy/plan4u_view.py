@@ -21,8 +21,8 @@ LAST_HOURS_AVAILABILITY = {
         1: {21: NUMPY_FOUR},
         2: {21: NUMPY_FOUR},
         3: {21: NUMPY_FOUR},
-        4: {22: NUMPY_FOUR},
-        5: {22: NUMPY_FOUR},
+        4: {23: NUMPY_FOUR},
+        5: {23: NUMPY_FOUR},
         6: {21: NUMPY_FOUR},
     }
 }
