@@ -25,10 +25,11 @@ def filter_data(df):
 
   with st.sidebar:
     with st.container(border=True):
-      time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=6)
+      time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku', 'Przedział'], index=6)
       if time_range == "Przedział":
-        start_date = st.date_input('Data rozpoczecia')
-        end_date = st.date_input('Data konca')
+        yesterday = datetime.now() - timedelta(days=1)
+        start_date = st.date_input('Data rozpoczecia', max_value=yesterday)
+        end_date = st.date_input('Data konca', min_value=start_date, max_value="today")
 
     with st.expander("Filtry", expanded=True):
       with st.container(border=True):
