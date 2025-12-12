@@ -29,7 +29,7 @@ def filter_data(df):
       if time_range == "Przedział":
         yesterday = datetime.now() - timedelta(days=1)
         start_date = st.date_input('Data rozpoczecia', max_value=yesterday)
-        end_date = st.date_input('Data konca', min_value=start_date, max_value="today")
+        end_date = st.date_input('Data konca', min_value=start_date + timedelta(days=1), max_value="today")
 
     with st.expander("Filtry", expanded=True):
       with st.container(border=True):
