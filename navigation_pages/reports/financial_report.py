@@ -237,22 +237,22 @@ if st.button("Generuj raport"):
 
 
 
-# url = "https://safi-api.pixel-xl.tech:9999/api/receipts"
+url = "https://safi-api.pixel-xl.tech:9999/api/receipts"
 
-# params = {
-#     "created_date_from": "2025-11-01",
-#     "created_date_to": "2025-11-30"
-# }
+params = {
+    "created_date_from": "2025-11-01",
+    "created_date_to": "2025-11-30"
+}
 
-# headers = {
-#     "Authorization": "Bearer kekVav-5xygga-wikdor"
-# }
+headers = {
+    "Authorization": "Bearer kekVav-5xygga-wikdor"
+}
 
-# response = requests.get(url, params=params, headers=headers)
+response = requests.get(url, params=params, headers=headers)
 
-# data = response.json()
-# response.raise_for_status()
-# st.write(data)
+data = response.json()
+response.raise_for_status()
+st.write(data)
 
 
 
