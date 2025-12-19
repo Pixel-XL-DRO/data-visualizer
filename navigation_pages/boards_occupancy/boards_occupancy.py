@@ -14,7 +14,7 @@ import auth
 import plan4u_view
 import safi_view
 
-SAFI_CITIES = ["lubicz", "ogrodowa", "kijowska", "swietego-marcina", "sokolska"] 
+SAFI_CITIES = ["lubicz", "ogrodowa", "kijowska", "swietego-marcina", "sokolska", "grunwaldzka"]
 
 with st.spinner("Ładowanie danych...", show_time=True):
 

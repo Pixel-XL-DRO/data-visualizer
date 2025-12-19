@@ -43,6 +43,15 @@ LAST_HOURS_AVAILABILITY = {
         5: {22: NUMPY_FOUR},
         6: {19: NUMPY_FOUR},
     },
+    "gdansk": {
+        0: {21: NUMPY_FOUR},
+        1: {21: NUMPY_FOUR},
+        2: {21: NUMPY_FOUR},
+        3: {21: NUMPY_FOUR},
+        4: {23: NUMPY_FOUR},
+        5: {23: NUMPY_FOUR},
+        6: {21: NUMPY_FOUR},
+    },
 }
 
 def render_safi_view(
@@ -53,7 +62,7 @@ def render_safi_view(
   city_selection,
   attraction_groups,
   ):
-  
+
   selected_location = df_locations[df_locations['street'] == city_selection]
   selected_location_boards_availability = df_location_boards_availability[df_location_boards_availability['boards_availability_dim_location_id'].isin(selected_location['id'])]
   selected_location_hours_availability = df_location_hours_availability[df_location_hours_availability['hours_availability_dim_location_id'].isin(selected_location['id'])]
@@ -127,7 +136,7 @@ def render_safi_view(
 
     if reservation['reservation_system'] == "plan4u":
       current_slot = df_slots_occupancy[df_slots_occupancy['slots_occupancy_reservation_id'] == reservation['id']]
-      
+
       time_sum = 0
       slots_sum = 0
 

@@ -27,10 +27,12 @@ reviews_page = st.Page("navigation_pages/reviews.py", title="NPS", icon=":materi
 dotypos = st.Page("navigation_pages/dotypos.py", title="System kasowy", icon=":material/point_of_sale:")
 income = st.Page("navigation_pages/income.py", title="Przychody", icon=":material/money_bag:")
 vouchers = st.Page("navigation_pages/vouchers.py", title="Vouchery", icon=":material/local_activity:")
+financial_report_page = st.Page("navigation_pages/reports/financial_report.py", title = "Raport finansowy", icon=":material/attach_money:")
 
 pages_by_role = {
   "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page, dotypos, income, vouchers],
+    "Raporty": [financial_report_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
