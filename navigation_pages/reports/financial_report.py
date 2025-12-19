@@ -109,7 +109,6 @@ def get_safi_data(iso_start, iso_end, city_label, safi_location_id, safi_auth_to
 
         online_sales.append({
           "produkt": line["productOrServiceName"],
-          "typ produktu": line["type"],
           "ilość zakupionych produktów": line["quantity"],
           "kwota brutto produktu": (line["unitPrice"] / 100),
           "kwota netto produktu": (line["unitPrice"] / 100) / (1+(tax_rate / 100)),
