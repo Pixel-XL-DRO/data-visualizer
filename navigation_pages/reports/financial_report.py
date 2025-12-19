@@ -250,9 +250,6 @@ headers = {
 
 response = requests.get(url, params=params, headers=headers)
 
-st.write("Request host:", response.request.url)
-st.write("Request headers:", response.request.headers)
-
 data = response.json()
 response.raise_for_status()
 st.write(data)
