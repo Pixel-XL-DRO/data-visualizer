@@ -148,7 +148,7 @@ def create_bar_chart(data, x_axis_type, x_axis_label, y_value, y_axis_label, col
       )
     )
 
-    
+
 
     return bar
 
@@ -268,7 +268,7 @@ def get_month_from_month_number(month_number):
     12: "12. Grudzień"
   }[month_number]
 
-def download_button(df, file_name):
+def download_button(df, file_name, label = "Pobierz plik .xlxs"):
 
   output = BytesIO()
   with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -278,7 +278,7 @@ def download_button(df, file_name):
 
     return (
       st.download_button(
-      label="Pobierz plik .xlxs",
+      label=label,
       data=processed_data,
       icon="⬇️",
       file_name=f"{file_name}.xlsx",
@@ -304,7 +304,7 @@ def format_array_for_query(array):
   return f"IN {tuple(array)}" if len(array) > 1 else f"= '{array[0]}'"
 
 def lazy_load_initials():
-  
+
     def load():
       _ = run_in_parallel(
         (queries.get_initial_data, ()),
@@ -326,7 +326,7 @@ street_to_location = {
   "lubicz": "Kraków, Lubicz 17A",
   "ogrodowa": "Łódź, Ogrodowa 8",
   "kijowska": "Warszawa, Kijowska 3",
-}       
+}
 
 def parse_grouping_period(period):
   return {

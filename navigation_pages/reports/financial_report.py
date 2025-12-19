@@ -4,6 +4,7 @@ import pandas as pd
 import queries
 import auth
 import requests
+import json
 from datetime import date, timedelta, datetime, timezone
 import calendar
 
@@ -18,18 +19,136 @@ POLISH_MONTHS = [
     "lipiec", "sierpień", "wrzesień", "październik", "listopad", "grudzień"
 ]
 
-def get_dotypos_data(iso_start, iso_end):
-    dotypos_wroclaw_swidnicka_refresh_token = "8ec03e5689fe792ad3cdbd5428f98f20"
+safi_locations = [
+  {
+    "label": "Kraków",
+    "value": {
+      "safi_id": "01976898-679c-70e0-9b4f-dc2a14131e3d",
+      "dotypos_cloud_id": 347740963,
+      "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_347740963"),
+    }
+  },
+  {
+    "label": "Łódź",
+    "value": {
+      "safi_id": "01988093-0fa0-731f-9ca0-b864decd2e94",
+      "dotypos_cloud_id": 386377536,
+      "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_386377536"),
+    }
+  },
+  {
+    "label": "Warszawa Kijowska",
+    "value": {
+      "safi_id": "019a1050-b96b-7032-baee-8a69101d49d4",
+      "dotypos_cloud_id": 381567693,
+      "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_381567693"),
+    }
+  },
+  {
+    "label": "Poznań",
+    "value": {
+      "safi_id": "019a39f1-045f-713a-834d-a66fb85287c5",
+      "dotypos_cloud_id": 355738408,
+      "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_355738408"),
+    }
+  },
+  {
+    "label": "Katowice",
+    "value": {
+      "safi_id": "019ae347-fb95-73cd-84a3-5b2101273631",
+      "dotypos_cloud_id": 366525852,
+      "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_366525852"),
+    }
+  },
+  {
+    "label": "Gdańsk",
+    "value": {
+      "safi_id": "019b3130-6834-7373-8b4b-c22d2b8b086a",
+      "dotypos_cloud_id": 321010692,
+      "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_321010692"),
+    }
+  }
+]
 
+def get_safi_data(iso_start, iso_end, city_label, safi_location_id, safi_auth_token):
+
+    url = "https://safi-api.pixel-xl.tech:9999/api/receipts"
+
+    params = {
+        "created_date_from": iso_start,
+        "created_date_to": iso_end,
+        "location_id": safi_location_id
+    }
+
+    headers = {
+        "Authorization": f"Bearer {safi_auth_token}"
+    }
+
+    response = requests.get(url, params=params, headers=headers)
+
+    data = response.json()
+    response.raise_for_status()
+
+
+    online_sales = []
+
+    for receipt in data:
+      if receipt['status'] != "CONFIRMED":
+        continue
+      request_data_parsed = json.loads(receipt["request_data"])
+      tax_rates = request_data_parsed["eReceipt"]["metadata"]["taxRates"]
+
+      lines = request_data_parsed["eReceipt"]["lines"]
+
+      for line in lines:
+        tax_rate = int(tax_rates[line["taxRate"]])
+        discounts = line.get("rebatesMarkups")
+
+        # negative value
+        discount_value = sum(d["value"] / 100 for d in discounts) if discounts else 0
+
+        online_sales.append({
+          "produkt": line["productOrServiceName"],
+          "typ produktu": line["type"],
+          "ilość zakupionych produktów": line["quantity"],
+          "kwota brutto produktu": (line["unitPrice"] / 100),
+          "kwota netto produktu": (line["unitPrice"] / 100) / (1+(tax_rate / 100)),
+          "kwota brutto całości": (line["totalLineValue"] / 100),
+          "kwota netto całości": (line["totalLineValue"] / 100) / (1 +( tax_rate / 100 )),
+          "kwota obniżki": discount_value,
+          "finalna kwota brutto": (line["totalLineValue"] / 100) + discount_value,
+          "finalna kwota netto": ((line["totalLineValue"] / 100) + discount_value) / (1 +( tax_rate / 100 )),
+          "stawka VAT": tax_rate,
+          "link do eparagonu": receipt.get("document_url"),
+          "data wystawienia paragonu": receipt.get("updated_at"),
+          "id rezerwacji": receipt.get("reservation_id"),
+          "lokalizacja": city_label,
+          "typ przychodu": "online - safi",
+        })
+
+    df_safi_export = pd.DataFrame(online_sales)
+
+    df_safi_export["finalna kwota netto"] = pd.to_numeric(
+        df_safi_export["finalna kwota netto"], errors="coerce"
+    ).round(2)
+
+    total_billed = df_safi_export["finalna kwota netto"].sum()
+
+    st.write(f"Suma NETTO safi: {round(total_billed, 2)}")
+
+    utils.download_button(df_safi_export, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .xlxs")
+
+
+def get_dotypos_data(iso_start, iso_end, city_label, cloud_id, refresh_token):
     url = "https://api.dotykacka.cz/v2/signin/token"
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"User {dotypos_wroclaw_swidnicka_refresh_token}",
+        "Authorization": f"User {refresh_token}",
     }
 
     payload = {
-        "_cloudId": 357162453,
+        "_cloudId": cloud_id,
     }
 
     response = requests.post(url, headers=headers, json=payload)
@@ -41,7 +160,7 @@ def get_dotypos_data(iso_start, iso_end):
 
     branches_map = {}
 
-    branches = get_branches(357162453, access_token)
+    branches = get_branches(cloud_id, access_token)
     for branch in branches.get("data"):
       branches_map[branch.get("id")] = branch.get("name")
 
@@ -50,7 +169,7 @@ def get_dotypos_data(iso_start, iso_end):
 
     while page:
         res = get_orders(
-            cloud_id=357162453,
+            cloud_id=cloud_id,
             token=access_token,
             page=page,
             since_when=iso_start,
@@ -84,7 +203,39 @@ def get_dotypos_data(iso_start, iso_end):
 
     filtered_order_items = df_order_items[(df_order_items['paid'] == True) & (df_order_items['documentType'] == "RECEIPT") & (df_order_items['canceledDate'].isna()) & (df_order_items['quantity'] >= 0)]
 
-    return filtered_order_items
+    filtered_order_items["totalPriceWithoutVat"] = pd.to_numeric(
+        filtered_order_items["totalPriceWithoutVat"], errors="coerce"
+    ).round(2)
+
+    total_billed = filtered_order_items["totalPriceWithoutVat"].sum()
+
+    st.write(f"Suma NETTO dotykacka: {round(total_billed, 2)}")
+
+    df_dotypos_export = pd.DataFrame({
+        "nr paragonu": filtered_order_items["documentNumber"],
+        "nazwa kasy": filtered_order_items["branch"],
+        "typ przychodu": "kasa w lokalu",
+        "data wystawienia paragonu": filtered_order_items["completed"],
+        "kwota netto produktu": pd.to_numeric(
+            filtered_order_items["billedUnitPriceWithoutVat"], errors="coerce"
+        ).round(2),
+
+        "kwota brutto produktu": pd.to_numeric(
+            filtered_order_items["billedUnitPriceWithVat"], errors="coerce"
+        ).round(2),
+        "ilość zakupionych produktów": filtered_order_items["quantity"],
+        "kwota netto całości": filtered_order_items["totalPriceWithoutVat"],
+        "kwota brutto całości": pd.to_numeric(
+            filtered_order_items["totalPriceWithVat"], errors="coerce"
+        ),
+        "stawka VAT": (
+            (pd.to_numeric(filtered_order_items["vat"], errors="coerce") - 1) * 100
+        ).round(0),
+        "produkt": filtered_order_items["name"],
+        "lokalizacja": city_label
+    })
+
+    utils.download_button(df_dotypos_export, f"raport_finansowy_dotykacka_{start_date}-{end_date}", label="Pobierz raport dotykacka .xlxs")
 
 def get_branches(cloud_id, token):
     url = f"https://api.dotykacka.cz/v2/clouds/{cloud_id}/branches"
@@ -147,7 +298,7 @@ previous_month_end = date(
     calendar.monthrange(today.year, today.month - 1)[1]
 )
 
-mode_col, year_col, month_col = st.columns(3)
+mode_col, month_col, year_col = st.columns(3)
 
 with mode_col:
     mode = st.selectbox("Tryb", ["Miesiąc", "Zakres"])
@@ -192,67 +343,29 @@ else:
         )
 
 dt_start = datetime.combine(start_date, datetime.min.time())
-iso_start = dt_start.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+dotypos_start = dt_start.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+safi_start = dt_start.date().isoformat()
 
-dt_end = datetime.combine(end_date, datetime.max.time())
-iso_end =  dt_end.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+dt_end = datetime.combine(end_date + timedelta(days=1), datetime.min.time())
+dotypos_end = dt_end.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+safi_end = dt_end.date().isoformat()
 
-if st.button("Generuj raport"):
-  with st.spinner("Generowanie...", show_time=True):
-    filtered_order_items = get_dotypos_data(iso_start, iso_end)
+selected = st.selectbox(
+    "Wybierz lokalizacje",
+    safi_locations,
+    format_func=lambda x: x["label"]
+)
 
-    filtered_order_items["totalPriceWithoutVat"] = pd.to_numeric(
-        filtered_order_items["totalPriceWithoutVat"], errors="coerce"
-    ).round(2)
+st.divider()
 
-    total_billed = filtered_order_items["totalPriceWithoutVat"].sum()
+safi, dotykacka = st.columns(2)
 
-    st.write(f"Suma kas na lokalu NETTO: {round(total_billed, 2)}")
+with dotykacka:
+    if st.button("Generuj raport dotykacka"):
+        with st.spinner("Generowanie...", show_time=True):
+            get_dotypos_data(dotypos_start, dotypos_end, selected["label"], selected["value"].get("dotypos_cloud_id"), selected["value"].get("dotypos_refresh_token"))
 
-    df_export = pd.DataFrame({
-        "nr paragonu": filtered_order_items["documentNumber"],
-        "nazwa kasy": filtered_order_items["branch"],
-        "typ przychodu": "kasa w lokalu",
-        "data sprzedaży": filtered_order_items["completed"],
-        "kwota netto produktu": pd.to_numeric(
-            filtered_order_items["billedUnitPriceWithoutVat"], errors="coerce"
-        ).round(2),
-
-        "kwota brutto produktu": pd.to_numeric(
-            filtered_order_items["billedUnitPriceWithVat"], errors="coerce"
-        ).round(2),
-        "ilość zakupionych produktów": filtered_order_items["quantity"],
-        "kwota netto całości": filtered_order_items["totalPriceWithoutVat"],
-        "kwota brutto całości": pd.to_numeric(
-            filtered_order_items["totalPriceWithVat"], errors="coerce"
-        ),
-        "stawka VAT": (
-            (pd.to_numeric(filtered_order_items["vat"], errors="coerce") - 1) * 100
-        ).round(0).astype("Int64").astype(str) + "%",
-        "produkt": filtered_order_items["name"],
-        "lokalizacja": "Wrocław"
-    })
-
-    utils.download_button(df_export, f"raport_finansowy_dotykacka_{start_date}-{end_date}")
-
-
-
-url = "https://safi-api.pixel-xl.tech:9999/api/receipts"
-
-params = {
-    "created_date_from": "2025-11-01",
-    "created_date_to": "2025-11-30"
-}
-
-headers = {
-    "Authorization": "Bearer kekVav-5xygga-wikdor"
-}
-
-response = requests.get(url, params=params, headers=headers)
-
-data = response.json()
-response.raise_for_status()
-st.write(data)
-
-
-
+with safi:
+    if st.button("Generuj raport safi"):
+        with st.spinner("Generowanie...", show_time=True):
+            get_safi_data(safi_start, safi_end, selected["label"], selected["value"].get("safi_id"), st.secrets["safi"].get("auth_token"))

@@ -32,7 +32,7 @@ financial_report_page = st.Page("navigation_pages/reports/financial_report.py", 
 pages_by_role = {
   "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page, dotypos, income, vouchers],
-    # "Raporty": [financial_report_page],
+    "Raporty": [financial_report_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
