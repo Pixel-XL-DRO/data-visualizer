@@ -178,7 +178,6 @@ def get_dotypos_data(iso_start, iso_end, city_label, cloud_id, refresh_token):
             until_when=iso_end
         )
 
-        print(page)
 
         data = res.get("data", [])
         if data:
@@ -299,12 +298,12 @@ MIN_YEAR = 2025
 
 
 previous_month = today.month - 1 if today.month > 1 else 12
-
-previous_month_start = date(today.year, previous_month, 1)
+year_of_previous_month = today.year if previous_month != 12 else today.year - 1
+previous_month_start = date(year_of_previous_month, previous_month, 1)
 previous_month_end = date(
-    today.year,
+    year_of_previous_month,
     previous_month,
-    calendar.monthrange(today.year, previous_month)[1]
+    calendar.monthrange(year_of_previous_month, previous_month)[1]
 )
 
 mode_col, month_col, year_col = st.columns(3)
@@ -317,7 +316,7 @@ if mode == "Miesiąc":
         year = st.selectbox(
             "Rok",
             list(range(MIN_YEAR, CURRENT_YEAR + 1)),
-            index=CURRENT_YEAR - MIN_YEAR
+            index=year_of_previous_month - MIN_YEAR
         )
 
     with month_col:
@@ -370,11 +369,17 @@ st.divider()
 safi, dotykacka = st.columns(2)
 
 with dotykacka:
-    if st.button("Generuj raport dotykacka"):
-        with st.spinner("Generowanie...", show_time=True):
-            get_dotypos_data(dotypos_start, dotypos_end, selected["label"], selected["value"].get("dotypos_cloud_id"), selected["value"].get("dotypos_refresh_token"))
+    @st.fragment
+    def dotykacka_view(): 
+      if st.button("Generuj raport dotykacka"):
+          with st.spinner("Generowanie...", show_time=True):
+              get_dotypos_data(dotypos_start, dotypos_end, selected["label"], selected["value"].get("dotypos_cloud_id"), selected["value"].get("dotypos_refresh_token"))
+    dotykacka_view()
 
 with safi:
-    if st.button("Generuj raport safi"):
-        with st.spinner("Generowanie...", show_time=True):
-            get_safi_data(safi_start, safi_end, selected["label"], selected["value"].get("safi_id"), st.secrets["safi"].get("auth_token"))
+    @st.fragment
+    def safi_view():
+      if st.button("Generuj raport safi"):
+          with st.spinner("Generowanie...", show_time=True):
+              get_safi_data(safi_start, safi_end, selected["label"], selected["value"].get("safi_id"), st.secrets["safi"].get("auth_token"))
+    safi_view()
