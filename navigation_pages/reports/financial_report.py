@@ -297,11 +297,14 @@ CURRENT_YEAR = today.year
 CURRENT_MONTH = today.month
 MIN_YEAR = 2025
 
-previous_month_start = date(today.year, today.month - 1, 1)
+
+previous_month = today.month - 1 if today.month > 1 else 12
+
+previous_month_start = date(today.year, previous_month, 1)
 previous_month_end = date(
     today.year,
-    today.month - 1,
-    calendar.monthrange(today.year, today.month - 1)[1]
+    previous_month,
+    calendar.monthrange(today.year, previous_month)[1]
 )
 
 mode_col, month_col, year_col = st.columns(3)
