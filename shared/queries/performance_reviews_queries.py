@@ -347,12 +347,7 @@ def get_monthly_nps(street, year):
   df_count = pd.DataFrame(rows2)
   
   if df.empty:
-    return pd.DataFrame(columns=[
-        'NPS'
-        'Procent ocenionych wizyt',
-        'Miesiac',
-        'Liczba ocen'
-    ])
+    return None
 
   df['Procent ocenionych wizyt'] = round((df['count'] / df_count['count']) * 100, 2)
   df['Miesiac'] = df['month'].map(utils.get_month_from_month_number)
