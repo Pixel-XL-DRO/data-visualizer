@@ -320,13 +320,13 @@ def get_monthly_nps(street, year):
     ecr.location_id = location.id
   WHERE
     location.street = @street
-    AND EXTRACT(YEAR FROM ecr.booked_date) = CAST(@year AS INT64)
+    AND EXTRACT(YEAR FROM ecr.start_date) = CAST(@year AS INT64)
     AND CASE
       WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
       WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
       ELSE 'Zrealizowane'
     END IN ('Zrealizowane', 'Zrealizowane nieopłacone')
-    AND EXTRACT(MONTH FROM ecr.start_date) > 4
+    AND TIMESTAMP(ecr.start_date) >= TIMESTAMP('2025-05-11')
   GROUP BY
     month
   ORDER BY
@@ -346,6 +346,14 @@ def get_monthly_nps(street, year):
   df = pd.DataFrame(rows)
   df_count = pd.DataFrame(rows2)
   
+  if df.empty:
+    return pd.DataFrame(columns=[
+        'NPS'
+        'Procent ocenionych wizyt',
+        'Miesiac',
+        'Liczba ocen'
+    ])
+
   df['Procent ocenionych wizyt'] = round((df['count'] / df_count['count']) * 100, 2)
   df['Miesiac'] = df['month'].map(utils.get_month_from_month_number)
   df['Liczba ocen'] = df['count']

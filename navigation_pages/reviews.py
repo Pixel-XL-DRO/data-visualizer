@@ -5,7 +5,7 @@ sys.path.append("utils")
 
 import streamlit as st
 import pandas as pd
-
+from datetime import datetime
 import queries
 import utils
 import performance_reviews_sidebar
@@ -157,12 +157,13 @@ with tab3:
 with tab4:
 
   @st.fragment
-  def tab_three():
-
+  def tab_four():
+  
     df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
+    years_possible = list(range(2025, datetime.now().year + 1)) # we measure nps since may 2025
 
     city = st.selectbox('Wybierz miasto', df['location'].unique(), index=0)
-    year = st.selectbox('Wybierz rok', df['date'].dt.year.unique(), index=0)
+    year = st.selectbox('Wybierz rok', years_possible, index=len(years_possible) - 1)
 
     street = df['street'][df['location'] == city].iloc[0]
 
@@ -170,10 +171,13 @@ with tab4:
       df_monthly = performance_reviews_queries.get_monthly_nps(street, year)
 
     st.text("Ocena NPS w miesiacu w danym mieście")
-    performance_bar_chart = utils.create_bar_chart(df_monthly, 'Miesiac', 'Miesiac', 'NPS', 'Wynik NPS', None, None, None, None, True)
-    st.altair_chart(performance_bar_chart, use_container_width=True)
+    if df_monthly.empty:
+      st.warning(f"Brak danych dla {city} w roku {year}")
+    else:
+      performance_bar_chart = utils.create_bar_chart(df_monthly, 'Miesiac', 'Miesiac', 'NPS', 'Wynik NPS', None, None, None, None, True)
+      st.altair_chart(performance_bar_chart, use_container_width=True)
 
-  tab_three()
+  tab_four()
 
 
 st.divider()
