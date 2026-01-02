@@ -13,21 +13,6 @@ import boards_occupancy_queries
 import utils
 import queries
 
-NUMPY_FOUR = np.float64(4) # for now every city has 4 boards that start at last hour
-
-LAST_HOURS_AVAILABILITY = {
-    "gdansk": {
-        0: {21: NUMPY_FOUR},
-        1: {21: NUMPY_FOUR},
-        2: {21: NUMPY_FOUR},
-        3: {21: NUMPY_FOUR},
-        4: {23: NUMPY_FOUR},
-        5: {23: NUMPY_FOUR},
-        6: {21: NUMPY_FOUR},
-    }
-}
-
-
 def render_plan4u_view(
   df_initial,
   df_locations,
@@ -133,15 +118,6 @@ def render_plan4u_view(
 
         selected_location_boards_availability_filtered = selected_location_boards_availability.loc[(selected_location_boards_availability['boards_availability_since_when'] <= reservation_date) & (selected_location_boards_availability['boards_availability_until_when'].isnull() | (selected_location_boards_availability['boards_availability_until_when'] >= reservation_date))].iloc[0]
         total_boards = selected_location_boards_availability_filtered['boards_availability_number_of_boards']
-
-        city = selected_location.city.iloc[0]
-        parsed_hour = int(float(hour))
-        day_of_week = datetime.strptime(start_date_key, '%Y-%m-%d').weekday()
-
-        new_slots_taken = LAST_HOURS_AVAILABILITY.get(city, {}).get(day_of_week, {}).get(parsed_hour)
-
-        if new_slots_taken: 
-          total_boards = new_slots_taken
 
         heatmap_data.append({
           'start_date_key': formatted_date,

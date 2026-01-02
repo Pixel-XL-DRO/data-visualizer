@@ -80,7 +80,7 @@ with tab4:
         min_date = df['min_creation_date'].min()
         max_date = df['max_creation_date'].max()
         with col1:
-            current_period_start = st.date_input('Od kiedy', value=min_date, min_value=min_date, max_value=max_date - timedelta(days=1)) # first of february is the date we fully adapted dotypos
+            current_period_start = st.date_input('Od kiedy', value=min_date, min_value=min_date, max_value=max_date - timedelta(days=1))
 
         with col2:
             current_period_end = st.date_input('Do kiedy', value=max_date +  + timedelta(days=1), min_value=min_date + timedelta(days=1), max_value=max_date +  + timedelta(days=1))
