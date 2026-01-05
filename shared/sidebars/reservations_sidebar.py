@@ -7,13 +7,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-def determine_status(row):
-  if row['is_cancelled']:
-    return 'Anulowane'
-  elif not row['is_payed']:
-    return 'Zrealizowane nieopłacone'
-  return 'Zrealizowane'
-
 def ensure_status():
   if (not st.session_state.ms1):
     st.session_state.ms1 = ["Wszystkie"]
@@ -28,6 +21,8 @@ def filter_data(df):
   start_date = None
   end_date = None
 
+  df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
+
   with st.sidebar:
     x_axis_type = st.selectbox('Wybierz rodzaj daty', ['Data stworzenia', 'Data rozpoczecia'])
     time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku', "Przedział"], index=2)
@@ -40,9 +35,9 @@ def filter_data(df):
       moving_average_days = st.slider('Ile dni', 1, 30, 7)
     with st.expander("Notatki"):
       show_notes = st.checkbox('Pokazuj notatki', key="t7", value=False, on_change=lambda:utils.chain_toggle_on("t7","t1","t2"))
-    with st.expander("Filtry"):
+    with st.expander("Filtry", expanded=True):
       with st.container(border=True):
-        city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
+        city_checkboxes = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique())
         seperate_cities = st.checkbox('Rozdziel miasta', key="t3", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t3"))
       language_checkboxes = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique())
       with st.container(border=True):
@@ -80,27 +75,18 @@ def filter_data(df):
       elif time_range == '3 lat':
         start_date = end_date - timedelta(days=1095)
       elif time_range == 'Od poczatku':
-        min_date = df[x_axis_type].min()
+        min_date = df['booked_date'].min()
         start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
+    cities = df['street'][df['location'].isin(city_checkboxes)].unique()
+    language = df['language'][df['language'].isin(language_checkboxes)].unique()
+    visit_types = df['visit_type'].unique() if "Wszystkie" in visit_type_groups_checkboxes else df['visit_type'][df['visit_type'].isin(visit_type_groups_checkboxes)].unique()
 
-    df['start_date'] = pd.to_datetime(df['start_date']).dt.tz_localize(None)
-    df['booked_date'] = pd.to_datetime(df['booked_date']).dt.tz_localize(None)
+    moving_average_days -= 1 # sql index starts from 0 so we have to subtract 1
 
-    df['status'] = df.apply(determine_status, axis=1)
-    df = df[df['status'].isin(status_checkboxes)]
-    df = df[df['language'].isin(language_checkboxes)]
-    df = df[df['attraction_group'].isin(attraction_groups_checkboxes)]
-    df = df if "Wszystkie" in visit_type_groups_checkboxes else df[df['visit_type'].isin(visit_type_groups_checkboxes)]
+    groupBy = 'street' if seperate_cities else 'attraction_group' if seperate_attractions else 'status' if seperate_status else 'visit_type' if seperate_visit_types else None
 
-    df = df[df[x_axis_type] >= start_date]
-    df = df[df[x_axis_type] <= end_date]
-
-    df_unfiltered_by_city = df
-    df = df[df['city'].isin(city_checkboxes)]
-
-    return (df, df_unfiltered_by_city, x_axis_type, moving_average_toggle,
+    return (x_axis_type, moving_average_toggle,
       show_only_moving_average, moving_average_days,
-      seperate_cities, show_notes, seperate_attractions, seperate_status,
-      seperate_visit_types)
+      show_notes, start_date, cities, language, attraction_groups_checkboxes,status_checkboxes,visit_types, groupBy)

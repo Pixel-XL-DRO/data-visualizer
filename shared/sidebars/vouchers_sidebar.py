@@ -5,29 +5,35 @@ from datetime import datetime, timedelta
 import utils
 import streamlit as st
 import pandas as pd
+import numpy as np
+
+def determine_status(row):
+  if row['is_cancelled']:
+    return 'Anulowane'
+  elif not row['is_payed']:
+    return 'Zrealizowane nieopłacone'
+  return 'Zrealizowane'
 
 def filter_data(df):
   start_date = None
   end_date = None
 
+  if df.empty:
+    return (start_date, end_date, [])
+
   df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
 
   with st.sidebar:
     with st.container(border=True):
-      time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=6)
+      time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku', 'Przedział'], index=6)
       if time_range == "Przedział":
-        start_date = st.date_input('Data rozpoczecia')
-        end_date = st.date_input('Data konca')
-
-    with st.expander("Średnia kroczaca"):
-      moving_average_toggle = st.checkbox('Pokazuj', key="t1", value=True, on_change=lambda:utils.chain_toggle_off("t1", "t2"))
-      show_only_moving_average = st.checkbox('Pokazuj tylko srednia kroczaca', key="t2", value=False, on_change=lambda:utils.chain_toggle_on("t2", "t1"))
-      moving_average_days = st.slider('Ile dni', 1, 30, 7)
+        yesterday = datetime.now() - timedelta(days=1)
+        start_date = st.date_input('Data rozpoczecia', max_value=yesterday)
+        end_date = st.date_input('Data konca', min_value=start_date + timedelta(days=1), max_value="today")
 
     with st.expander("Filtry", expanded=True):
       with st.container(border=True):
         location_checkboxes = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique())
-        separate_cities = st.checkbox('Rozdziel miasta')
 
     if end_date is None:
       end_date = datetime.now()
@@ -54,6 +60,5 @@ def filter_data(df):
       start_date = datetime.combine(start_date, datetime.min.time())
 
     cities = df['street'][df['location'].isin(location_checkboxes)].unique()
-    groupBy = 'street' if separate_cities else None
-    moving_average_days = moving_average_days - 1 # we have to decrement to adjust for SQL indexing from 0
-    return (groupBy, show_only_moving_average, moving_average_days, moving_average_toggle, cities, start_date)
+    
+    return (start_date, end_date, cities)

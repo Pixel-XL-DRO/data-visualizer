@@ -2,10 +2,8 @@ import sys
 sys.path.append("shared")
 
 from datetime import datetime, timedelta
-import utils
 import streamlit as st
 import pandas as pd
-import numpy as np
 
 def filter_data(df):
   start_date = None
@@ -21,10 +19,10 @@ def filter_data(df):
       end_date = st.date_input('Data konca')
     location_checkboxes = st.multiselect("Lokalizacje", df['location'].unique(), default=df['location'][0])
 
+    location_checkboxes = [location.split(", ", 1)[1] for location in location_checkboxes]
+    
     if end_date is None:
-      end_date = datetime.now()
-    else:
-      end_date = datetime.combine(end_date, datetime.min.time())
+      end_date = datetime.now() + timedelta(days=1)
 
     if start_date is None:
       if time_range == '7 dni':
@@ -45,15 +43,4 @@ def filter_data(df):
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 
-    df['create_time'] = pd.to_datetime(df['create_time']).dt.tz_localize(None)
-
-    df = df[df['location'].isin(location_checkboxes)]
-    if rating_to_show != "Wszystkie (suma)":
-      df = df[df['rating'] == rating_to_show]
-
-    df = df[df['create_time'] >= start_date]
-    df = df[df['create_time'] <= end_date]
-
-    df = df.reset_index(drop=True)
-
-    return (df)
+    return (start_date, end_date, rating_to_show, location_checkboxes)

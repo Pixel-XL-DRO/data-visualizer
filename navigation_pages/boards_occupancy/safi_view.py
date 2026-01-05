@@ -2,37 +2,75 @@ import math
 import sys
 
 sys.path.append("utils")
+sys.path.append("shared")
 
 import streamlit as st
 import pandas as pd
 import altair as alt
 import numpy as np
 from datetime import datetime
-
+import boards_occupancy_queries
+import queries
 import utils
 
+NUMPY_FOUR = np.float64(4) # for now every city has 4 boards that start at last hour
+
+LAST_HOURS_AVAILABILITY = {
+    "krakow": {
+        0: {20: NUMPY_FOUR},
+        1: {20: NUMPY_FOUR},
+        2: {20: NUMPY_FOUR},
+        3: {20: NUMPY_FOUR},
+        4: {22: NUMPY_FOUR},
+        5: {22: NUMPY_FOUR},
+        6: {20: NUMPY_FOUR},
+    },
+    "poznan": {
+        0: {22: NUMPY_FOUR},
+        1: {22: NUMPY_FOUR},
+        2: {22: NUMPY_FOUR},
+        3: {22: NUMPY_FOUR},
+        4: {23: NUMPY_FOUR},
+        5: {23: NUMPY_FOUR},
+        6: {21: NUMPY_FOUR},
+    },
+    "katowice": {
+        0: {21: NUMPY_FOUR},
+        1: {21: NUMPY_FOUR},
+        2: {21: NUMPY_FOUR},
+        3: {21: NUMPY_FOUR},
+        4: {22: NUMPY_FOUR},
+        5: {22: NUMPY_FOUR},
+        6: {19: NUMPY_FOUR},
+    },
+    "gdansk": {
+        0: {21: NUMPY_FOUR},
+        1: {21: NUMPY_FOUR},
+        2: {21: NUMPY_FOUR},
+        3: {21: NUMPY_FOUR},
+        4: {23: NUMPY_FOUR},
+        5: {23: NUMPY_FOUR},
+        6: {21: NUMPY_FOUR},
+    },
+}
+
 def render_safi_view(
-  df,
+  df_initial,
   df_locations,
-  df_visit_types,
   df_location_hours_availability,
   df_location_boards_availability,
-  df_visit_type_availability,
-  df_slots_occupancy,
-  city_selection
+  city_selection,
+  attraction_groups,
   ):
 
-  selected_location = df_locations[df_locations['city'] == city_selection]
+  selected_location = df_locations[df_locations['street'] == city_selection]
   selected_location_boards_availability = df_location_boards_availability[df_location_boards_availability['boards_availability_dim_location_id'].isin(selected_location['id'])]
   selected_location_hours_availability = df_location_hours_availability[df_location_hours_availability['hours_availability_dim_location_id'].isin(selected_location['id'])]
 
-  df = df[df['location_id'].isin(selected_location['id'])]
-
-  min_date = df['start_date'].min()
-  max_date = df['start_date'].max()
+  min_date = df_initial['start_date'].min()
 
   if 'week_offset' not in st.session_state:
-      st.session_state.week_offset = 0
+    st.session_state.week_offset = 0
 
   # show since yesterday - since we dont have data for today
   yesterday = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - pd.Timedelta(days=1)
@@ -41,34 +79,36 @@ def render_safi_view(
   def update_week_offset(offset):
     if offset == -1:
       st.session_state.week_offset -= 1
-    elif offset == 1 and current_week_start - pd.Timedelta(days=7 * (st.session_state.week_offset + 1)) >= min_date:
+    elif offset == 1 and current_week_start - pd.Timedelta(days=7 * (st.session_state.week_offset)) >= min_date:
       st.session_state.week_offset += 1
+    else:
+      st.session_state.week_offset -= offset
 
   selected_week_start = current_week_start - pd.Timedelta(days=7 * st.session_state.week_offset)
   selected_week_end = (selected_week_start + pd.Timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999)
 
   col1, col2, col3 = st.columns(3)
 
-  if selected_week_start - pd.Timedelta(days=7) >= min_date:
+  if selected_week_start.date() > min_date.date():
     with col1:
-      st.button("<=", on_click=lambda: update_week_offset(1))
+      st.button(":material/arrow_back:", on_click=lambda: update_week_offset(1))
 
   with col2:
     st.write(f"{selected_week_start.day}.{selected_week_start.month}.{selected_week_start.year} - {selected_week_end.day}.{selected_week_end.month}.{selected_week_end.year}" )
 
   if True or st.session_state.week_offset > 0:
     with col3:
-      st.button("=>", on_click=lambda: update_week_offset(-1))
+      st.button(":material/arrow_forward:", on_click=lambda: update_week_offset(-1))
 
-  df['start_date'] = pd.to_datetime(df['start_date'])
-  df = df.loc[(df['start_date'] >= selected_week_start) & (df['start_date'] <= selected_week_end)]
+  with st.spinner("Ładowanie danych...", show_time=True):
 
-  df = df.reset_index()
+    df, df_slots_occupancy = utils.run_in_parallel(
+      (boards_occupancy_queries.get_reservations_data, (city_selection, attraction_groups, selected_week_start, selected_week_end)),
+      (queries.get_slots_occupancy, (selected_week_start, selected_week_end))
+    )
 
   current_location_boards_availability = selected_location_boards_availability[selected_location_boards_availability['boards_availability_until_when'].isnull()]
   current_location_hours_availability = selected_location_hours_availability[selected_location_hours_availability['hours_availability_until_when'].isnull()]
-  current_location_slots_occupancy = df_slots_occupancy[df_slots_occupancy['slots_occupancy_reservation_id'].isin(df['id'])]
-
   time_unit_in_hours = current_location_boards_availability['boards_availability_time_unit_in_hours'].values[0]
 
   hours_map = {}
@@ -93,8 +133,28 @@ def render_safi_view(
   time_unit_in_minutes = int(time_unit_in_hours * 60)
 
   for _, reservation in df.iterrows():
-    slots_taken = reservation['reservation_slots_taken']
-    time_taken = reservation['reservation_time_taken']
+
+    if reservation['reservation_system'] == "plan4u":
+      current_slot = df_slots_occupancy[df_slots_occupancy['slots_occupancy_reservation_id'] == reservation['id']]
+
+      time_sum = 0
+      slots_sum = 0
+
+      for _, slot in current_slot.iterrows():
+        time_sum += slot['slots_occupancy_time_taken']
+        slots_sum += slot['slots_occupancy_slots_taken']
+
+      time_taken = time_sum
+
+      if time_taken == 0:
+        continue
+
+      slots_taken = slots_sum / (time_taken / 60)
+
+    else:
+      slots_taken = reservation['reservation_slots_taken']
+      time_taken = reservation['reservation_time_taken']
+
     start_date = reservation['start_date']
 
     date = start_date.date()
@@ -106,9 +166,7 @@ def render_safi_view(
 
     while (time_taken > 0):
       hour_key = str(f'{hour}.{minutes_multiplier * int(minutes / 60 * 10)}')
-
-      if hour_key in hours_map[str(date)]:
-        hours_map[str(date)][hour_key] += slots_taken
+      hours_map[str(date)][hour_key] += slots_taken
 
       time_taken -= time_unit_in_minutes
 
@@ -119,48 +177,49 @@ def render_safi_view(
 
   heatmap_data = []
 
-  for start_date_key, hours_data in hours_map.items():
-    for hour, slots_taken in hours_data.items():
-      formatted_date = utils.format_date(start_date_key)
+  try:
 
-      display_date = pd.to_datetime(formatted_date, format='%d-%m-%Y').strftime('%d.%m')
-      day_name = utils.get_day_of_week_string_shortcut(datetime.strptime(start_date_key, '%Y-%m-%d').weekday())
-      display_label = f"{display_date}, {day_name}"
+    for start_date_key, hours_data in hours_map.items():
+      for hour, slots_taken in hours_data.items():
+        formatted_date = utils.format_date(start_date_key)
 
-      reservation_date = pd.to_datetime(start_date_key, format='%Y-%m-%d').tz_localize('UTC')
+        display_date = pd.to_datetime(formatted_date, format='%d-%m-%Y').strftime('%d.%m')
+        day_name = utils.get_day_of_week_string_shortcut(datetime.strptime(start_date_key, '%Y-%m-%d').weekday())
+        display_label = f"{display_date}, {day_name}"
 
-      selected_location_boards_availability_filtered = selected_location_boards_availability.loc[(selected_location_boards_availability['boards_availability_since_when'] <= reservation_date) & (selected_location_boards_availability['boards_availability_until_when'].isnull() | (selected_location_boards_availability['boards_availability_until_when'] >= reservation_date))].iloc[0]
-      total_boards = selected_location_boards_availability_filtered['boards_availability_number_of_boards']
+        reservation_date = pd.to_datetime(start_date_key, format='%Y-%m-%d').tz_localize('UTC')
 
-      if (selected_location.city.iloc[0] == "krakow"):
+        selected_location_boards_availability_filtered = selected_location_boards_availability.loc[(selected_location_boards_availability['boards_availability_since_when'] <= reservation_date) & (selected_location_boards_availability['boards_availability_until_when'].isnull() | (selected_location_boards_availability['boards_availability_until_when'] >= reservation_date))].iloc[0]
+        total_boards = selected_location_boards_availability_filtered['boards_availability_number_of_boards']
+
+        city = selected_location.city.iloc[0]
         parsed_hour = int(float(hour))
-        new_total_boards = np.float64(4)
-
         day_of_week = datetime.strptime(start_date_key, '%Y-%m-%d').weekday()
-        if day_of_week < 5 and parsed_hour == 20:
-          total_boards = new_total_boards
-        elif day_of_week == 5 and parsed_hour == 21:
-          total_boards = new_total_boards
-        elif day_of_week == 6 and parsed_hour == 20:
-          total_boards = new_total_boards
 
-      heatmap_data.append({
-        'start_date_key': formatted_date,
-        'display_label': display_label,
-        'start_date_hour': utils.parse_hour(hour),
-        'slots_taken': slots_taken,
-        # TODO: revert
-        # 'boards_occupancy': (slots_taken / total_boards * 100).clip(max=100).round(0)
-        'boards_occupancy': (slots_taken / total_boards * 100).round(0)
-      })
+        new_slots_taken = LAST_HOURS_AVAILABILITY.get(city, {}).get(day_of_week, {}).get(parsed_hour)
 
+        if new_slots_taken:
+          total_boards = new_slots_taken
 
+        heatmap_data.append({
+          'start_date_key': formatted_date,
+          'display_label': display_label,
+          'start_date_hour': utils.parse_hour(hour),
+          'slots_taken': slots_taken,
+          # TODO: revert
+          # 'boards_occupancy': (slots_taken / total_boards * 100).clip(max=100).round(0)
+          'boards_occupancy': (slots_taken / total_boards * 100).round(0)
+        })
+  except:
+    pass
   heatmap_df = pd.DataFrame(heatmap_data)
 
   if heatmap_df.empty:
-    raise Exception("Pusty zbiór danych. Popraw zakres dat.")
+    st.write(f"W aktualnym przedziale nie wykryto mapowania rezerwacji")
+    st.write(f"Najbliższe rezerwacje są w tygodniu :orange[{min_date.date()} - {min_date.date() + pd.Timedelta(days=7)}]")
+    st.button("Przejdź :material/fast_forward:", on_click=lambda: update_week_offset((min_date - selected_week_start).days // 7))
 
-  date_sort_order = sorted(heatmap_df['start_date_key'].unique(), key=lambda x: pd.to_datetime(x, format='%d-%m-%Y'))
+    raise Exception("Pusty zbiór danych. Popraw zakres dat.")
 
   heatmap_df['sort_key'] = pd.to_datetime(heatmap_df['start_date_key'], format='%d-%m-%Y')
 

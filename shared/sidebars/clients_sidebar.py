@@ -15,7 +15,10 @@ def determine_status(row):
   return 'Zrealizowane'
 
 def ensure_status():
-  if st.session_state.ms1[0] == "Wszystkie":
+  if not st.session_state.ms1:
+    st.session_state.ms1 = ["Wszystkie"]
+    return
+  elif st.session_state.ms1[0] == "Wszystkie":
     st.session_state.ms1 = st.session_state.ms1[1:]
   elif st.session_state.ms1[-1] == "Wszystkie":
     st.session_state.ms1 = ["Wszystkie"]
@@ -24,15 +27,18 @@ def filter_data(df):
   start_date = None
   end_date = None
 
+  df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
+
   with st.sidebar:
     x_axis_type = st.selectbox('Wybierz rodzaj daty', ['Data stworzenia', 'Data rozpoczecia'])
     time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku', "Przedział"], index=2)
     if time_range == "Przedział":
       start_date = st.date_input('Data rozpoczecia')
       end_date = st.date_input('Data konca')
-    with st.expander("Filtry"):
+
+    with st.expander("Filtry", expanded=True):
       with st.container(border=True):
-        city_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
+        city_checkboxes = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique())
         seperate_cities = st.checkbox('Rozdziel miasta', key="t3", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t3"))
       language_checkboxes = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique())
       with st.container(border=True):
@@ -75,23 +81,12 @@ def filter_data(df):
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 
-    df['start_date'] = pd.to_datetime(df['start_date']).dt.tz_localize(None)
-    df['booked_date'] = pd.to_datetime(df['booked_date']).dt.tz_localize(None)
+    streets = df['street'][df['location'].isin(city_checkboxes)].unique()
+    language = df['language'][df['language'].isin(language_checkboxes)].unique()
+    
+    visit_types = df['visit_type'].unique() if "Wszystkie" in visit_type_groups_checkboxes else df['visit_type'][df['visit_type'].isin(visit_type_groups_checkboxes)].unique()
 
-    df['status'] = df.apply(determine_status, axis=1)
-    df = df[df['status'].isin(status_checkboxes)]
-    df = df[df['city'].isin(city_checkboxes)]
-    df = df[df['language'].isin(language_checkboxes)]
-    df = df[df['attraction_group'].isin(attraction_groups_checkboxes)]
-    df = df if "Wszystkie" in visit_type_groups_checkboxes else df[df['visit_type'].isin(visit_type_groups_checkboxes)]
+    groupBy = 'street' if seperate_cities else 'attraction_group' if seperate_attractions else 'status' if seperate_status else 'visit_type' if seperate_visit_types else None
 
-    df = df.sort_values(by=x_axis_type, ascending=True)
-    df['cumulative_reservations'] = df.groupby('client_id').cumcount() + 1
-    df['has_past_reservation'] = df['cumulative_reservations'] > 1
-
-    df = df[df[x_axis_type] >= start_date]
-    df = df[df[x_axis_type] <= end_date]
-
-
-    return (df, x_axis_type, seperate_cities,seperate_attractions,
-            seperate_status, seperate_visit_types)
+    return (x_axis_type,
+      start_date, streets, language, attraction_groups_checkboxes,status_checkboxes,visit_types, groupBy)

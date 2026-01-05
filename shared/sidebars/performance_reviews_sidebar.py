@@ -4,34 +4,30 @@ sys.path.append("shared")
 from datetime import datetime, timedelta
 import utils
 import streamlit as st
-import pandas as pd
-import numpy as np
 
 def filter_data(df):
   start_date = None
   end_date = None
 
+  df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
+
   with st.sidebar:
     with st.container(border=True):
       time_range = st.selectbox('Pokazuj z ostatnich', ['7 dni', '1 miesiaca', '6 miesiecy', '1 roku', '2 lat', '3 lat', 'Od poczatku'], index=6)
-      if time_range == "Przedział":
-        start_date = st.date_input('Data rozpoczecia')
-        end_date = st.date_input('Data konca')
 
     with st.expander("Średnia krocząca"):
       moving_average_toggle = st.checkbox('Pokazuj', key="t1", value=True, on_change=lambda:utils.chain_toggle_off("t1", "t2","t7"))
       show_only_moving_average = st.checkbox('Pokazuj tylko srednia kroczaca', key="t2", value=False, on_change=lambda:utils.chain_toggle_on("t2", "t1"))
       moving_average_days = st.slider('Ile dni', 1, 30, 7)
+      moving_average_days = moving_average_days - 1 # we have to decrement to adjust for SQL indexing from 0
 
-    with st.expander("Filtry"):
+    with st.expander("Filtry", expanded=True):
       with st.container(border=True):
-        location_checkboxes = st.multiselect("Miasta", df['city'].unique(), default=df['city'].unique())
-        seperate_cities = st.checkbox('Rozdziel miasta')
-
+        location_checkboxes = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique())
+        separate_cities = st.checkbox('Rozdziel miasta')
+        
     if end_date is None:
-      end_date = datetime.now()
-    else:
-      end_date = datetime.combine(end_date, datetime.min.time())
+      end_date = datetime.now() + timedelta(days=1)
 
     if start_date is None:
       if time_range == '7 dni':
@@ -49,13 +45,10 @@ def filter_data(df):
       elif time_range == 'Od poczatku':
         min_date = df['date'].min()
         start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
+        
     else:
       start_date = datetime.combine(start_date, datetime.min.time())
 
-    df['date'] = pd.to_datetime(df['date']).dt.tz_localize(None)
+    cities = df['street'][df['location'].isin(location_checkboxes)].unique()
 
-    df = df[df['city'].isin(location_checkboxes)]
-    df = df[df['date'] >= start_date]
-    df = df[df['date'] <= end_date]
-
-    return (df, seperate_cities, moving_average_toggle, show_only_moving_average, moving_average_days)
+    return (start_date, end_date, cities, separate_cities, moving_average_toggle, show_only_moving_average, moving_average_days)

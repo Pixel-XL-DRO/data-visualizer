@@ -17,13 +17,25 @@ performance_reviews_credentials = service_account.Credentials.from_service_accou
   st.secrets["gcp_performance_reviews_account"]
 )
 
+sandbox_credentials = service_account.Credentials.from_service_account_info(
+  st.secrets["gcp_sandbox_account"]
+)
+
 client = bigquery.Client(credentials=credentials)
 reviews_client = bigquery.Client(credentials=reviews_credentials)
 performance_reviews_client = bigquery.Client(credentials=performance_reviews_credentials)
+sandbox_client = bigquery.Client(credentials=sandbox_credentials)
 
 def run_query(query, job_config=None):
 
   query_job = client.query(query, job_config)
+  rows_raw = query_job.result()
+  # dict cause of caching
+  rows = [dict(row) for row in rows_raw]
+  return rows
+def run_sandbox_query(query, job_config=None):
+
+  query_job = sandbox_client.query(query, job_config)
   rows_raw = query_job.result()
   # dict cause of caching
   rows = [dict(row) for row in rows_raw]
@@ -63,7 +75,7 @@ def get_reviews():
   df = pd.DataFrame(rows, columns=['location_id', 'rating', 'create_time', 'address', 'city'])
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_locations_data():
   query = """
     SELECT
@@ -80,7 +92,7 @@ def get_locations_data():
 
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_historical_location_hours_availability():
   query = """
     SELECT
@@ -98,7 +110,7 @@ def get_historical_location_hours_availability():
 
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_historical_location_boards_availability():
   query = """
     SELECT
@@ -115,7 +127,7 @@ def get_historical_location_boards_availability():
 
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_visit_types_data():
   query = """
     SELECT
@@ -131,7 +143,7 @@ def get_visit_types_data():
 
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_historical_visit_type_availability():
   query = """
     SELECT
@@ -149,18 +161,30 @@ def get_historical_visit_type_availability():
 
   return df
 
-@st.cache_data(ttl=6000)
-def get_slots_occupancy():
-  query = """
+@st.cache_data(ttl=28800)
+def get_slots_occupancy(selected_week_start, selected_week_end):
+  query = f"""
     SELECT
       reservation_id AS slots_occupancy_reservation_id,
       slots_taken AS slots_occupancy_slots_taken,
       time_taken AS slots_occupancy_time_taken,
-      datetime_slot AS slots_occupancy_datetime_slot
+      DATETIME(datetime_slot) AS slots_occupancy_datetime_slot
     FROM
       reservation_data.reservation_slots_occupancy
+    WHERE
+      DATETIME(datetime_slot) >= @start
+    AND     
+      DATETIME(datetime_slot) <= @end
   """
-  rows = run_query(query)
+
+  job_config = bigquery.QueryJobConfig(
+    query_parameters=[
+        bigquery.ScalarQueryParameter("start", "DATETIME", selected_week_start),
+        bigquery.ScalarQueryParameter("end", "DATETIME", selected_week_end),
+    ]
+  )
+
+  rows = run_query(query, job_config)
 
   df = pd.DataFrame(rows, columns=['slots_occupancy_reservation_id', 'slots_occupancy_slots_taken', 'slots_occupancy_time_taken', 'slots_occupancy_datetime_slot'])
 
@@ -173,7 +197,7 @@ def refresh_data_editor_data():
   get_historical_location_boards_availability.clear()
   get_historical_visit_type_availability.clear()
   get_notes.clear()
-
+@st.cache_data(ttl=28800)
 def add_historical_location_hours_availability(location_id, since_when, day_of_week, number_of_hours, starting_hour):
   query = """
       UPDATE
@@ -215,7 +239,7 @@ def add_historical_location_hours_availability(location_id, since_when, day_of_w
   )
   run_query(query, job_config)
   get_historical_location_hours_availability.clear()
-
+@st.cache_data(ttl=28800)
 def add_historical_location_boards_availability(location_id, since_when, number_of_boards, time_unit_in_hours):
   query = """
       UPDATE
@@ -254,6 +278,7 @@ def add_historical_location_boards_availability(location_id, since_when, number_
   run_query(query, job_config)
   get_historical_location_boards_availability.clear()
 
+@st.cache_data(ttl=28800)
 def add_historical_visit_type_availability(visit_type_id, since_when, number_of_boards_per_time_unit, duration_in_time_units):
   query = """
       UPDATE
@@ -292,7 +317,7 @@ def add_historical_visit_type_availability(visit_type_id, since_when, number_of_
   run_query(query, job_config)
   get_historical_visit_type_availability.clear()
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_reservation_data():
   query = """
     SELECT
@@ -308,6 +333,8 @@ def get_reservation_data():
       ANY_VALUE(res.additional_items_cost) AS additional_items_cost,
       ANY_VALUE(res.time_taken) AS reservation_time_taken,
       ANY_VALUE(res.slots_taken) AS reservation_slots_taken,
+      ANY_VALUE(res.reservation_system) AS reservation_system,
+      ANY_VALUE(res.reservation_external_id) AS reservation_external_id,
       ANY_VALUE(start_date.date) AS start_date,
       ANY_VALUE(booked_date.date) AS booked_date,
       ANY_VALUE(start_date.hour) AS start_date_hour,
@@ -426,14 +453,14 @@ def mock_price_and_people(day_of_week, visit_type, city, additional_items_cost, 
     return (max((2899 + additional_items_cost), current_price), 50)
   return (current_price, current_number_of_people)
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_notes():
   query = """
     SELECT
       notes.id as id,
       notes.date_id as date,
-      notes.content as content,
-      location.city as note_city
+      notes.content as note_content,
+      location.city as city
     FROM
       reservation_data.notes notes
     JOIN
@@ -442,7 +469,7 @@ def get_notes():
       notes.dim_location_id = location.id
   """
   rows = run_query(query)
-  df = pd.DataFrame(rows, columns=['id', 'date', 'content', 'note_city'])
+  df = pd.DataFrame(rows, columns=['id', 'date', 'note_content', 'city'])
 
   return df
 
@@ -499,7 +526,7 @@ def get_performance_reviews():
   df = pd.DataFrame(rows, columns=['reservationId', 'feedback', 'score', 'city', 'date'])
   return df
 
-@st.cache_data(ttl=6000)
+@st.cache_data(ttl=28800)
 def get_order_items():
   query = """
     SELECT
@@ -543,6 +570,109 @@ def get_order_items():
   df_all = df_all[df_all['status'] != 'canceled']
   return df, df_all
 
+@st.cache_data(ttl=60000)
+def get_initial_data():
+  query = f"""
+    SELECT
+      l.city as city,
+      l.street as street,
+      dvt.attraction_group as attraction_group,
+      dvt.name as visit_type,
+      dc.language as language,
+      DATETIME(MIN(ecr.start_date)) as start_date,
+      DATETIME(MIN(ecr.booked_date)) as booked_date
+    FROM
+      reservation_data.event_create_reservation ecr
+    JOIN
+      reservation_data.dim_client dc
+      ON ecr.client_id = dc.id
+    JOIN
+      reservation_data.dim_location l
+      ON ecr.location_id = l.id
+    JOIN
+      reservation_data.dim_visit_type dvt
+      ON ecr.visit_type_id = dvt.id
+    WHERE
+      ecr.is_cancelled = FALSE
+    GROUP BY
+      l.city,
+      l.street,
+      dvt.attraction_group,
+      dvt.name,
+      dc.language  
+  """
+
+  rows = run_query(query)
+  return pd.DataFrame(rows)
+
+@st.cache_data(ttl=60000)
+def get_vouchers_initial_data():
+  query = f"""
+    SELECT DISTINCT
+      MIN(voucher_creation_date) as min_creation_date,
+      MAX(voucher_creation_date) as max_creation_date,
+      voucher_name,
+      location.city,
+      location.street
+    FROM
+      vouchers_data.voucher voucher
+    JOIN
+      vouchers_data.dim_location location
+    ON
+      voucher.dim_location_id = location.id
+    GROUP BY
+      voucher_name,
+      location.city,
+      location.street  
+  """
+
+  rows = run_query(query)
+  return pd.DataFrame(rows)
+
+@st.cache_data(ttl=60000)
+def get_nps_initial_data():
+  query = f"""
+    SELECT
+      MIN(nps.date) AS date,
+      location.city,
+      location.street
+    FROM
+      performance_data.mail_review nps
+    JOIN
+      performance_data.dim_location location
+    ON
+      nps.dim_location_id = location.id
+    GROUP BY
+      location.city,
+      location.street      
+  """
+
+  rows = run_performance_review_query(query)
+  return pd.DataFrame(rows)
+
+@st.cache_data(ttl=60000)
+def get_reviews_initial_data():
+  query = """
+    SELECT 
+      ratings.value AS rating,
+      MIN(ratings.create_time) AS create_time,
+      dim_location.address AS address,
+      dim_location.locality AS city,
+    FROM
+      reviews.star_rating ratings
+    JOIN
+      reviews.dim_location dim_location
+      ON ratings.location_id = dim_location.name
+    GROUP BY
+      ratings.value,
+      dim_location.address,
+      dim_location.locality 
+  """
+  rows = run_reviews_query(query)
+  df = pd.DataFrame(rows, columns=['rating', 'create_time', 'address', 'city'])
+  return df
+
+@st.cache_data(ttl=6000)
 def get_voucher_data():
   query = """
     SELECT
@@ -563,4 +693,42 @@ def get_voucher_data():
   rows = run_query(query)
   df = pd.DataFrame(rows, columns=['id', 'creation_date', 'voucher_name', 'net_amount', 'city', 'street'])
   return df
+@st.cache_data(ttl=60000)
+def get_dotypos_initial_data():
+  query = f"""
+    SELECT
+      MAX(o.creation_date) AS max_creation_date,
+      MIN(o.creation_date) AS min_creation_date,
+      o.status,
+      l.city,
+      l.street
+    FROM
+      POS_system_data.order o
+    JOIN
+      POS_system_data.dim_location l
+    ON
+      o.dim_location_id = l.id
+    WHERE
+      DATE(o.creation_date) >= DATE("2025-02-01") -- START OF DOTYPOS
+    GROUP BY
+      o.status,
+      l.city,
+      l.street
+  """
 
+  query_items = f"""
+  SELECT DISTINCT
+    i.name
+  FROM 
+    POS_system_data.item i
+  WHERE
+    NOT REGEXP_CONTAINS(i.name, '(?i)bilet|zadatek|voucher|integracja|uczestnik|urodzin')  
+  """
+
+  rows = run_query(query)
+  rows_items = run_query(query_items)
+
+  df_dotypos = pd.DataFrame(rows)
+  df_items = pd.DataFrame(rows_items)
+
+  return df_dotypos, df_items
