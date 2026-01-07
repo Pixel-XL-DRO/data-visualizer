@@ -108,7 +108,6 @@ def render_safi_view(
     )
 
   current_location_boards_availability = selected_location_boards_availability[selected_location_boards_availability['boards_availability_until_when'].isnull()]
-  current_location_hours_availability = selected_location_hours_availability[selected_location_hours_availability['hours_availability_until_when'].isnull()]
   time_unit_in_hours = current_location_boards_availability['boards_availability_time_unit_in_hours'].values[0]
 
   hours_map = {}
@@ -118,8 +117,12 @@ def render_safi_view(
 
   while current_iterator_date <= end_iterator_date:
     weekday = (current_iterator_date.weekday() + 1) % 7
-    starting_hour = current_location_hours_availability[current_location_hours_availability['hours_availability_day_of_week'] == weekday]['hours_availability_starting_hour'].values[0]
-    num_time_units = int(current_location_hours_availability[current_location_hours_availability['hours_availability_day_of_week'] == weekday]['hours_availability_number_of_hours'].values[0] / time_unit_in_hours)
+  
+    sorted_location_hours_availability = selected_location_hours_availability[selected_location_hours_availability['hours_availability_day_of_week'] == weekday].sort_values(by='hours_availability_since_when', ascending=False)
+    current_location_hours_availability = sorted_location_hours_availability[sorted_location_hours_availability['hours_availability_since_when'] <= pd.to_datetime(current_iterator_date).tz_localize('UTC')].iloc[0]
+    
+    starting_hour = current_location_hours_availability['hours_availability_starting_hour']
+    num_time_units = int((current_location_hours_availability['hours_availability_number_of_hours']) / time_unit_in_hours)
 
     hours_map[str(current_iterator_date)] = {}
 
