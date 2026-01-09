@@ -460,7 +460,8 @@ def get_notes():
       notes.id as id,
       notes.date_id as date,
       notes.content as note_content,
-      location.city as city
+      location.city as city,
+      location.street as street
     FROM
       reservation_data.notes notes
     JOIN
@@ -469,42 +470,52 @@ def get_notes():
       notes.dim_location_id = location.id
   """
   rows = run_query(query)
-  df = pd.DataFrame(rows, columns=['id', 'date', 'note_content', 'city'])
-
+  df = pd.DataFrame(rows, columns=['id', 'date', 'note_content', 'city', 'street'])
+  
   return df
 
-def add_note(date_id, content, location_id):
-  note_id = str(uuid.uuid4())
+def add_note(date_dt, content, note_selected_locations):
+
   query = """
     INSERT INTO
       reservation_data.notes (id, date_id, content, dim_location_id)
     VALUES
       (@id, @date_id, @content, @location_id)
   """
-  job_config = bigquery.QueryJobConfig(
-    query_parameters=[
-        bigquery.ScalarQueryParameter("id", "STRING", note_id),
-        bigquery.ScalarQueryParameter("date_id", "STRING", date_id),
-        bigquery.ScalarQueryParameter("content", "STRING", content),
-        bigquery.ScalarQueryParameter("location_id", "STRING", location_id),
-    ]
-  )
-  run_query(query, job_config)
+
+  for location_id in note_selected_locations:
+    note_id = str(uuid.uuid4())
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("id", "STRING", note_id),
+            bigquery.ScalarQueryParameter("date_id", "STRING", date_dt),
+            bigquery.ScalarQueryParameter("content", "STRING", content),
+            bigquery.ScalarQueryParameter("location_id", "STRING", location_id),
+        ]
+    )
+
+    run_query(query, job_config)
+
   get_notes.clear()
 
-def delete_note(id):
+def delete_note(ids):
+  
   query = """
     DELETE FROM
       reservation_data.notes notes
     WHERE
       notes.id = @id
   """
-  job_config = bigquery.QueryJobConfig(
-    query_parameters=[
-        bigquery.ScalarQueryParameter("id", "STRING", id),
-    ]
-  )
-  res = run_query(query, job_config)
+  
+  for id in ids:
+    job_config = bigquery.QueryJobConfig(
+      query_parameters=[
+          bigquery.ScalarQueryParameter("id", "STRING", id),
+      ]
+    )
+    run_query(query, job_config)
+
   get_notes.clear()
 
 def get_performance_reviews():
