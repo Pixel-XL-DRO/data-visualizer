@@ -16,6 +16,15 @@ def get_total_income(group_by, moving_average_days, start, end, date_type, citie
     (vouchers_income_queries.get_voucher_income, (group_by, moving_average_days, start, end, cities))
   )
   
+  keys = ["date", "price", group_by]
+
+  if df.empty:
+     fill_empty_df(df, keys)
+  if df_pos.empty:
+     fill_empty_df(df_pos, keys)
+  if df_voucher.empty:
+     fill_empty_df(df_voucher, keys)
+
   df_all = pd.concat([df, df_pos, df_voucher], ignore_index=True)
   
   df_final = df_all.groupby(["date", group_by] if group_by else "date", as_index=False).agg({
@@ -42,6 +51,15 @@ def get_total_income_by_period(grouping_period, start, end, date_type, cities, l
     (pos_queries.get_pos_income_by_period, (grouping_period, start, end, cities, filter_checkbox)),
     (vouchers_income_queries.get_vouchers_by_weekday, (grouping_period, start, end, cities)),
   )
+
+  keys = ["date", "period", "current_period", "avg_count"]
+
+  if df.empty:
+     fill_empty_df(df, keys)
+  if df_pos.empty:
+     fill_empty_df(df_pos, keys)
+  if df_voucher.empty:
+     fill_empty_df(df_voucher, keys)
 
   df_all = pd.concat([df, df_pos, df_voucher], ignore_index=True)
   
