@@ -3,18 +3,18 @@ from google.cloud import bigquery
 from queries import run_query
 import utils
 
-def get_reservations_data(street, attraction_groups, selected_week_start, selected_week_end):
+def get_reservations_data(attraction_groups, selected_week_start, selected_week_end):
 
   attraction_groups_condition = utils.format_array_for_query(attraction_groups)
   
   query = f"""
     SELECT
       res.id,
-      res.location_id AS location_id,
       res.time_taken AS reservation_time_taken,
       res.slots_taken AS reservation_slots_taken,
       res.reservation_system AS reservation_system,
       res.start_date AS start_date,
+      loc.street AS street
     FROM
       `pixelxl-database-dev.reservation_data.event_create_reservation` res
     JOIN 
@@ -30,8 +30,6 @@ def get_reservations_data(street, attraction_groups, selected_week_start, select
     AND
       res.is_cancelled is FALSE
     AND
-      loc.street = @street
-    AND
       dvt.attraction_group {attraction_groups_condition}
     AND
       res.start_date >= @start
@@ -41,7 +39,6 @@ def get_reservations_data(street, attraction_groups, selected_week_start, select
 
   job_config = bigquery.QueryJobConfig(
     query_parameters=[
-        bigquery.ScalarQueryParameter("street", "STRING", street),
         bigquery.ScalarQueryParameter("start", "TIMESTAMP", selected_week_start),
         bigquery.ScalarQueryParameter("end", "TIMESTAMP", selected_week_end),
     ]

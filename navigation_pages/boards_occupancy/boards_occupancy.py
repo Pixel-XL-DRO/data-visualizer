@@ -35,7 +35,6 @@ df_locations['location'] = df_locations['street'].map(utils.street_to_location).
 city_selection = st.selectbox('Wybierz miasto', df_locations['location'].unique())
 selected_city = df_locations['street'][df_locations['location'] == city_selection].iloc[0]
 
-df_initial = df_initial[df_initial['street'] == selected_city]
 
 if not selected_city in SAFI_CITIES:
   plan4u_view.render_plan4u_view(
