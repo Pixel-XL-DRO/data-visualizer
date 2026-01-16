@@ -313,6 +313,7 @@ def lazy_load_initials():
         (queries.get_reviews_initial_data, ()),
         (queries.get_nps_initial_data, ()),
         (queries.get_vouchers_initial_data, ()),
+        (queries.get_safi_products_initial_data, ()),
       )
     with st.spinner("Pobieranie danych w tle..."):
       load()

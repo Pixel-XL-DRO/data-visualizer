@@ -28,28 +28,40 @@ dotypos = st.Page("navigation_pages/dotypos.py", title="System kasowy", icon=":m
 income = st.Page("navigation_pages/income.py", title="Przychody", icon=":material/money_bag:")
 vouchers = st.Page("navigation_pages/vouchers.py", title="Vouchery", icon=":material/local_activity:")
 financial_report_page = st.Page("navigation_pages/reports/financial_report.py", title = "Raport finansowy", icon=":material/attach_money:")
+safi_products_page = st.Page("navigation_pages/safi_products.py", title="Produkty dodatkowe", icon=":material/add_shopping_cart:")
+
+locations_without_safi = [
+  "wroclaw-swidnicka",
+  "warszawa-arkadia"
+]
+# CHANGE THIS AFTER MIGRATION 
+conditional_sales = [dotypos, income, vouchers, safi_products_page] if all(location not in st.session_state.locations for location in locations_without_safi) else [dotypos, income, vouchers]
 
 pages_by_role = {
   "super-admin": {
-    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page, dotypos, income, vouchers],
+    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
+    "Sprzedaż": conditional_sales,
     "Raporty": [financial_report_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
   },
   "admin": {
-    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page, dotypos, income, vouchers],
+    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
+    "Sprzedaż": conditional_sales,
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
   },
   "manager": {
-    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, dotypos, income, vouchers],
+    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page],
+    "Sprzedaż": conditional_sales,
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
   },
   "marketing": {
-    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, vouchers],
+    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page],
+    "Sprzedaż": [vouchers],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
   }

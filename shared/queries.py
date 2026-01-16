@@ -743,3 +743,34 @@ def get_dotypos_initial_data():
   df_items = pd.DataFrame(rows_items)
 
   return df_dotypos, df_items
+
+@st.cache_data(ttl=60000)
+def get_safi_products_initial_data():
+  query = """
+    SELECT 
+      MAX(rp.date_of_sale) as max_creation_date,
+      MIN(rp.date_of_sale) as min_creation_date,
+      dl.city as city,
+      dl.street as street
+    FROM 
+      reservation_data.reservation_product rp
+    JOIN 
+      reservation_data.dim_location dl
+    ON
+      rp.dim_location_id = dl.id
+    GROUP BY
+      dl.city,
+      dl.street  
+  """
+
+  query_items = """
+    SELECT DISTINCT
+      p.name as product_name,
+    FROM
+      reservation_data.products p  
+  """
+
+  rows = run_query(query)
+  rows_product = run_query(query_items)
+
+  return pd.DataFrame(rows), pd.DataFrame(rows_product)
