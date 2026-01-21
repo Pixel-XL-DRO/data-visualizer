@@ -8,6 +8,10 @@ import json
 from datetime import date, timedelta, datetime, timezone
 import calendar
 
+from zoneinfo import ZoneInfo
+
+USER_TZ = ZoneInfo("Europe/Warsaw")
+
 sys.path.append("shared")
 import utils
 
@@ -107,6 +111,9 @@ def get_safi_data(iso_start, iso_end, city_label, safi_location_id, safi_auth_to
         # negative value
         discount_value = sum(d["value"] / 100 for d in discounts) if discounts else 0
 
+        utc_updated_at = datetime.fromisoformat(receipt.get("updated_at").replace("Z", "+00:00")).astimezone(USER_TZ)
+        parsed_utc_updated_at = utc_updated_at.strftime("%Y-%m-%d")
+
         online_sales.append({
           "produkt": line["productOrServiceName"],
           "ilość zakupionych produktów": line["quantity"],
@@ -119,7 +126,7 @@ def get_safi_data(iso_start, iso_end, city_label, safi_location_id, safi_auth_to
           "finalna kwota netto": ((line["totalLineValue"] / 100) + discount_value) / (1 +( tax_rate / 100 )),
           "stawka VAT": tax_rate,
           "link do eparagonu": receipt.get("document_url"),
-          "data wystawienia paragonu": receipt.get("updated_at"),
+          "data wystawienia paragonu": parsed_utc_updated_at,
           "id rezerwacji": receipt.get("reservation_id"),
           "lokalizacja": city_label,
           "typ przychodu": "online - safi",
@@ -350,13 +357,27 @@ else:
             key="range_end"
         )
 
-dt_start = datetime.combine(start_date, datetime.min.time())
-dotypos_start = dt_start.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
-safi_start = dt_start.date().isoformat()
+dt_start = datetime.combine(
+    start_date,
+    datetime.min.time(),
+    tzinfo=USER_TZ
+)
 
-dt_end = datetime.combine(end_date + timedelta(days=1), datetime.min.time())
-dotypos_end = dt_end.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
-safi_end = dt_end.date().isoformat()
+utc_start = (
+    dt_start
+    .astimezone(timezone.utc)
+    .isoformat()
+    .replace("+00:00", "Z")
+)
+
+dt_end = datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=USER_TZ)
+
+utc_end = (
+    dt_end
+    .astimezone(timezone.utc)
+    .isoformat()
+    .replace("+00:00", "Z")
+)
 
 selected = st.selectbox(
     "Wybierz lokalizacje",
@@ -368,12 +389,14 @@ st.divider()
 
 safi, dotykacka = st.columns(2)
 
+st.write(utc_start, utc_end)
+
 with dotykacka:
     @st.fragment
-    def dotykacka_view(): 
+    def dotykacka_view():
       if st.button("Generuj raport dotykacka"):
           with st.spinner("Generowanie...", show_time=True):
-              get_dotypos_data(dotypos_start, dotypos_end, selected["label"], selected["value"].get("dotypos_cloud_id"), selected["value"].get("dotypos_refresh_token"))
+              get_dotypos_data(utc_start, utc_end, selected["label"], selected["value"].get("dotypos_cloud_id"), selected["value"].get("dotypos_refresh_token"))
     dotykacka_view()
 
 with safi:
@@ -381,5 +404,5 @@ with safi:
     def safi_view():
       if st.button("Generuj raport safi"):
           with st.spinner("Generowanie...", show_time=True):
-              get_safi_data(safi_start, safi_end, selected["label"], selected["value"].get("safi_id"), st.secrets["safi"].get("auth_token"))
+              get_safi_data(utc_start, utc_end, selected["label"], selected["value"].get("safi_id"), st.secrets["safi"].get("auth_token"))
     safi_view()
