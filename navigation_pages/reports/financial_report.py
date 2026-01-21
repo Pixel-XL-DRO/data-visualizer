@@ -389,8 +389,6 @@ st.divider()
 
 safi, dotykacka = st.columns(2)
 
-st.write(utc_start, utc_end)
-
 with dotykacka:
     @st.fragment
     def dotykacka_view():
