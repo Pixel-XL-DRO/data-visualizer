@@ -71,6 +71,14 @@ safi_locations = [
       "dotypos_cloud_id": 321010692,
       "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_321010692"),
     }
+  },
+  {
+    "label": "Warszawa BOX - arkadia",
+    "value": {
+      "safi_id": "019bc67a-793e-705f-99db-3ee07379f1e1",
+      "dotypos_cloud_id": 359334480,
+      "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_359334480"),
+    }
   }
 ]
 
