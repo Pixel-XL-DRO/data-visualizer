@@ -152,7 +152,7 @@ def render_safi_view(
       if time_taken == 0:
         continue
 
-      slots_taken = slots_sum / (time_taken / 60)
+      slots_taken = slots_sum / (time_taken / time_unit_in_minutes)
 
     else:
       slots_taken = reservation['reservation_slots_taken']
