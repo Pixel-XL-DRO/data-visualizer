@@ -2,7 +2,6 @@ import sys
 
 sys.path.append("shared")
 
-
 import streamlit as st
 import auth
 
