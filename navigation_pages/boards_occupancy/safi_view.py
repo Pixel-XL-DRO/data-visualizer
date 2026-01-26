@@ -167,8 +167,6 @@ def render_safi_view(
 
     minutes_multiplier = 1 if time_unit_in_minutes != 60 else 0
 
-    if date == datetime(2026,1,19).date() and hour >=10 and hour < 12:
-      print(reservation)
     while (time_taken > 0):
       hour_key = str(f'{hour}.{minutes_multiplier * int(minutes / 60 * 10)}')
       hours_map[str(date)][hour_key] += slots_taken
