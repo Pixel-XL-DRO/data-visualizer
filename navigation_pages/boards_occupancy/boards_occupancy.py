@@ -11,10 +11,7 @@ import queries
 import utils
 import boards_occupancy_sidebar
 import auth
-import plan4u_view
 import safi_view
-
-SAFI_CITIES = ["lubicz", "ogrodowa", "kijowska", "swietego-marcina", "sokolska", "grunwaldzka", "arkadia"]
 
 with st.spinner("Ładowanie danych...", show_time=True):
 
@@ -37,23 +34,13 @@ selected_city = df_locations['street'][df_locations['location'] == city_selectio
 
 df_initial = df_initial[df_initial['street'] == selected_city]
 
-if not selected_city in SAFI_CITIES:
-  plan4u_view.render_plan4u_view(
-    df_initial,
-    df_locations,
-    df_location_hours_availability,
-    df_location_boards_availability,
-    selected_city,
-    attraction_groups
-  )
-else:
-  safi_view.render_safi_view(
-    df_initial,
-    df_locations,
-    df_location_hours_availability,
-    df_location_boards_availability,
-    selected_city,
-    attraction_groups
-  )
+safi_view.render_safi_view(
+  df_initial,
+  df_locations,
+  df_location_hours_availability,
+  df_location_boards_availability,
+  selected_city,
+  attraction_groups
+)
 
 utils.lazy_load_initials()

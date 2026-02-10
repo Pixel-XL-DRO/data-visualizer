@@ -60,7 +60,7 @@ LAST_HOURS_AVAILABILITY = {
         4: {23: np.float64(5)},
         5: {23: np.float64(5)},
         6: {21: np.float64(5)},
-    },
+    } 
 }
 
 def render_safi_view(
