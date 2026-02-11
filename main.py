@@ -40,6 +40,7 @@ pages_by_role = {
   },
   "admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page, dotypos, income, vouchers],
+    "Raporty": [voucher_report_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
@@ -51,6 +52,7 @@ pages_by_role = {
   },
   "marketing": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, vouchers],
+    "Raporty": [voucher_report_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
   }
