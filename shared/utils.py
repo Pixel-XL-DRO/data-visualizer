@@ -268,11 +268,19 @@ def get_month_from_month_number(month_number):
     12: "12. Grudzień"
   }[month_number]
 
-def download_button(df, file_name, label = "Pobierz plik .xlxs"):
-
+def download_button(dfs, file_name, label = "Pobierz plik .xlxs", transpose=False):
+  
   output = BytesIO()
   with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    
+    for name, data in dfs.items():
+      df = pd.DataFrame(data)
+      
+      if transpose:
+        df = df.T
+
+      df.to_excel(writer, index=True, sheet_name=name)
+
     writer.close()
     processed_data = output.getvalue()
 
