@@ -15,6 +15,18 @@ USER_TZ = ZoneInfo("Europe/Warsaw")
 sys.path.append("shared")
 import utils
 
+if "location_select" not in st.session_state:
+    st.session_state.location_select = ["Wszystkie"]
+
+def ensure_status():
+  if (not st.session_state.location_select):
+    st.session_state.location_select = ["Wszystkie"]
+    return
+
+  if st.session_state.location_select[0] == "Wszystkie":
+    st.session_state.location_select = st.session_state.location_select[1:]
+  elif st.session_state.location_select[-1] == "Wszystkie":
+    st.session_state.location_select = ["Wszystkie"]
 
 min_date = date(2025, 1, 1)
 
@@ -24,6 +36,7 @@ POLISH_MONTHS = [
 ]
 
 safi_locations = [
+   "Wszystkie",
   {
     "label": "Kraków",
     "value": {
@@ -90,180 +103,208 @@ safi_locations = [
   }
 ]
 
-def get_safi_data(iso_start, iso_end, city_label, safi_location_id, safi_auth_token):
+def get_safi_data(iso_start, iso_end, selected):
 
-    url = "https://safi-api.pixel-xl.tech:9999/api/receipts"
+    download_data = {}
+    cities_sum = 0
 
-    params = {
-        "created_date_from": iso_start,
-        "created_date_to": iso_end,
-        "location_id": safi_location_id
-    }
+    for selected_location in selected:
 
-    headers = {
-        "Authorization": f"Bearer {safi_auth_token}"
-    }
+        safi_location_id = selected_location["value"].get("safi_id")
+        safi_auth_token = st.secrets["safi"].get("auth_token")
+        city_label = selected_location["label"]
 
-    response = requests.get(url, params=params, headers=headers)
+        url = "https://safi-api.pixel-xl.tech:9999/api/receipts"
 
-    data = response.json()
-    response.raise_for_status()
+        params = {
+            "created_date_from": iso_start,
+            "created_date_to": iso_end,
+            "location_id": safi_location_id
+        }
 
+        headers = {
+            "Authorization": f"Bearer {safi_auth_token}"
+        }
 
-    online_sales = []
+        response = requests.get(url, params=params, headers=headers)
 
-    for receipt in data:
-      if receipt['status'] != "CONFIRMED":
-        continue
-      request_data_parsed = json.loads(receipt["request_data"])
-      tax_rates = request_data_parsed["eReceipt"]["metadata"]["taxRates"]
+        data = response.json()
+        response.raise_for_status()
 
-      lines = request_data_parsed["eReceipt"]["lines"]
+        online_sales = []
 
-      for line in lines:
-        tax_rate = int(tax_rates[line["taxRate"]])
-        discounts = line.get("rebatesMarkups")
+        for receipt in data:
+            if receipt['status'] != "CONFIRMED":
+                continue
+            request_data_parsed = json.loads(receipt["request_data"])
+            tax_rates = request_data_parsed["eReceipt"]["metadata"]["taxRates"]
 
-        # negative value
-        discount_value = sum(d["value"] / 100 for d in discounts) if discounts else 0
+            lines = request_data_parsed["eReceipt"]["lines"]
 
-        utc_updated_at = datetime.fromisoformat(receipt.get("updated_at").replace("Z", "+00:00")).astimezone(USER_TZ)
-        parsed_utc_updated_at = utc_updated_at.strftime("%Y-%m-%d")
+            for line in lines:
+                tax_rate = int(tax_rates[line["taxRate"]])
+                discounts = line.get("rebatesMarkups")
+                # negative value
+                discount_value = sum(d["value"] / 100 for d in discounts) if discounts else 0
 
-        online_sales.append({
-          "produkt": line["productOrServiceName"],
-          "ilość zakupionych produktów": line["quantity"],
-          "kwota brutto produktu": (line["unitPrice"] / 100),
-          "kwota netto produktu": (line["unitPrice"] / 100) / (1+(tax_rate / 100)),
-          "kwota brutto całości": (line["totalLineValue"] / 100),
-          "kwota netto całości": (line["totalLineValue"] / 100) / (1 +( tax_rate / 100 )),
-          "kwota obniżki": discount_value,
-          "finalna kwota brutto": (line["totalLineValue"] / 100) + discount_value,
-          "finalna kwota netto": ((line["totalLineValue"] / 100) + discount_value) / (1 +( tax_rate / 100 )),
-          "stawka VAT": tax_rate,
-          "link do eparagonu": receipt.get("document_url"),
-          "data wystawienia paragonu": parsed_utc_updated_at,
-          "id rezerwacji": receipt.get("reservation_id"),
-          "lokalizacja": city_label,
-          "typ przychodu": "online - safi",
-        })
+                utc_updated_at = datetime.fromisoformat(receipt.get("updated_at").replace("Z", "+00:00")).astimezone(USER_TZ)
+                parsed_utc_updated_at = utc_updated_at.strftime("%Y-%m-%d")
+                total_tax_value = (line["totalLineValue"] / 100) * tax_rate / (100 + tax_rate)
+                unit_tax_value = (line["unitPrice"] / 100) / (1+(tax_rate / 100)) * (tax_rate / 100)
+                
+                online_sales.append({
+                "produkt": line["productOrServiceName"],
+                "ilość zakupionych produktów": line["quantity"],
+                "cena jednostkowa brutto": (line["unitPrice"] / 100),
+                "cena jednostkowa netto": (line["unitPrice"] / 100) / (1+(tax_rate / 100)),
+                "wartość brutto": (line["totalLineValue"] / 100),
+                "wartość netto": (line["totalLineValue"] / 100) / (1 +( tax_rate / 100 )),
+                "kwota podatku": total_tax_value,
+                "kwota jednostkowa podatku": unit_tax_value,
+                "kwota obniżki": discount_value,
+                "wartość brutto po obniżce": (line["totalLineValue"] / 100) + discount_value,
+                "wartość netto po obniżce": ((line["totalLineValue"] / 100) + discount_value) / (1 + ( tax_rate / 100 )),
+                "stawka VAT": tax_rate,
+                "link do eparagonu": receipt.get("document_url"),
+                "data wystawienia paragonu": parsed_utc_updated_at,
+                "numer rezerwacji": receipt["reservation_number"],
+                "lokalizacja": city_label,
+                "typ przychodu": "online - safi",
+                })
 
-    df_safi_export = pd.DataFrame(online_sales)
+        df_safi_export = pd.DataFrame(online_sales)
 
-    if len(df_safi_export) == 0:
-      st.write("Brak danych w tym okresie")
-    else:
-      df_safi_export["finalna kwota netto"] = pd.to_numeric(
-          df_safi_export["finalna kwota netto"], errors="coerce"
-      ).round(2)
+        if len(df_safi_export) == 0:
+            st.write(f"Brak danych w tym okresie: {city_label}")
+        else:
+        
+            for col in ["wartość netto po obniżce", "cena jednostkowa netto", "wartość netto", "kwota podatku", "kwota jednostkowa podatku"]:
+                df_safi_export[col] = pd.to_numeric(
+                    df_safi_export[col], errors="coerce"
+                ).round(2)
+            
+            total_billed = df_safi_export["wartość netto po obniżce"].sum()
 
-      total_billed = df_safi_export["finalna kwota netto"].sum()
+            st.write(f"Suma NETTO safi {city_label}: {round(total_billed, 2)}")
+            cities_sum += round(total_billed, 2)
+            download_data[city_label] = df_safi_export
 
-      st.write(f"Suma NETTO safi: {round(total_billed, 2)}")
-
-      utils.download_button(df_safi_export, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .xlxs")
-
-
-def get_dotypos_data(iso_start, iso_end, city_label, cloud_id, refresh_token):
-    url = "https://api.dotykacka.cz/v2/signin/token"
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"User {refresh_token}",
-    }
-
-    payload = {
-        "_cloudId": cloud_id,
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-
-    response.raise_for_status()
-
-    res = response.json()
-    access_token = res.get("accessToken")
-
-    branches_map = {}
-
-    branches = get_branches(cloud_id, access_token)
-    for branch in branches.get("data"):
-      branches_map[branch.get("id")] = branch.get("name")
-
-    page = 1
-    orders = []
-
-    while page:
-        res = get_orders(
-            cloud_id=cloud_id,
-            token=access_token,
-            page=page,
-            since_when=iso_start,
-            until_when=iso_end
-        )
+    st.write(f"Suma NETTO całości: {round(cities_sum, 2)}")    
+    utils.download_button(download_data, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .xlxs")
 
 
-        data = res.get("data", [])
-        if data:
-            orders.extend(data)
+def get_dotypos_data(iso_start, iso_end, selected):
+    
+    download_data = {}
+    total_value = 0
 
-        page = res.get("nextPage")
+    for selected_city in selected:
+        
+        refresh_token = selected_city["value"].get("dotypos_refresh_token")
+        cloud_id = selected_city["value"].get("dotypos_cloud_id")
+        city_label = selected_city["label"]
 
-    df_orders = pd.DataFrame(orders)
+        url = "https://api.dotykacka.cz/v2/signin/token"
 
-    order_items_data = []
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"User {refresh_token}",
+        }
 
-    for order in orders:
-        for item in order.get("orderItems", []):
-            item_data = item.copy()
-            item_data["documentNumber"] = order.get("documentNumber")
-            item_data["status"] = order.get("status")
-            item_data["documentType"] = order.get("documentType")
-            item_data["paid"] = order.get("paid")
-            item_data["branch"] = branches_map.get(order.get("_branchId"))
-            order_items_data.append(item_data)
+        payload = {
+            "_cloudId": cloud_id,
+        }
 
-    df_order_items = pd.DataFrame(order_items_data)
+        response = requests.post(url, headers=headers, json=payload)
 
-    if len(df_order_items) == 0:
-      st.write("Brak danych w tym okresie")
-    else:
-      df_order_items["quantity"] = pd.to_numeric(df_order_items["quantity"], errors="coerce")
+        response.raise_for_status()
 
-      filtered_order_items = df_order_items[(df_order_items['paid'] == True) & (df_order_items['documentType'] == "RECEIPT") & (df_order_items['canceledDate'].isna()) & (df_order_items['quantity'] >= 0)]
+        res = response.json()
+        access_token = res.get("accessToken")
 
-      filtered_order_items["totalPriceWithoutVat"] = pd.to_numeric(
-          filtered_order_items["totalPriceWithoutVat"], errors="coerce"
-      ).round(2)
+        branches_map = {}
 
-      total_billed = filtered_order_items["totalPriceWithoutVat"].sum()
+        branches = get_branches(cloud_id, access_token)
+        for branch in branches.get("data"):
+            branches_map[branch.get("id")] = branch.get("name")
 
-      st.write(f"Suma NETTO dotykacka: {round(total_billed, 2)}")
+        page = 1
+        orders = []
 
-      df_dotypos_export = pd.DataFrame({
-          "nr paragonu": filtered_order_items["documentNumber"],
-          "nazwa kasy": filtered_order_items["branch"],
-          "typ przychodu": "kasa w lokalu",
-          "data wystawienia paragonu": filtered_order_items["completed"],
-          "kwota netto produktu": pd.to_numeric(
-              filtered_order_items["billedUnitPriceWithoutVat"], errors="coerce"
-          ).round(2),
+        while page:
+            res = get_orders(
+                cloud_id=cloud_id,
+                token=access_token,
+                page=page,
+                since_when=iso_start,
+                until_when=iso_end
+            )
 
-          "kwota brutto produktu": pd.to_numeric(
-              filtered_order_items["billedUnitPriceWithVat"], errors="coerce"
-          ).round(2),
-          "ilość zakupionych produktów": filtered_order_items["quantity"],
-          "kwota netto całości": filtered_order_items["totalPriceWithoutVat"],
-          "kwota brutto całości": pd.to_numeric(
-              filtered_order_items["totalPriceWithVat"], errors="coerce"
-          ),
-          "stawka VAT": (
-              (pd.to_numeric(filtered_order_items["vat"], errors="coerce") - 1) * 100
-          ).round(0),
-          "produkt": filtered_order_items["name"],
-          "lokalizacja": city_label
-      })
+            data = res.get("data", [])
+            if data:
+                orders.extend(data)
 
-      utils.download_button(df_dotypos_export, f"raport_finansowy_dotykacka_{start_date}-{end_date}", label="Pobierz raport dotykacka .xlxs")
+            page = res.get("nextPage")
+
+        order_items_data = []
+
+        for order in orders:
+            for item in order.get("orderItems", []):
+                item_data = item.copy()
+                item_data["documentNumber"] = order.get("documentNumber")
+                item_data["status"] = order.get("status")
+                item_data["documentType"] = order.get("documentType")
+                item_data["paid"] = order.get("paid")
+                item_data["branch"] = branches_map.get(order.get("_branchId"))
+                order_items_data.append(item_data)
+
+        df_order_items = pd.DataFrame(order_items_data)
+
+        if len(df_order_items) == 0:
+            st.write("Brak danych w tym okresie")
+        else:
+            df_order_items["quantity"] = pd.to_numeric(df_order_items["quantity"], errors="coerce")
+
+            filtered_order_items = df_order_items[(df_order_items['paid'] == True) & (df_order_items['documentType'] == "RECEIPT") & (df_order_items['canceledDate'].isna()) & (df_order_items['quantity'] >= 0)]
+
+            filtered_order_items["totalPriceWithoutVat"] = pd.to_numeric(
+                filtered_order_items["totalPriceWithoutVat"], errors="coerce"
+            ).round(2)
+
+            total_billed = filtered_order_items["totalPriceWithoutVat"].sum()
+            
+            cut_dates = [pd.to_datetime(date).date() if date else None for date in filtered_order_items["completed"]]  
+            
+            st.write(f"Suma NETTO dotykacka {city_label}: {round(total_billed, 2)}")
+            total_value += round(total_billed, 2)
+
+            df_dotypos_export = pd.DataFrame({
+                "nr paragonu": filtered_order_items["documentNumber"],
+                "nazwa kasy": filtered_order_items["branch"],
+                "typ przychodu": "kasa w lokalu",
+                "data wystawienia paragonu": cut_dates,
+                "cena jednostkowa netto": pd.to_numeric(
+                    filtered_order_items["billedUnitPriceWithoutVat"], errors="coerce"
+                ).round(2),
+
+                "cena jednostkowa brutto": pd.to_numeric(
+                    filtered_order_items["billedUnitPriceWithVat"], errors="coerce"
+                ).round(2),
+                "ilość zakupionych produktów": filtered_order_items["quantity"],
+                "wartość netto": filtered_order_items["totalPriceWithoutVat"],
+                "wartość brutto": pd.to_numeric(
+                    filtered_order_items["totalPriceWithVat"], errors="coerce"
+                ),
+                "stawka VAT": (
+                    (pd.to_numeric(filtered_order_items["vat"], errors="coerce") - 1) * 100
+                ).round(0),
+                "produkt": filtered_order_items["name"],
+                "lokalizacja": city_label
+            })
+
+            download_data[city_label] = df_dotypos_export
+
+    utils.download_button(download_data, f"raport_finansowy_dotykacka_{start_date}-{end_date}", label="Pobierz raport dotykacka .xlxs")
 
 def get_branches(cloud_id, token):
     url = f"https://api.dotykacka.cz/v2/clouds/{cloud_id}/branches"
@@ -395,10 +436,13 @@ utc_end = (
     .replace("+00:00", "Z")
 )
 
-selected = st.selectbox(
+selected = st.multiselect(
     "Wybierz lokalizacje",
     safi_locations,
-    format_func=lambda x: x["label"]
+    format_func=lambda x: x["label"] if x != "Wszystkie" else x,
+    default=safi_locations[0],
+    key="location_select",
+    on_change=ensure_status
 )
 
 st.divider()
@@ -410,7 +454,7 @@ with dotykacka:
     def dotykacka_view():
       if st.button("Generuj raport dotykacka"):
           with st.spinner("Generowanie...", show_time=True):
-              get_dotypos_data(utc_start, utc_end, selected["label"], selected["value"].get("dotypos_cloud_id"), selected["value"].get("dotypos_refresh_token"))
+              get_dotypos_data(utc_start, utc_end, selected if selected != ["Wszystkie"] else safi_locations[1:])
     dotykacka_view()
 
 with safi:
@@ -418,5 +462,5 @@ with safi:
     def safi_view():
       if st.button("Generuj raport safi"):
           with st.spinner("Generowanie...", show_time=True):
-              get_safi_data(utc_start, utc_end, selected["label"], selected["value"].get("safi_id"), st.secrets["safi"].get("auth_token"))
+              get_safi_data(utc_start, utc_end, selected if selected != ["Wszystkie"] else safi_locations[1:])
     safi_view()
