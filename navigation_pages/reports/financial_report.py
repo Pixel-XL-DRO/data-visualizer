@@ -302,9 +302,7 @@ def get_dotypos_data(iso_start, iso_end, selected):
                 "lokalizacja": city_label
             })
 
-            download_data[city_label] = df_dotypos_export
-
-    utils.download_button(download_data, f"raport_finansowy_dotykacka_{start_date}-{end_date}", label="Pobierz raport dotykacka .xlxs")
+    utils.download_button({f"{start_date}-{end_date}": df_dotypos_export}, f"raport_finansowy_dotykacka_{start_date}-{end_date}", label="Pobierz raport dotykacka .xlxs")
 
 def get_branches(cloud_id, token):
     url = f"https://api.dotykacka.cz/v2/clouds/{cloud_id}/branches"

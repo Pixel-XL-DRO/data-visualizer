@@ -39,7 +39,7 @@ with tab1:
         total_netto_chart = utils.create_chart_new(df_bar, 'date', "Data", 'netto' if not show_only_moving_average else None, 'netto_rolling_avg', "Sprzedaż barowa netto [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia sprzedaż barowa netto", False)
         st.plotly_chart(total_netto_chart, use_container_width=True)
 
-        utils.download_button(df_bar, "sprzedaz_barowa")
+        utils.download_button({"sprzedaz_barowa": df_bar}, "sprzedaz_barowa")
     tab_one()
 
 with tab2:
@@ -52,7 +52,7 @@ with tab2:
         netto_per_visit_chart = utils.create_chart_new(df_sale, 'date', "Data", 'netto' if not show_only_moving_average else None, 'netto_rolling_avg' if moving_average_toggle else None, "Sprzedaż barowa netto na rachunek [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia", False)
         st.plotly_chart(netto_per_visit_chart, use_container_width=True)
 
-        utils.download_button(df_sale, "sprzedaz_na_wizyte")
+        utils.download_button({"sprzedaz_na_wizyte": df_sale}, "sprzedaz_na_wizyte")
     tab_two()
 
 with tab3:
@@ -68,7 +68,7 @@ with tab3:
         netto_per_reservation_chart = utils.create_chart_new(df_res, 'date', "Data", 'netto_per_reservation' if not show_only_moving_average else None, 'netto_per_reservation_moving_avg' if moving_average_toggle else None, "Sprzedaż barowa netto na rezerwacje [ZŁ]", groupBy, 2 if groupBy else 4, "Średnia", False)
         st.plotly_chart(netto_per_reservation_chart, use_container_width=True)
 
-        utils.download_button(df_res, "sprzedaz_na_rezerwacje")
+        utils.download_button({"sprzedaz_na_rezerwacje": df_res}, "sprzedaz_na_rezerwacje")
     tab_three()
 
 with tab4:
@@ -101,7 +101,7 @@ with tab4:
 
         df_sold_items
 
-        utils.download_button(df_sold_items, "produkty")
+        utils.download_button({"produkty": df_sold_items}, "produkty")
 
     tab_four()
 
