@@ -8,10 +8,6 @@ from zoneinfo import ZoneInfo
 
 USER_TZ = ZoneInfo("Europe/Warsaw")
 
-SAFI_URL = "https://rezerwacje.pixel-xl.pl/api/integration";
-AUTH_ENDPOINT = "/auth/login";
-RESERVATIONS_ENDPOINT = "/reservations";
-
 def get_promo_codes_reports(start_date, end_date, use_start_at):
 
   url = "https://safi-api.pixel-xl.tech:9999/api/promo_codes_report"

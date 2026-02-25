@@ -161,9 +161,6 @@ def get_safi_data(iso_start, iso_end, city_label, safi_location_id, safi_auth_to
 
       st.write(f"Suma NETTO safi: {round(total_billed, 2)}")
 
-      utils.download_button({f"{start_date}-{end_date}": df_safi_export}, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .xlxs")
-
-
 def get_dotypos_data(iso_start, iso_end, city_label, cloud_id, refresh_token):
     url = "https://api.dotykacka.cz/v2/signin/token"
 
