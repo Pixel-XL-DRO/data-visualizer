@@ -21,9 +21,9 @@ def get_items_sales_per_day(start_date, end_date, moving_average_days, cities, i
     FROM
       reservation_data.reservation_product rp
     JOIN
-      reservation_data.products p
+      reservation_data.product p
     ON
-      p.id = rp.product_id
+      p.product_external_id = rp.product_external_id
     JOIN
       reservation_data.dim_location l
     ON
@@ -93,9 +93,9 @@ def get_items_sold(start_date, end_date, cities, items, groupBy):
     FROM
       reservation_data.reservation_product rp
     JOIN
-      reservation_data.products p
+      reservation_data.product p
     ON
-      p.id = rp.product_id
+      p.product_external_id = rp.product_external_id
     JOIN
       reservation_data.dim_location l
     ON

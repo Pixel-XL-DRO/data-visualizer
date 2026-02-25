@@ -767,7 +767,7 @@ def get_safi_products_initial_data():
     SELECT DISTINCT
       p.name as product_name,
     FROM
-      reservation_data.products p  
+      reservation_data.product p  
   """
 
   rows = run_query(query)
