@@ -20,7 +20,7 @@ def get_safi_data(year):
   }  
 
   headers = {
-    "Authorization": f"Bearer {st.secrets["safi"]["auth_token"]}"
+    "Authorization": f"Bearer {st.secrets['safi']['auth_token']}"
   }
 
   all_reservations = []
