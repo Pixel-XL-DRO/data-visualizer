@@ -5,18 +5,6 @@ import utils
 import requests
 from datetime import date, datetime
 
-cities = [
-  "krakow-lubicz",
-  "lodz-ogrodowa",
-  "poznan-swietegomarcina",
-  "warszawa-kijowska",
-  "katowice-sokolska",
-  "gdańsk-olivia",
-  "warszawa-arkadia",
-  "wrocław-świdnicka",
-  "bydgoszcz-szajnochy"
-]
-
 def get_safi_data(year):
 
   url = "https://safi-api.pixel-xl.tech:9999/api/get_reservations_for_invoice_report"
