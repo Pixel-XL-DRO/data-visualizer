@@ -49,18 +49,22 @@ def get_safi_data(year):
   for reservation in all_reservations:
 
     reservation_status = reservation["status"]
-
+    reservation_date = (
+      pd.to_datetime(reservation["start_at"])
+        .tz_convert("Europe/Warsaw")
+        .date()
+        .strftime("%Y-%m-%d")
+    )
     if "CANCELLED" in reservation_status:
       reservation_status = "ANULOWANA"
     else:
       reservation_status = "NIEANULOWANA"
 
     parsed_data.append({
-      "Data wizyty": reservation["start_at"],
+      "Data wizyty": reservation_date,
       "Numer rezerwacji": reservation["number"],
       "Status": reservation_status,
       "Atrakcja": reservation["visit_name"],
-      "Z Fakturą": "TAK" if reservation["invoice_required"] else "NIE",
       "Typ faktury": invoice_types[reservation["invoice_type"]] if reservation["invoice_type"] else None,
       "NIP": reservation["invoice_tax_number"]
     })
