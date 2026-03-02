@@ -3,14 +3,16 @@ import streamlit as st
 import pandas as pd
 import utils
 import requests
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 
-def get_safi_data(year):
+from zoneinfo import ZoneInfo
+
+USER_TZ = ZoneInfo("Europe/Warsaw")
+min_date = date(2025, 1, 1)
+
+def get_safi_data(start, end, use_start_date):
 
   url = "https://safi-api.pixel-xl.tech:9999/api/get_reservations_for_invoice_report"
-
-  start_date = datetime(year, 1, 1).date()
-  end_date = datetime(year, 12, 31).date()
 
   parsed_data = []
 
@@ -30,22 +32,24 @@ def get_safi_data(year):
   while (should_fetch):
 
     params = {
-      "start_at_from": start_date.isoformat(),
-      "start_at_to": end_date.isoformat(),
-      "page": page
+      "from_dt": start,
+      "to_dt": end,
+      "page": page,
+      "use_start_date": use_start_date
     }
-
+    
     response = requests.get(f"{url}", params=params, headers=headers)
 
     data = response.json()
 
-    if len(data) == 0:
+    if len(data) == 0 or "error" in data:
       should_fetch = False  
-         
+      break  
+    
     all_reservations.extend(data)
 
     page += 1
-    
+
   for reservation in all_reservations:
 
     reservation_status = reservation["status"]
@@ -74,18 +78,51 @@ def get_safi_data(year):
 def view():
 
   today = date.today()
-  CURRENT_YEAR = today.year
-  MIN_YEAR = 2025
+  col1, col2 = st.columns(2)
 
-  year = st.selectbox(
-    "Rok",
-    list(range(MIN_YEAR, CURRENT_YEAR + 1)),
-    index=CURRENT_YEAR - MIN_YEAR
+  with col1:
+    start_date = st.date_input(
+      "Od kiedy",
+      value=today - timedelta(days=30),
+      min_value=min_date,
+      key="range_start"
+    )
+
+  with col2:
+    end_date = st.date_input(
+      "Do kiedy (włącznie)",
+      value=today,
+      min_value=min_date + timedelta(days=1),
+      key="range_end"
+    )
+
+  dt_start = datetime.combine(
+    start_date,
+    datetime.min.time(),
+    tzinfo=USER_TZ
   )
+
+  utc_start = (
+    dt_start
+    .astimezone(timezone.utc)
+    .isoformat()
+    .replace("+00:00", "Z")
+  )
+
+  dt_end = datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=USER_TZ)
+
+  utc_end = (
+    dt_end
+    .astimezone(timezone.utc)
+    .isoformat()
+    .replace("+00:00", "Z")
+  )
+
+  use_start_date = st.checkbox("Czy użyć daty odbycia rezerwacji? (w przeciwnym razie data stworzenia)")
 
   if st.button("Generuj"):
     with st.spinner("Ładowanie...", show_time=True):
-      data = get_safi_data(year)
-      utils.download_button(data, f"Odbyte rezerwacje w roku {year}", label="Pobierz raport .xlxs")
+      data = get_safi_data(utc_start, utc_end, use_start_date)
+      utils.download_button(data, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .xlxs")
 
 view()

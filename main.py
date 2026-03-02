@@ -28,7 +28,7 @@ dotypos = st.Page("navigation_pages/dotypos.py", title="System kasowy", icon=":m
 income = st.Page("navigation_pages/income.py", title="Przychody", icon=":material/money_bag:")
 vouchers = st.Page("navigation_pages/vouchers.py", title="Vouchery", icon=":material/local_activity:")
 financial_report_page = st.Page("navigation_pages/reports/financial_report.py", title = "Raport finansowy", icon=":material/attach_money:")
-reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py", title = "Rezerwacje w danym roku", icon=":material/vertical_split:")
+reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py", title = "Rezerwacje w danym okresie", icon=":material/vertical_split:")
 
 pages_by_role = {
   "super-admin": {
