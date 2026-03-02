@@ -118,7 +118,9 @@ def view():
     .replace("+00:00", "Z")
   )
 
-  use_start_date = st.checkbox("Czy użyć daty odbycia rezerwacji? (w przeciwnym razie data stworzenia)")
+  date_type = st.selectbox("Wybierz rodzaj daty", ["Data stworzenia", "Data rozpoczecia"], key="date_type")
+
+  use_start_date = True if date_type == "Data rozpoczecia" else False
 
   if st.button("Generuj"):
     with st.spinner("Ładowanie...", show_time=True):
