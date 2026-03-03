@@ -1,8 +1,6 @@
 import sys
 import streamlit as st
 import pandas as pd
-import queries
-import auth
 import requests
 import json
 from datetime import date, timedelta, datetime, timezone
@@ -190,7 +188,7 @@ def get_safi_data(iso_start, iso_end):
 
             online_sales[city_label].append(sale_data)
             online_sales["Wszystkie"].append(sale_data)
-            
+
     for key, value in cities_sum.items():
         st.write(key, f"{value:,.2f} PLN")   
 
@@ -264,7 +262,7 @@ def get_dotypos_data(iso_start, iso_end):
 
         df_order_items = pd.DataFrame(order_items_data)
         df_dotypos_export = {}
-        
+
         if len(df_order_items) == 0:
             st.write("Brak danych w tym okresie")
         else:
