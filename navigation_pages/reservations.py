@@ -60,12 +60,12 @@ with tab1:
     @st.fragment
     def tab_one():
         with st.spinner("Ładowanie danych...", show_time=True):
-            df_days_ahead = reservations_queries.get_mean_days_ahead(x_axis_type, start_date, cities)
+            df_days_ahead = reservations_queries.get_mean_days_ahead(x_axis_type, start_date, cities, language, attraction_groups_checkboxes, status_checkboxes, visit_type_groups_checkboxes)
             true_avg = (df_days_ahead['days'] * df_days_ahead['count']).sum() / df_days_ahead['count'].sum()
 
         st.markdown(f"Średni okres między rezerwacją a wizytą: **{true_avg:.2f}**")
 
-        reservations_chart = utils.create_bar_chart(df_days_ahead, 'city', 'Miasto', 'days', 'Średni okres między rezerwacją a wizytą', None, moving_average_toggle)
+        reservations_chart = utils.create_bar_chart(df_days_ahead, 'street', 'Miasto', 'days', 'Średni okres między rezerwacją a wizytą', None, moving_average_toggle)
         st.altair_chart(reservations_chart, use_container_width=True, )
 
     tab_one()
@@ -81,7 +81,7 @@ with tab2:
         street = df['street'][df['location'] == street].iloc[0]
 
         with st.spinner("Ładowanie danych...", show_time=True):
-            df_ahead_by_city = reservations_queries.get_days_ahead_by_city(x_axis_type, period, start_date, street)
+            df_ahead_by_city = reservations_queries.get_days_ahead_by_city(x_axis_type, period, start_date, street, language, attraction_groups_checkboxes, status_checkboxes, visit_type_groups_checkboxes)
 
         reservations_chart = utils.create_bar_chart(df_ahead_by_city, 'days', 'Dni w przód', 'reservations', 'Liczba rezerwacji', None)
         st.altair_chart(reservations_chart, use_container_width=True)
