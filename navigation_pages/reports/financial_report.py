@@ -7,13 +7,13 @@ import requests
 import json
 from datetime import date, timedelta, datetime, timezone
 import calendar
+import utils
 
 from zoneinfo import ZoneInfo
 
 USER_TZ = ZoneInfo("Europe/Warsaw")
 
 sys.path.append("shared")
-import utils
 
 if "location_select" not in st.session_state:
     st.session_state.location_select = ["Wszystkie"]
@@ -36,7 +36,6 @@ POLISH_MONTHS = [
 ]
 
 safi_locations = [
-   "Wszystkie",
   {
     "label": "Kraków",
     "value": {
@@ -103,103 +102,108 @@ safi_locations = [
   }
 ]
 
-def get_safi_data(iso_start, iso_end, selected):
+def get_safi_data(iso_start, iso_end):
 
-    download_data = {}
-    cities_sum = 0
+    cities_sum = {
+        "Suma NETTO Wszystkich lokacji": 0
+    }
 
-    for selected_location in selected:
+    safi_locations_ids = []
 
-        safi_location_id = selected_location["value"].get("safi_id")
-        safi_auth_token = st.secrets["safi"].get("auth_token")
-        city_label = selected_location["label"]
+    for location in safi_locations:
+        safi_locations_ids.append(location["value"]["safi_id"])
 
-        url = "https://safi-api.pixel-xl.tech:9999/api/receipts"
+    safi_locations_ids = ",".join(safi_locations_ids)
 
-        params = {
-            "created_date_from": iso_start,
-            "created_date_to": iso_end,
-            "location_id": safi_location_id
-        }
+    safi_auth_token = st.secrets["safi"].get("auth_token")
 
-        headers = {
-            "Authorization": f"Bearer {safi_auth_token}"
-        }
 
-        response = requests.get(url, params=params, headers=headers)
+    url = "https://safi-api.pixel-xl.tech:9999/api/receipts"
 
-        data = response.json()
-        response.raise_for_status()
+    params = {
+        "created_date_from": iso_start,
+        "created_date_to": iso_end,
+        "location_ids": safi_locations_ids
+    }
 
-        online_sales = []
+    headers = {
+        "Authorization": f"Bearer {safi_auth_token}"
+    }
 
-        for receipt in data:
-            if receipt['status'] != "CONFIRMED":
-                continue
-            request_data_parsed = json.loads(receipt["request_data"])
-            tax_rates = request_data_parsed["eReceipt"]["metadata"]["taxRates"]
+    response = requests.get(url, params=params, headers=headers)
 
-            lines = request_data_parsed["eReceipt"]["lines"]
+    data = response.json()
+    response.raise_for_status()
 
-            for line in lines:
-                tax_rate = int(tax_rates[line["taxRate"]])
-                discounts = line.get("rebatesMarkups")
-                # negative value
-                discount_value = sum(d["value"] / 100 for d in discounts) if discounts else 0
+    online_sales = {
+        "Wszystkie": []
+    }
 
-                utc_updated_at = datetime.fromisoformat(receipt.get("updated_at").replace("Z", "+00:00")).astimezone(USER_TZ)
-                parsed_utc_updated_at = utc_updated_at.strftime("%Y-%m-%d")
-                total_tax_value = (line["totalLineValue"] / 100) * tax_rate / (100 + tax_rate)
-                unit_tax_value = (line["unitPrice"] / 100) / (1+(tax_rate / 100)) * (tax_rate / 100)
-                
-                online_sales.append({
+    for receipt in data:
+        if receipt['status'] != "CONFIRMED":
+            continue
+        request_data_parsed = json.loads(receipt["request_data"])
+        tax_rates = request_data_parsed["eReceipt"]["metadata"]["taxRates"]
+
+        city_label = next(location["label"] for location in safi_locations if location["value"]["safi_id"] == receipt["location_id"])
+
+        lines = request_data_parsed["eReceipt"]["lines"]
+
+        utc_updated_at = datetime.fromisoformat(receipt.get("updated_at").replace("Z", "+00:00")).astimezone(USER_TZ)
+        parsed_utc_updated_at = utc_updated_at.strftime("%Y-%m-%d")
+
+        for line in lines:
+            tax_rate = int(tax_rates[line["taxRate"]])
+            discounts = line.get("rebatesMarkups")
+            # negative value
+            discount_value = sum(d["value"] / 100 for d in discounts) if discounts else 0
+            total_tax_value = (line["totalLineValue"] / 100) * tax_rate / (100 + tax_rate)
+            unit_tax_value = (line["unitPrice"] / 100) / (1+(tax_rate / 100)) * (tax_rate / 100)
+
+            sale_data = {
                 "produkt": line["productOrServiceName"],
                 "ilość zakupionych produktów": line["quantity"],
-                "cena jednostkowa brutto": (line["unitPrice"] / 100),
-                "cena jednostkowa netto": (line["unitPrice"] / 100) / (1+(tax_rate / 100)),
-                "wartość brutto": (line["totalLineValue"] / 100),
-                "wartość netto": (line["totalLineValue"] / 100) / (1 +( tax_rate / 100 )),
-                "kwota podatku": total_tax_value,
-                "kwota jednostkowa podatku": unit_tax_value,
-                "kwota obniżki": discount_value,
-                "wartość brutto po obniżce": (line["totalLineValue"] / 100) + discount_value,
-                "wartość netto po obniżce": ((line["totalLineValue"] / 100) + discount_value) / (1 + ( tax_rate / 100 )),
+                "cena jednostkowa brutto": round(line["unitPrice"] / 100, 2),
+                "cena jednostkowa netto": round((line["unitPrice"] / 100) / (1+(tax_rate / 100)), 2),
+                "wartość brutto": round((line["totalLineValue"] / 100), 2),
+                "wartość netto": round((line["totalLineValue"] / 100) / (1 +( tax_rate / 100 )), 2),
+                "kwota podatku": round(total_tax_value, 2),
+                "kwota jednostkowa podatku": round(unit_tax_value, 2),
+                "kwota obniżki": round(discount_value, 2),
+                "wartość brutto po obniżce": round(((line["totalLineValue"] / 100) + discount_value), 2),
+                "wartość netto po obniżce": round(((line["totalLineValue"] / 100) + discount_value) / (1 + ( tax_rate / 100 )), 2),
                 "stawka VAT": tax_rate,
                 "link do eparagonu": receipt.get("document_url"),
                 "data wystawienia paragonu": parsed_utc_updated_at,
                 "numer rezerwacji": receipt["reservation_number"],
                 "lokalizacja": city_label,
                 "typ przychodu": "online - safi",
-                })
+            }
 
-        df_safi_export = pd.DataFrame(online_sales)
-
-        if len(df_safi_export) == 0:
-            st.write(f"Brak danych w tym okresie: {city_label}")
-        else:
-        
-            for col in ["wartość netto po obniżce", "cena jednostkowa netto", "wartość netto", "kwota podatku", "kwota jednostkowa podatku"]:
-                df_safi_export[col] = pd.to_numeric(
-                    df_safi_export[col], errors="coerce"
-                ).round(2)
+            if f"Suma NETTO {city_label}" not in cities_sum:
+                cities_sum[f"Suma NETTO {city_label}"] = 0
+            cities_sum["Suma NETTO Wszystkich lokacji"] += sale_data["wartość netto po obniżce"]
+            cities_sum[f"Suma NETTO {city_label}"] += sale_data["wartość netto po obniżce"]
             
-            total_billed = df_safi_export["wartość netto po obniżce"].sum()
+            if city_label not in online_sales:
+                online_sales[city_label] = []
 
-            st.write(f"Suma NETTO safi {city_label}: {round(total_billed, 2)}")
-            cities_sum += round(total_billed, 2)
-            download_data[city_label] = df_safi_export
+            online_sales[city_label].append(sale_data)
+            online_sales["Wszystkie"].append(sale_data)
+            
+    for key, value in cities_sum.items():
+        st.write(key, f"{value:,.2f} PLN")   
 
-    st.write(f"Suma NETTO całości: {round(cities_sum, 2)}")    
-    utils.download_button(download_data, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .xlxs")
+    utils.download_button(online_sales, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .xlxs")
 
 
-def get_dotypos_data(iso_start, iso_end, selected):
-    
+def get_dotypos_data(iso_start, iso_end):
+
     download_data = {}
     total_value = 0
 
-    for selected_city in selected:
-        
+    for selected_city in safi_locations:
+
         refresh_token = selected_city["value"].get("dotypos_refresh_token")
         cloud_id = selected_city["value"].get("dotypos_cloud_id")
         city_label = selected_city["label"]
@@ -259,7 +263,8 @@ def get_dotypos_data(iso_start, iso_end, selected):
                 order_items_data.append(item_data)
 
         df_order_items = pd.DataFrame(order_items_data)
-
+        df_dotypos_export = {}
+        
         if len(df_order_items) == 0:
             st.write("Brak danych w tym okresie")
         else:
@@ -272,9 +277,9 @@ def get_dotypos_data(iso_start, iso_end, selected):
             ).round(2)
 
             total_billed = filtered_order_items["totalPriceWithoutVat"].sum()
-            
-            cut_dates = [pd.to_datetime(date).date() if date else None for date in filtered_order_items["completed"]]  
-            
+
+            cut_dates = [pd.to_datetime(date).date() if date else None for date in filtered_order_items["completed"]]
+
             st.write(f"Suma NETTO dotykacka {city_label}: {round(total_billed, 2)}")
             total_value += round(total_billed, 2)
 
@@ -434,15 +439,6 @@ utc_end = (
     .replace("+00:00", "Z")
 )
 
-selected = st.multiselect(
-    "Wybierz lokalizacje",
-    safi_locations,
-    format_func=lambda x: x["label"] if x != "Wszystkie" else x,
-    default=safi_locations[0],
-    key="location_select",
-    on_change=ensure_status
-)
-
 st.divider()
 
 safi, dotykacka = st.columns(2)
@@ -452,7 +448,7 @@ with dotykacka:
     def dotykacka_view():
       if st.button("Generuj raport dotykacka"):
           with st.spinner("Generowanie...", show_time=True):
-              get_dotypos_data(utc_start, utc_end, selected if selected != ["Wszystkie"] else safi_locations[1:])
+              get_dotypos_data(utc_start, utc_end)
     dotykacka_view()
 
 with safi:
@@ -460,5 +456,5 @@ with safi:
     def safi_view():
       if st.button("Generuj raport safi"):
           with st.spinner("Generowanie...", show_time=True):
-              get_safi_data(utc_start, utc_end, selected if selected != ["Wszystkie"] else safi_locations[1:])
+              get_safi_data(utc_start, utc_end)
     safi_view()
