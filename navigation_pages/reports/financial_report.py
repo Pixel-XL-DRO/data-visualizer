@@ -197,14 +197,13 @@ def get_safi_data(iso_start, iso_end):
 
 def get_dotypos_data(iso_start, iso_end):
 
-    download_data = {}
-    total_value = 0
+    orders = []
+    branches_map = {}
 
     for selected_city in safi_locations:
 
         refresh_token = selected_city["value"].get("dotypos_refresh_token")
         cloud_id = selected_city["value"].get("dotypos_cloud_id")
-        city_label = selected_city["label"]
 
         url = "https://api.dotykacka.cz/v2/signin/token"
 
@@ -224,15 +223,8 @@ def get_dotypos_data(iso_start, iso_end):
         res = response.json()
         access_token = res.get("accessToken")
 
-        branches_map = {}
-
-        branches = get_branches(cloud_id, access_token)
-        for branch in branches.get("data"):
-            branches_map[branch.get("id")] = branch.get("name")
-
         page = 1
-        orders = []
-
+        
         while page:
             res = get_orders(
                 cloud_id=cloud_id,
@@ -248,62 +240,67 @@ def get_dotypos_data(iso_start, iso_end):
 
             page = res.get("nextPage")
 
-        order_items_data = []
+        branches = get_branches(cloud_id, access_token)
+        for branch in branches.get("data"):
+            branches_map[branch.get("id")] = branch.get("name")
 
-        for order in orders:
-            for item in order.get("orderItems", []):
-                item_data = item.copy()
-                item_data["documentNumber"] = order.get("documentNumber")
-                item_data["status"] = order.get("status")
-                item_data["documentType"] = order.get("documentType")
-                item_data["paid"] = order.get("paid")
-                item_data["branch"] = branches_map.get(order.get("_branchId"))
-                order_items_data.append(item_data)
+    order_items_data = []
+    
+    for order in orders:
+        for item in order.get("orderItems", []):
+            item_data = item.copy()
+            item_data["documentNumber"] = order.get("documentNumber")
+            item_data["status"] = order.get("status")
+            item_data["documentType"] = order.get("documentType")
+            item_data["paid"] = order.get("paid")
+            item_data["branch"] = branches_map.get(order.get("_branchId"))
+            item_data["location"] = next(location["label"] for location in safi_locations if location["value"].get("dotypos_cloud_id") == int(item.get("_cloudId")))
+            order_items_data.append(item_data)
 
-        df_order_items = pd.DataFrame(order_items_data)
-        df_dotypos_export = {}
+    df_order_items = pd.DataFrame(order_items_data)
+    
+    df_dotypos_export = {}
 
-        if len(df_order_items) == 0:
-            st.write("Brak danych w tym okresie")
-        else:
-            df_order_items["quantity"] = pd.to_numeric(df_order_items["quantity"], errors="coerce")
+    if len(df_order_items) == 0:
+        st.write("Brak danych w tym okresie")
+    else:
+        df_order_items["quantity"] = pd.to_numeric(df_order_items["quantity"], errors="coerce")
 
-            filtered_order_items = df_order_items[(df_order_items['paid'] == True) & (df_order_items['documentType'] == "RECEIPT") & (df_order_items['canceledDate'].isna()) & (df_order_items['quantity'] >= 0)]
+        filtered_order_items = df_order_items[(df_order_items['paid'] == True) & (df_order_items['documentType'] == "RECEIPT") & (df_order_items['canceledDate'].isna()) & (df_order_items['quantity'] >= 0)]
 
-            filtered_order_items["totalPriceWithoutVat"] = pd.to_numeric(
-                filtered_order_items["totalPriceWithoutVat"], errors="coerce"
-            ).round(2)
+        filtered_order_items["totalPriceWithoutVat"] = pd.to_numeric(
+            filtered_order_items["totalPriceWithoutVat"], errors="coerce"
+        ).round(2)
 
-            total_billed = filtered_order_items["totalPriceWithoutVat"].sum()
+        total_billed = filtered_order_items["totalPriceWithoutVat"].sum()
 
-            cut_dates = [pd.to_datetime(date).date() if date else None for date in filtered_order_items["completed"]]
+        cut_dates = [pd.to_datetime(date).date() if date else None for date in filtered_order_items["completed"]]
 
-            st.write(f"Suma NETTO dotykacka {city_label}: {round(total_billed, 2)}")
-            total_value += round(total_billed, 2)
+        st.write(f"Suma NETTO dotykacka: {total_billed:,.2f} PLN")
 
-            df_dotypos_export = pd.DataFrame({
-                "nr paragonu": filtered_order_items["documentNumber"],
-                "nazwa kasy": filtered_order_items["branch"],
-                "typ przychodu": "kasa w lokalu",
-                "data wystawienia paragonu": cut_dates,
-                "cena jednostkowa netto": pd.to_numeric(
-                    filtered_order_items["billedUnitPriceWithoutVat"], errors="coerce"
-                ).round(2),
+        df_dotypos_export = pd.DataFrame({
+            "nr paragonu": filtered_order_items["documentNumber"],
+            "nazwa kasy": filtered_order_items["branch"],
+            "typ przychodu": "kasa w lokalu",
+            "data wystawienia paragonu": cut_dates,
+            "cena jednostkowa netto": pd.to_numeric(
+                filtered_order_items["billedUnitPriceWithoutVat"], errors="coerce"
+            ).round(2),
 
-                "cena jednostkowa brutto": pd.to_numeric(
-                    filtered_order_items["billedUnitPriceWithVat"], errors="coerce"
-                ).round(2),
-                "ilość zakupionych produktów": filtered_order_items["quantity"],
-                "wartość netto": filtered_order_items["totalPriceWithoutVat"],
-                "wartość brutto": pd.to_numeric(
-                    filtered_order_items["totalPriceWithVat"], errors="coerce"
-                ),
-                "stawka VAT": (
-                    (pd.to_numeric(filtered_order_items["vat"], errors="coerce") - 1) * 100
-                ).round(0),
-                "produkt": filtered_order_items["name"],
-                "lokalizacja": city_label
-            })
+            "cena jednostkowa brutto": pd.to_numeric(
+                filtered_order_items["billedUnitPriceWithVat"], errors="coerce"
+            ).round(2),
+            "ilość zakupionych produktów": filtered_order_items["quantity"],
+            "wartość netto": filtered_order_items["totalPriceWithoutVat"],
+            "wartość brutto": pd.to_numeric(
+                filtered_order_items["totalPriceWithVat"], errors="coerce"
+            ),
+            "stawka VAT": (
+                (pd.to_numeric(filtered_order_items["vat"], errors="coerce") - 1) * 100
+            ).round(0),
+            "produkt": filtered_order_items["name"],
+            "lokalizacja": filtered_order_items["location"]
+        })
 
     utils.download_button({f"{start_date}-{end_date}": df_dotypos_export}, f"raport_finansowy_dotykacka_{start_date}-{end_date}", label="Pobierz raport dotykacka .xlxs")
 
