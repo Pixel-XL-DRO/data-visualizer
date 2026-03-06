@@ -29,7 +29,7 @@ income = st.Page("navigation_pages/income.py", title="Przychody", icon=":materia
 vouchers = st.Page("navigation_pages/vouchers.py", title="Vouchery", icon=":material/local_activity:")
 financial_report_page = st.Page("navigation_pages/reports/financial_report.py", title = "Raport finansowy", icon=":material/attach_money:")
 voucher_report_page = st.Page("navigation_pages/reports/voucher_report.py", title = "Raport kodów promocyjnych", icon=":material/sell:")
-reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py", title = "Rezerwacje w danym okresie", icon=":material/vertical_split:")
+reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py", title = "Rezerwacje z fakturą", icon=":material/vertical_split:")
 
 pages_by_role = {
   "super-admin": {
