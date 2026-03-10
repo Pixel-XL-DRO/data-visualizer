@@ -87,8 +87,8 @@ def get_items_sold(start_date, end_date, cities, items, groupBy):
       SUM(rp.quantity) AS Liczba,
       SUM(rp.total_price_brutto) AS `Całość brutto`,
       SUM(rp.total_price_netto) AS `Całość netto`,
-      AVG(rp.total_price_brutto / rp.quantity) AS `Średnia za produkt brutto`,
-      AVG(rp.total_price_netto / rp.quantity) AS `Średnia za produkt netto`
+      ROUND(AVG(rp.total_price_brutto / rp.quantity), 2) AS `Średnia za produkt brutto`,
+      ROUND(AVG(rp.total_price_netto / rp.quantity), 2) AS `Średnia za produkt netto`
       {groupBy_select}
     FROM
       reservation_data.reservation_product rp
