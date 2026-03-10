@@ -13,10 +13,10 @@ import boards_occupancy_queries
 import queries
 import utils
 
-NUMPY_FOUR = np.float64(4) # for now every city has 4 boards that start at last hour
+NUMPY_FOUR = np.float64(4)
 
 LAST_HOURS_AVAILABILITY = {
-    "krakow": {
+    "lubicz": {
         0: {20: NUMPY_FOUR},
         1: {20: NUMPY_FOUR},
         2: {20: NUMPY_FOUR},
@@ -25,7 +25,7 @@ LAST_HOURS_AVAILABILITY = {
         5: {22: NUMPY_FOUR},
         6: {20: NUMPY_FOUR},
     },
-    "poznan": {
+    "swietego-marcina": {
         0: {22: NUMPY_FOUR},
         1: {22: NUMPY_FOUR},
         2: {22: NUMPY_FOUR},
@@ -34,24 +34,33 @@ LAST_HOURS_AVAILABILITY = {
         5: {23: NUMPY_FOUR},
         6: {21: NUMPY_FOUR},
     },
-    "katowice": {
+    "sokolska": {
         0: {21: NUMPY_FOUR},
         1: {21: NUMPY_FOUR},
         2: {21: NUMPY_FOUR},
         3: {21: NUMPY_FOUR},
         4: {22: NUMPY_FOUR},
         5: {22: NUMPY_FOUR},
-        6: {19: NUMPY_FOUR},
+        6: {20: NUMPY_FOUR},
     },
-    "gdansk": {
+    "grunwaldzka": {
         0: {21: NUMPY_FOUR},
         1: {21: NUMPY_FOUR},
         2: {21: NUMPY_FOUR},
         3: {21: NUMPY_FOUR},
-        4: {23: NUMPY_FOUR},
-        5: {23: NUMPY_FOUR},
+        4: {22: NUMPY_FOUR},
+        5: {22: NUMPY_FOUR},
         6: {21: NUMPY_FOUR},
     },
+    "kijowska": {
+        0: {21: np.float64(5)},
+        1: {21: np.float64(5)},
+        2: {21: np.float64(5)},
+        3: {21: np.float64(5)},
+        4: {23: np.float64(5)},
+        5: {23: np.float64(5)},
+        6: {21: np.float64(5)},
+    } 
 }
 
 def render_safi_view(
@@ -100,6 +109,8 @@ def render_safi_view(
     with col3:
       st.button(":material/arrow_forward:", on_click=lambda: update_week_offset(-1))
 
+  error_box = st.empty()
+  
   with st.spinner("Ładowanie danych...", show_time=True):
 
     df, df_slots_occupancy = utils.run_in_parallel(
@@ -152,7 +163,7 @@ def render_safi_view(
       if time_taken == 0:
         continue
 
-      slots_taken = slots_sum / (time_taken / 60)
+      slots_taken = slots_sum / (time_taken / time_unit_in_minutes)
 
     else:
       slots_taken = reservation['reservation_slots_taken']
@@ -169,8 +180,10 @@ def render_safi_view(
 
     while (time_taken > 0):
       hour_key = str(f'{hour}.{minutes_multiplier * int(minutes / 60 * 10)}')
-      hours_map[str(date)][hour_key] += slots_taken
-
+      if hour_key in hours_map[str(date)]:
+        hours_map[str(date)][hour_key] += slots_taken
+      else:
+        error_box.error("UWAGA BŁĄD! Daj znać DRO", icon="🚨")
       time_taken -= time_unit_in_minutes
 
       minutes += time_unit_in_minutes
@@ -195,12 +208,11 @@ def render_safi_view(
         selected_location_boards_availability_filtered = selected_location_boards_availability.loc[(selected_location_boards_availability['boards_availability_since_when'] <= reservation_date) & (selected_location_boards_availability['boards_availability_until_when'].isnull() | (selected_location_boards_availability['boards_availability_until_when'] >= reservation_date))].iloc[0]
         total_boards = selected_location_boards_availability_filtered['boards_availability_number_of_boards']
 
-        city = selected_location.city.iloc[0]
+        street = selected_location.street.iloc[0]
         parsed_hour = int(float(hour))
         day_of_week = datetime.strptime(start_date_key, '%Y-%m-%d').weekday()
 
-        new_slots_taken = LAST_HOURS_AVAILABILITY.get(city, {}).get(day_of_week, {}).get(parsed_hour)
-
+        new_slots_taken = LAST_HOURS_AVAILABILITY.get(street, {}).get(day_of_week, {}).get(parsed_hour)
         if new_slots_taken:
           total_boards = new_slots_taken
 

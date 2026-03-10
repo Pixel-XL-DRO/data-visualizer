@@ -44,11 +44,15 @@ def render_online_view(df):
     st.plotly_chart(online_chart, use_container_width=True)
 
     st.text("Średni przychód online w danej grupie czasowej")
-    reservations_chart = utils.create_bar_chart(df_online_period, 'period', group_dates_by, 'avg_count', 'Przychód (PLN)', None, df_online_period['current_period'].iloc[0])
-    st.altair_chart(reservations_chart, use_container_width=True)
 
-    reservations_chart = utils.create_chart_new(df_online_cumulative, 'date', "Data", None, 'price', "Kumulujacy sie przychód (PLN)", group_by, 2 if group_by else 4, "Przychód (PLN)", False)
-    st.plotly_chart(reservations_chart, use_container_width=True)
+    if df_online_period.empty:
+        st.warning("Brak danych dla danej grupy czasowej")
+    else:
+        online_by_period_chart = utils.create_bar_chart(df_online_period, 'period', group_dates_by, 'avg_count', 'Przychód (PLN)', None, df_online_period['current_period'].iloc[0])
+        st.altair_chart(online_by_period_chart, use_container_width=True)
+
+    online_cumulative_chart = utils.create_chart_new(df_online_cumulative, 'date', "Data", None, 'price', "Kumulujacy sie przychód (PLN)", group_by, 2 if group_by else 4, "Przychód (PLN)", False)
+    st.plotly_chart(online_cumulative_chart, use_container_width=True)
 
 def render_pos_view(df_dotypos):
     filter_checkbox = st.checkbox(
@@ -73,11 +77,15 @@ def render_pos_view(df_dotypos):
     st.plotly_chart(pos_chart, use_container_width=True)
 
     st.text("Średni przychód kasowy w danej grupie czasowej")
-    reservations_chart = utils.create_bar_chart(df_dotypos_period, 'period', group_dates_by, 'avg_count', 'Przychód (PLN)', None, df_dotypos_period['current_period'].iloc[0])
-    st.altair_chart(reservations_chart, use_container_width=True)
+    
+    if df_dotypos_period.empty:
+        st.warning("Brak danych dla danej grupy czasowej")
+    else:
+        pos_by_period_chart = utils.create_bar_chart(df_dotypos_period, 'period', group_dates_by, 'avg_count', 'Przychód (PLN)', None, df_dotypos_period['current_period'].iloc[0])
+        st.altair_chart(pos_by_period_chart, use_container_width=True)
 
-    reservations_chart = utils.create_chart_new(df_dotypos_cumulative, 'date', "Data", None, 'price', "Kumulujacy sie przychód (PLN)", group_by, 2 if group_by else 4, "Przychód (PLN)", False)
-    st.plotly_chart(reservations_chart, use_container_width=True)
+    pos_cumulative_chart = utils.create_chart_new(df_dotypos_cumulative, 'date', "Data", None, 'price', "Kumulujacy sie przychód (PLN)", group_by, 2 if group_by else 4, "Przychód (PLN)", False)
+    st.plotly_chart(pos_cumulative_chart, use_container_width=True)
 
 def render_total_view(df):
 
@@ -103,11 +111,15 @@ def render_total_view(df):
     st.plotly_chart(income_chart, use_container_width=True)
 
     st.text("Średni przychód sumaryczny w danej grupie czasowej")
-    reservations_chart = utils.create_bar_chart(df_total_period, 'period', group_dates_by, 'avg_count', 'Przychód (PLN)', None, df_total_period['current_period'].iloc[0])
-    st.altair_chart(reservations_chart, use_container_width=True)
 
-    reservations_chart = utils.create_chart_new(df_total_cumulative, 'date', "Data", None, 'total_price', "Kumulujacy sie przychód (PLN)", group_by, 2 if group_by else 4, "Przychód (PLN)", False)
-    st.plotly_chart(reservations_chart, use_container_width=True)
+    if df_total_period.empty:
+        st.warning("Brak danych dla danej grupy czasowej")    
+    else:
+        income_by_period_chart = utils.create_bar_chart(df_total_period, 'period', group_dates_by, 'avg_count', 'Przychód (PLN)', None, df_total_period['current_period'].iloc[0])
+        st.altair_chart(income_by_period_chart, use_container_width=True)
+
+    income_cumulative_chart = utils.create_chart_new(df_total_cumulative, 'date', "Data", None, 'total_price', "Kumulujacy sie przychód (PLN)", group_by, 2 if group_by else 4, "Przychód (PLN)", False)
+    st.plotly_chart(income_cumulative_chart, use_container_width=True)
 
 def render_voucher_view(df_voucher):
 
@@ -128,11 +140,15 @@ def render_voucher_view(df_voucher):
     st.plotly_chart(voucher_chart, use_container_width=True)
 
     st.text("Średni przychód sumaryczny w danej grupie czasowej")
-    reservations_chart = utils.create_bar_chart(df_voucher_by_period, 'period', group_dates_by, 'avg_count', 'Przychód (PLN)', None, df_voucher_by_period['current_period'].iloc[0])
-    st.altair_chart(reservations_chart, use_container_width=True)
 
-    reservations_chart = utils.create_chart_new(df_voucher_cumulative_income, 'date', "Data", None, 'price', "Kumulujacy sie przychód (PLN)", group_by, 2 if group_by else 4, "Przychód (PLN)", False)
-    st.plotly_chart(reservations_chart, use_container_width=True)
+    if df_voucher_by_period.empty:
+        st.warning("Brak danych dla danej grupy czasowej")
+    else:
+        voucher_by_period_chart = utils.create_bar_chart(df_voucher_by_period, 'period', group_dates_by, 'avg_count', 'Przychód (PLN)', None, df_voucher_by_period['current_period'].iloc[0])
+        st.altair_chart(voucher_by_period_chart, use_container_width=True)
+
+    voucher_cumulative_chart = utils.create_chart_new(df_voucher_cumulative_income, 'date', "Data", None, 'price', "Kumulujacy sie przychód (PLN)", group_by, 2 if group_by else 4, "Przychód (PLN)", False)
+    st.plotly_chart(voucher_cumulative_chart, use_container_width=True)
 
 current_tab_id = stx.tab_bar(data=[
     stx.TabBarItemData(id=1, title="Online", description="Rezerwacje online"),

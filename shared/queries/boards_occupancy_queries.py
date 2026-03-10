@@ -37,6 +37,8 @@ def get_reservations_data(street, attraction_groups, selected_week_start, select
       res.start_date >= @start
     AND 
       res.start_date <= @end  
+    AND 
+      dvt.name != "Arena"  
   """
 
   job_config = bigquery.QueryJobConfig(

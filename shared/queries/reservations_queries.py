@@ -359,15 +359,19 @@ def get_boardhours(date_type, since_when, moving_average_days, groupBy, cities, 
 
   return df
 
-def get_mean_days_ahead(date_type, since_when,cities):
+def get_mean_days_ahead(date_type, since_when,cities, language, attraction_groups, status, visit_type_groups):
 
   cities_condition = format_array_for_query(cities)
+  language_condition = format_array_for_query(language)
+  attraction_condition = format_array_for_query(attraction_groups)
+  status_condition = format_array_for_query(status)
+  visit_type_condition = format_array_for_query(visit_type_groups)
   timestamp_now = datetime.fromtimestamp(time.time())
-
+  
   query = f"""
     SELECT
       AVG(DATE_DIFF(DATE(ecr.start_date), DATE(ecr.booked_date), day)) as days,
-      dl.city,
+      dl.street,
       count(*) as count
     FROM
       reservation_data.event_create_reservation ecr
@@ -375,16 +379,32 @@ def get_mean_days_ahead(date_type, since_when,cities):
       reservation_data.dim_location dl
     ON
       dl.id = ecr.location_id
+    JOIN
+      reservation_data.dim_visit_type dvt
+    ON
+      ecr.visit_type_id = dvt.id
+    JOIN
+      reservation_data.dim_client dc
+    ON
+      ecr.client_id = dc.id
     WHERE
       DATE({date_type}) >= DATE(@since_when)
     AND
       DATE({date_type}) < DATE('{timestamp_now}')
     AND
       ecr.deleted_at IS NULL
-    AND
-      dl.street {cities_condition}
+    AND language {language_condition}
+    AND dvt.name {visit_type_condition}
+    AND dvt.attraction_group {attraction_condition}
+    AND street {cities_condition}
+    AND 
+      CASE
+        WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
+        WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
+        ELSE 'Zrealizowane'
+      END {status_condition}
     GROUP BY
-      dl.city
+      dl.street
   """
 
   job_config = bigquery.QueryJobConfig(
@@ -394,11 +414,22 @@ def get_mean_days_ahead(date_type, since_when,cities):
   )
 
   rows = run_query(query, job_config)
+
+  if len(rows) == 0:
+    return pd.DataFrame(columns=["days", "street", "count"])
+
   df = pd.DataFrame(rows)
+  df['street'] = df['street'].replace(utils.street_to_location)
 
   return df
 
-def get_days_ahead_by_city(date_type, period, since_when, street):
+def get_days_ahead_by_city(date_type, period, since_when, street, language, attraction_groups, status, visit_type_groups):
+
+  language_condition = format_array_for_query(language)
+  attraction_condition = format_array_for_query(attraction_groups)
+  status_condition = format_array_for_query(status)
+  visit_type_condition = format_array_for_query(visit_type_groups)
+
   timestamp_now = datetime.fromtimestamp(time.time())
 
   query = f"""
@@ -415,6 +446,14 @@ def get_days_ahead_by_city(date_type, period, since_when, street):
       reservation_data.dim_location dl
     ON
       dl.id = ecr.location_id
+    JOIN
+      reservation_data.dim_visit_type dvt
+    ON
+      ecr.visit_type_id = dvt.id
+    JOIN
+      reservation_data.dim_client dc
+    ON
+      ecr.client_id = dc.id
     WHERE
       dl.street = @street
     AND
@@ -425,6 +464,15 @@ def get_days_ahead_by_city(date_type, period, since_when, street):
       DATE({date_type}) < DATE('{timestamp_now}')
     AND
       ecr.deleted_at IS NULL
+    AND language {language_condition}
+    AND dvt.name {visit_type_condition}
+    AND dvt.attraction_group {attraction_condition}
+    AND 
+      CASE
+        WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
+        WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
+        ELSE 'Zrealizowane'
+      END {status_condition}  
     GROUP BY
       days
     ORDER BY
@@ -439,6 +487,10 @@ def get_days_ahead_by_city(date_type, period, since_when, street):
   )
 
   rows = run_query(query, job_config)
+
+  if len(rows) == 0:
+    return pd.DataFrame(columns=["days", "reservations"])
+
   df = pd.DataFrame(rows)
 
   return df
