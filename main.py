@@ -28,7 +28,7 @@ dotypos = st.Page("navigation_pages/dotypos.py", title="System kasowy", icon=":m
 income = st.Page("navigation_pages/income.py", title="Przychody", icon=":material/money_bag:")
 vouchers = st.Page("navigation_pages/vouchers.py", title="Vouchery", icon=":material/local_activity:")
 financial_report_page = st.Page("navigation_pages/reports/financial_report.py", title = "Raport finansowy", icon=":material/attach_money:")
-safi_products_page = st.Page("navigation_pages/safi_products.py", title="Produkty dodatkowe", icon=":material/add_shopping_cart:")
+safi_products_page = st.Page("navigation_pages/safi_products.py", title="Produkty dodatkowe online", icon=":material/add_shopping_cart:")
 voucher_report_page = st.Page("navigation_pages/reports/voucher_report.py", title = "Raport kodów promocyjnych", icon=":material/sell:")
 reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py", title = "Rezerwacje z fakturą", icon=":material/vertical_split:")
 

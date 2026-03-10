@@ -49,7 +49,7 @@ def view():
 
   df_sold_items
 
-  utils.download_button(df_sold_items, "produkty")
+  utils.download_button({"Produkty": df_sold_items}, "produkty")
 
 view()
 
