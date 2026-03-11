@@ -80,7 +80,7 @@ def get_safi_data(start, end, use_start_date):
       "Atrakcja": reservation["visit_name"],
       "Typ faktury": invoice_types[reservation["invoice_type"]] if reservation["invoice_type"] else None,
       "NIP": reservation["invoice_tax_number"],
-      "Lokalizacja": reservation["location_name"], 
+      "Lokalizacja": reservation["location_name"],
     })
 
   return parsed_data
@@ -136,5 +136,6 @@ def view():
     with st.spinner("Ładowanie...", show_time=True):
       data = get_safi_data(utc_start, utc_end, use_start_date)
       utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .xlxs")
+      utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .csv", format="csv")
 
 view()
