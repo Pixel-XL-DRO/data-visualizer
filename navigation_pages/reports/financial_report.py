@@ -176,6 +176,7 @@ def get_safi_data(iso_start, iso_end):
                 "numer rezerwacji": receipt["reservation_number"],
                 "lokalizacja": city_label,
                 "typ przychodu": "online - safi",
+                "atrakcja": receipt["visit_name"]
             }
 
             if f"Suma NETTO {city_label}" not in cities_sum:
