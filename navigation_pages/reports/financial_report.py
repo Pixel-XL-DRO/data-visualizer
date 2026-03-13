@@ -183,7 +183,7 @@ def get_safi_data(iso_start, iso_end):
                 cities_sum[f"Suma NETTO {city_label}"] = 0
             cities_sum["Suma NETTO Wszystkich lokacji"] += sale_data["wartość netto po obniżce"]
             cities_sum[f"Suma NETTO {city_label}"] += sale_data["wartość netto po obniżce"]
-            
+
             if city_label not in online_sales:
                 online_sales[city_label] = []
 
@@ -191,9 +191,10 @@ def get_safi_data(iso_start, iso_end):
             online_sales["Wszystkie"].append(sale_data)
 
     for key, value in cities_sum.items():
-        st.write(key, f"{value:,.2f} PLN")   
+        st.write(key, f"{value:,.2f} PLN")
 
     utils.download_button(online_sales, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .xlxs")
+    utils.download_button({"Wszystkie_csv": online_sales["Wszystkie"]}, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .csv", format="csv")
 
 
 def get_dotypos_data(iso_start, iso_end):
@@ -225,7 +226,7 @@ def get_dotypos_data(iso_start, iso_end):
         access_token = res.get("accessToken")
 
         page = 1
-        
+
         while page:
             res = get_orders(
                 cloud_id=cloud_id,
@@ -246,7 +247,7 @@ def get_dotypos_data(iso_start, iso_end):
             branches_map[branch.get("id")] = branch.get("name")
 
     order_items_data = []
-    
+
     for order in orders:
         for item in order.get("orderItems", []):
             item_data = item.copy()
@@ -259,7 +260,7 @@ def get_dotypos_data(iso_start, iso_end):
             order_items_data.append(item_data)
 
     df_order_items = pd.DataFrame(order_items_data)
-    
+
     df_dotypos_export = {}
 
     if len(df_order_items) == 0:
