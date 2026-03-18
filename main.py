@@ -31,12 +31,13 @@ financial_report_page = st.Page("navigation_pages/reports/financial_report.py", 
 safi_products_page = st.Page("navigation_pages/safi_products.py", title="Produkty dodatkowe online", icon=":material/add_shopping_cart:")
 voucher_report_page = st.Page("navigation_pages/reports/voucher_report.py", title = "Raport kodów promocyjnych", icon=":material/sell:")
 reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py", title = "Rezerwacje z fakturą", icon=":material/vertical_split:")
+clients_report = st.Page("navigation_pages/reports/clients_report.py", title = "Klienci", icon=":material/vertical_split:")
 
 pages_by_role = {
   "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
     "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
-    "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page],
+    "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page, clients_report],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
@@ -44,7 +45,7 @@ pages_by_role = {
   "admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
     "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
-    "Raporty": [voucher_report_page, reservations_for_year_page],
+    "Raporty": [voucher_report_page, reservations_for_year_page, clients_report],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
