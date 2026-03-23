@@ -154,6 +154,9 @@ def get_reservations_by_time_period(date_type, since_when, end_when, status, cit
 
   rows = run_query(query, job_config)
 
+  if len(rows) == 0:
+    return pd.DataFrame(columns=["avg_count", "period", "current_period"])
+
   df = pd.DataFrame(rows)
 
   df.sort_values('period', inplace=True)
@@ -314,6 +317,9 @@ def get_boardhours_by_time_period(date_type, since_when, end_when, status, citie
   )
 
   rows = run_query(query, job_config)
+
+  if len(rows) == 0:
+    return pd.DataFrame(columns=["avg_boardhours", "period", "current_period"])
 
   df = pd.DataFrame(rows)
   df.sort_values('period', inplace=True)
@@ -515,6 +521,8 @@ def get_people_by_time_period(date_type, since_when, end_when, status, cities, l
   )
 
   rows = run_query(query, job_config)
+  if not rows:
+    return pd.DataFrame(columns=["avg_people", "period", "current_period"])
   df = pd.DataFrame(rows)
   df.sort_values('period', inplace=True)
 

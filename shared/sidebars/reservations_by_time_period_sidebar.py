@@ -1,10 +1,9 @@
 import sys
 sys.path.append("shared")
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import utils
 import streamlit as st
-import pandas as pd
 import numpy as np
 
 def determine_status(row):
@@ -35,13 +34,12 @@ def filter_data(df):
     group_dates_by = st.selectbox('Wybierz grupowanie po dacie', ['Godzina', 'Dzień tygodnia', 'Tydzien roku', 'Dzień miesiaca', 'Miesiac', 'Rok'], index=1)
     time_range = st.selectbox('Wybierz okres', [*years_possible, 'Od poczatku', "Przedział"], index=3)
     if time_range == "Przedział":
-      start_year, end_year = st.slider(
-      "Wybierz zakres lat",
-      min_value=2022,
-      max_value=datetime.now().year,
-      value=(2022, datetime.now().year),
-      step=1
-    )
+      start_date, end_date = st.date_input(
+        "Wybierz zakres lat",
+        min_value=datetime(2022, 10, 30),        
+        value=(datetime(2022, 10, 30), datetime(datetime.now().year, 12, 31)),
+      )
+
     with st.expander("Filtry", expanded=True):
       city_checkboxes = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique())
       language_checkboxes = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique())
@@ -68,13 +66,9 @@ def filter_data(df):
       start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)
       # 23:59:59 the day before - to account for data collection that takes place at 01:00:00 - we want to cut out single reservations at 00:00:00
       end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
-    elif time_range == 'Przedział':
-      start_date = datetime(start_year, 1, 1)
-
-      if end_year == datetime.now().year:
-        end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
-      else:
-        end_date = datetime(end_year, 12, 31, 23, 59, 59)
+    elif time_range == "Przedział":      
+      start_date = datetime.combine(start_date, time.min)
+      end_date = datetime.combine(end_date, time.max)
 
     cities = df['street'][df['location'].isin(city_checkboxes)].unique()
     visit_types = df['visit_type'].unique() if "Wszystkie" in visit_type_groups_checkboxes else df['visit_type'][df['visit_type'].isin(visit_type_groups_checkboxes)].unique()
