@@ -28,6 +28,7 @@ def get_clients(utc_start, utc_end):
       ecr.start_date >= TIMESTAMP("{utc_start}")
       AND ecr.start_date < TIMESTAMP("{utc_end}")
       AND NOT ecr.is_cancelled 
+      AND s.reservation_system_url = ecr.reservation_system_url
       AND NOT EXISTS (
         SELECT 1 
         FROM reservation_data.event_create_reservation future_ecr
