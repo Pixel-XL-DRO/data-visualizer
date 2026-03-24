@@ -23,6 +23,12 @@ attraction_map = {
   "Blokada": "Blokada"
 };
 
+city_names_map = {
+  "krakow lubicz": "Kraków",
+  "lodz ogrodowa": "Łódź",
+  "katowice": "Katowice",
+  "poznan": "Poznań",
+}
 
 def get_clients(iso_start, iso_end, attractions, clients_from_p4u):
 
@@ -63,6 +69,9 @@ def get_clients(iso_start, iso_end, attractions, clients_from_p4u):
 
     if client_attraction_name not in attractions:
       continue
+
+    if city in city_names_map:  
+      city = city_names_map[city]
 
     if city not in parsed:
       parsed[city] = []

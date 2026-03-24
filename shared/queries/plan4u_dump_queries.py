@@ -35,7 +35,7 @@ def get_clients(utc_start, utc_end):
         JOIN plan4u_dump_data.sale future_s ON future_s.reservation_id = future_ecr.reservation_external_id
         WHERE future_s.client_id = c.id 
           AND future_s.reservation_system_url = future_ecr.reservation_system_url
-          AND future_ecr.start_date > CURRENT_TIMESTAMP()
+          AND future_ecr.start_date > TIMESTAMP("{utc_end}")
           AND NOT future_ecr.is_cancelled
       );    
   """
