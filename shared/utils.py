@@ -268,30 +268,51 @@ def get_month_from_month_number(month_number):
     12: "12. Grudzień"
   }[month_number]
 
-def download_button(dfs, file_name, label = "Pobierz plik .xlxs", transpose=False):
-  
-  output = BytesIO()
-  with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-    
-    for name, data in dfs.items():
-      df = pd.DataFrame(data)
-      
-      if transpose:
-        df = df.T
+def download_button(dfs, file_name, label = "Pobierz plik .xlxs", transpose=False, format='xlsx'):
+  if format == "csv":
+    if len(dfs) > 1:
+      raise Exception("download button function with csv format can accept only one dimension (one df)")
 
-      df.to_excel(writer, index=True, sheet_name=name)
+    dfs_first_key = next(iter(dfs))
+    data = dfs[dfs_first_key]
 
-    writer.close()
-    processed_data = output.getvalue()
+    df = pd.DataFrame(data)
+    if transpose:
+      df = df.T
 
+    csv_data = df.to_csv(index=False).encode('utf-8')
     return (
       st.download_button(
-      label=label,
-      data=processed_data,
-      icon="⬇️",
-      file_name=f"{file_name}.xlsx",
-      mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    ))
+        label = label,
+        data = csv_data,
+        icon="⬇️",
+        file_name=f"{file_name}.csv",
+        mime="text/csv"
+      )
+    )
+  else:
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+
+      for name, data in dfs.items():
+        df = pd.DataFrame(data)
+
+        if transpose:
+          df = df.T
+
+        df.to_excel(writer, index=True, sheet_name=name)
+
+      writer.close()
+      processed_data = output.getvalue()
+
+      return (
+        st.download_button(
+        label=label,
+        data=processed_data,
+        icon="⬇️",
+        file_name=f"{file_name}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      ))
 
 def run_in_parallel(*funcs):
 

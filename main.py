@@ -33,6 +33,8 @@ voucher_report_page = st.Page("navigation_pages/reports/voucher_report.py", titl
 reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py", title = "Rezerwacje z fakturą", icon=":material/vertical_split:")
 clients_report = st.Page("navigation_pages/reports/clients_report.py", title = "Klienci", icon=":material/vertical_split:")
 
+# safi_products_page is hidden until we differentiate products bought and added in data parser
+
 pages_by_role = {
   "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
@@ -52,7 +54,7 @@ pages_by_role = {
   },
   "manager": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page],
-    "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
+    "Sprzedaż": [dotypos, income, vouchers],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
   },
