@@ -350,6 +350,9 @@ def get_items_sales_per_day(start_date, end_date, moving_average_days, cities, i
 
   rows = run_query(query, job_config)
 
+  if len(rows) == 0:
+    return pd.DataFrame(columns=['date', 'count', 'count_moving_avg', 'street'])
+
   df = pd.DataFrame(rows)
 
   if groupBy:
@@ -409,6 +412,9 @@ def get_items_sold(start_date, end_date, cities, items, groupBy):
   )
 
   rows = run_query(query, job_config)
+
+  if len(rows) == 0:
+    return pd.DataFrame(columns=['name', 'count', 'brutto', 'netto', 'avg_brutto', 'avg_netto', 'street'])
 
   df = pd.DataFrame(rows)
   if groupBy:
