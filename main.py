@@ -55,6 +55,7 @@ pages_by_role = {
   "manager": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page],
     "Sprzedaż": [dotypos, income, vouchers],
+    "Raporty": [voucher_report_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
   },

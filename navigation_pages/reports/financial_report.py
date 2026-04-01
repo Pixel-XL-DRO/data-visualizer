@@ -91,6 +91,14 @@ safi_locations = [
     }
   },
   {
+    "label": "Bydgoszcz Szajnochy",
+    "value": {
+      "safi_id": "019c32dd-e660-7073-8969-b350de2f45c9",
+      "dotypos_cloud_id": 386402827,
+      "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_386402827"),
+    }
+  },
+  {
     "label": "Wrocław Świdnicka",
     "value": {
       "safi_id": "019c32dd-e660-7073-8969-b350de2f45c9",

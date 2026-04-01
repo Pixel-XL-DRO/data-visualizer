@@ -3,19 +3,36 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 import utils
-
+import auth
+import queries
 from zoneinfo import ZoneInfo
 
 USER_TZ = ZoneInfo("Europe/Warsaw")
 
-def get_promo_codes_reports(start_date, end_date, use_start_at):
+SAFI_LOCATIONS = {
+  "krakow-lubicz": "01976898-679c-70e0-9b4f-dc2a14131e3d",
+  "lodz-ogrodowa": "01988093-0fa0-731f-9ca0-b864decd2e94",
+  "warszawa-kijowska": "019a1050-b96b-7032-baee-8a69101d49d4",
+  "poznan-swietego-marcina": "019a39f1-045f-713a-834d-a66fb85287c5",
+  "katowice-sokolska": "019ae347-fb95-73cd-84a3-5b2101273631",
+  "gdansk-grunwaldzka": "019b3130-6834-7373-8b4b-c22d2b8b086a",
+  "warszawa-arkadia": "019bc67a-793e-705f-99db-3ee07379f1e1",
+  "wroclaw-swidnicka": "019c32dd-e660-7073-8969-b350de2f45c9",
+  "bydgoszcz-szajnochy": "019c6612-ff2e-711a-9646-78e9d3054c68"
+}
+
+def get_promo_codes_reports(start_date, end_date, use_start_at, locations):
+
+  safi_locations_ids = [SAFI_LOCATIONS[location] for location in locations]
+  safi_locations_ids = ",".join(safi_locations_ids)
 
   url = "https://safi-api.pixel-xl.tech:9999/api/promo_codes_report"
 
   params = {
       "from_dt": start_date,
       "to_dt": end_date,
-      "use_start_date": use_start_at
+      "use_start_date": use_start_at,
+      "location_ids": safi_locations_ids
   }
   
   auth_token = st.secrets["safi"].get("auth_token")
@@ -36,6 +53,10 @@ def get_promo_codes_reports(start_date, end_date, use_start_at):
 @st.fragment
 def view(): 
 
+  with st.spinner(""):
+    df = queries.get_initial_data()
+    df = auth.filter_locations(df)
+    locations = list(set([f"{city}-{street}" for city, street in df[["city", "street"]].values]))
   col1, col2 = st.columns(2)
 
   now = datetime.now()
@@ -68,7 +89,7 @@ def view():
   
   if st.button("Generuj raport"):
     with st.spinner("Ładowanie danych...", show_time=True):
-      data = get_promo_codes_reports(utc_start, utc_end, use_start_date)
+      data = get_promo_codes_reports(utc_start, utc_end, use_start_date, locations)
       st.info("Sumaryczne dane, rozdzielone typy wizyt dostępne w pliku do pobrania")
       for visit_name in data:
         
