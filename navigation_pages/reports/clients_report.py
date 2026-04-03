@@ -50,7 +50,7 @@ def get_clients(iso_start, iso_end, attractions, clients_from_p4u):
   }
 
   response = requests.get(url, params=params, headers=headers)
-  
+
   data = response.json()
   response.raise_for_status()
 
@@ -70,7 +70,7 @@ def get_clients(iso_start, iso_end, attractions, clients_from_p4u):
     if client_attraction_name not in attractions:
       continue
 
-    if city in city_names_map:  
+    if city in city_names_map:
       city = city_names_map[city]
 
     if city not in parsed:
@@ -89,7 +89,7 @@ def view():
     attractions = init["attraction_group"].unique()
 
   st.info("Klienci, którzy mieli rezerwacje w danym okresie, a nie mają w przyszłości")
-  
+
   date_col1, date_col2 = st.columns(2)
 
   now = datetime.now()
@@ -109,15 +109,17 @@ def view():
     .replace("+00:00", "Z")
   )
 
+  dt_end = datetime.combine(dt_end_date + timedelta(days=1), datetime.min.time(), tzinfo=USER_TZ)
+
   utc_end = (
-    dt_end_date
+    dt_end
     .astimezone(timezone.utc)
     .isoformat()
     .replace("+00:00", "Z")
   )
 
   clients_from_p4u = plan4u_dump_queries.get_clients(utc_start, utc_end)
-  
+
   selected_attractions = st.multiselect("Wybierz atrakcje", attractions, default=attractions[:1])
 
   if st.button("Generuj raport"):
