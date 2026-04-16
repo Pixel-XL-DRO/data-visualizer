@@ -10,6 +10,8 @@ import vouchers_income_queries
 @st.cache_data(ttl=28800)
 def get_total_income(group_by, moving_average_days, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox):
 
+  cities = tuple(cities)
+
   df, df_pos, df_voucher = utils.run_in_parallel(
     (online_queries.get_online_income, (group_by, moving_average_days, start, end, date_type, cities, languages, attractions, status, attraction_types)),
     (pos_queries.get_pos_income, (start, end, cities, filter_checkbox, moving_average_days, group_by)),
@@ -46,6 +48,8 @@ def get_total_income(group_by, moving_average_days, start, end, date_type, citie
 @st.cache_data(ttl=28800)
 def get_total_income_by_period(grouping_period, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox):
 
+  cities = tuple(cities)
+
   df, df_pos, df_voucher = utils.run_in_parallel(
     (online_queries.get_online_income_by_time_period, (date_type, start, end, status, cities, languages, attractions, attraction_types, grouping_period)),
     (pos_queries.get_pos_income_by_period, (grouping_period, start, end, cities, filter_checkbox)),
@@ -72,6 +76,8 @@ def get_total_income_by_period(grouping_period, start, end, date_type, cities, l
 
 @st.cache_data(ttl=28800)
 def get_total_cumulative_income(group_by, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox):
+
+  cities = tuple(cities)
 
   df, df_pos, df_voucher = utils.run_in_parallel(
     (online_queries.get_online_income_cumulative, (group_by, start, end, date_type, cities, languages, attractions, status, attraction_types)),

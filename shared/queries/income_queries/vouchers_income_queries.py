@@ -8,6 +8,7 @@ import streamlit as st
 @st.cache_data(ttl=28800)
 def get_voucher_income(groupBy, moving_average_days, start_date, end_date, cities):
 
+  cities = tuple(cities)
   cities_condition = utils.format_array_for_query(cities)
 
   groupBy_select = f", {groupBy}" if groupBy else ""
@@ -73,6 +74,7 @@ def get_voucher_income(groupBy, moving_average_days, start_date, end_date, citie
 @st.cache_data(ttl=28800)
 def get_vouchers_by_weekday(grouping_period, start_date, end_date, cities):
 
+  cities = tuple(cities)
   cities_condition = utils.format_array_for_query(cities)
 
   group_years = start_date.year != end_date.year
@@ -210,6 +212,7 @@ def get_vouchers_by_weekday(grouping_period, start_date, end_date, cities):
 @st.cache_data(ttl=28800)
 def get_voucher_cumulative_income(groupBy, start_date, end_date, cities):
     
+  cities = tuple(cities)  
   cities_condition = utils.format_array_for_query(cities)
 
   groupBy_select = f", {groupBy}" if groupBy else ""
