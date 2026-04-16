@@ -8,14 +8,12 @@ import pos_queries
 import vouchers_income_queries
 
 @st.cache_data(ttl=28800)
-def get_total_income(group_by, moving_average_days, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox):
-
-  cities = tuple(cities)
+def get_total_income(group_by, moving_average_days, start, end, date_type, _cities, languages, attractions, status, attraction_types, filter_checkbox):
 
   df, df_pos, df_voucher = utils.run_in_parallel(
-    (online_queries.get_online_income, (group_by, moving_average_days, start, end, date_type, cities, languages, attractions, status, attraction_types)),
-    (pos_queries.get_pos_income, (start, end, cities, filter_checkbox, moving_average_days, group_by)),
-    (vouchers_income_queries.get_voucher_income, (group_by, moving_average_days, start, end, cities))
+    (online_queries.get_online_income, (group_by, moving_average_days, start, end, date_type, _cities, languages, attractions, status, attraction_types)),
+    (pos_queries.get_pos_income, (start, end, _cities, filter_checkbox, moving_average_days, group_by)),
+    (vouchers_income_queries.get_voucher_income, (group_by, moving_average_days, start, end, _cities))
   )
   
   keys = ["date", "price", group_by]
@@ -46,14 +44,12 @@ def get_total_income(group_by, moving_average_days, start, end, date_type, citie
   return df_final
 
 @st.cache_data(ttl=28800)
-def get_total_income_by_period(grouping_period, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox):
-
-  cities = tuple(cities)
+def get_total_income_by_period(grouping_period, start, end, date_type, _cities, languages, attractions, status, attraction_types, filter_checkbox):
 
   df, df_pos, df_voucher = utils.run_in_parallel(
-    (online_queries.get_online_income_by_time_period, (date_type, start, end, status, cities, languages, attractions, attraction_types, grouping_period)),
-    (pos_queries.get_pos_income_by_period, (grouping_period, start, end, cities, filter_checkbox)),
-    (vouchers_income_queries.get_vouchers_by_weekday, (grouping_period, start, end, cities)),
+    (online_queries.get_online_income_by_time_period, (date_type, start, end, status, _cities, languages, attractions, attraction_types, grouping_period)),
+    (pos_queries.get_pos_income_by_period, (grouping_period, start, end, _cities, filter_checkbox)),
+    (vouchers_income_queries.get_vouchers_by_weekday, (grouping_period, start, end, _cities)),
   )
 
   keys = ["date", "period", "current_period", "avg_count"]
@@ -75,14 +71,12 @@ def get_total_income_by_period(grouping_period, start, end, date_type, cities, l
   return df_final
 
 @st.cache_data(ttl=28800)
-def get_total_cumulative_income(group_by, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox):
-
-  cities = tuple(cities)
+def get_total_cumulative_income(group_by, start, end, date_type, _cities, languages, attractions, status, attraction_types, filter_checkbox):
 
   df, df_pos, df_voucher = utils.run_in_parallel(
-    (online_queries.get_online_income_cumulative, (group_by, start, end, date_type, cities, languages, attractions, status, attraction_types)),
-    (pos_queries.get_pos_cumulative_income, (start, end, cities, filter_checkbox, group_by)),
-    (vouchers_income_queries.get_voucher_cumulative_income, (group_by, start, end, cities)),
+    (online_queries.get_online_income_cumulative, (group_by, start, end, date_type, _cities, languages, attractions, status, attraction_types)),
+    (pos_queries.get_pos_cumulative_income, (start, end, _cities, filter_checkbox, group_by)),
+    (vouchers_income_queries.get_voucher_cumulative_income, (group_by, start, end, _cities)),
   )
 
   keys = ["date", "price", group_by]
