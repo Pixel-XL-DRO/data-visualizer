@@ -5,10 +5,9 @@ import utils
 from datetime import timedelta
 import streamlit as st
 
-@st.cache_data(ttl=28800)
-def get_voucher_income(groupBy, moving_average_days, start_date, end_date, _cities):
+def get_voucher_income(groupBy, moving_average_days, start_date, end_date, cities):
 
-  cities_condition = utils.format_array_for_query(_cities)
+  cities_condition = utils.format_array_for_query(cities)
 
   groupBy_select = f", {groupBy}" if groupBy else ""
   groupBy_grouping = f", street" if groupBy else ""
@@ -70,10 +69,10 @@ def get_voucher_income(groupBy, moving_average_days, start_date, end_date, _citi
     
   return df
 
-@st.cache_data(ttl=28800)
-def get_vouchers_by_weekday(grouping_period, start_date, end_date, _cities):
 
-  cities_condition = utils.format_array_for_query(_cities)
+def get_vouchers_by_weekday(grouping_period, start_date, end_date, cities):
+
+  cities_condition = utils.format_array_for_query(cities)
 
   group_years = start_date.year != end_date.year
 
@@ -207,10 +206,9 @@ def get_vouchers_by_weekday(grouping_period, start_date, end_date, _cities):
 
   return df
 
-@st.cache_data(ttl=28800)
-def get_voucher_cumulative_income(groupBy, start_date, end_date, _cities):
+def get_voucher_cumulative_income(groupBy, start_date, end_date, cities):
     
-  cities_condition = utils.format_array_for_query(_cities)
+  cities_condition = utils.format_array_for_query(cities)
 
   groupBy_select = f", {groupBy}" if groupBy else ""
   groupBy_grouping = f", street" if groupBy else ""

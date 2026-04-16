@@ -126,10 +126,10 @@ mock_function = """
   return current_price;
   ''';
 """
-@st.cache_data(ttl=28800)
-def get_online_income(groupBy, moving_average_days, start, end, date_type, _cities, languages, attractions, status, attraction_types):
 
-  cities_condition = utils.format_array_for_query(_cities)
+def get_online_income(groupBy, moving_average_days, start, end, date_type, cities, languages, attractions, status, attraction_types):
+
+  cities_condition = utils.format_array_for_query(cities)
   language_condition = utils.format_array_for_query(languages)
   attraction_condition = utils.format_array_for_query(attractions)
   status_condition = utils.format_array_for_query(status)
@@ -230,10 +230,10 @@ def get_online_income(groupBy, moving_average_days, start, end, date_type, _citi
 
   return df
 
-@st.cache_data(ttl=28800)
-def get_online_income_by_time_period(date_type, since_when, end_when, status, _cities, language, attraction_groups, visit_type_groups, grouping_period):
 
-  cities_condition = utils.format_array_for_query(_cities)
+def get_online_income_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period):
+
+  cities_condition = utils.format_array_for_query(cities)
   language_condition = utils.format_array_for_query(language)
   attraction_condition = utils.format_array_for_query(attraction_groups)
   status_condition = utils.format_array_for_query(status)
@@ -400,10 +400,9 @@ def get_online_income_by_time_period(date_type, since_when, end_when, status, _c
     df['current_period'] = df['current_period'].map(utils.get_month_from_month_number)
 
   return df
-@st.cache_data(ttl=28800)
-def get_online_income_cumulative(groupBy, start, end, date_type, _cities, languages, attractions, status, attraction_types):
 
-  cities_condition = utils.format_array_for_query(_cities)
+def get_online_income_cumulative(groupBy, start, end, date_type, cities, languages, attractions, status, attraction_types):
+  cities_condition = utils.format_array_for_query(cities)
   language_condition = utils.format_array_for_query(languages)
   attraction_condition = utils.format_array_for_query(attractions)
   status_condition = utils.format_array_for_query(status)

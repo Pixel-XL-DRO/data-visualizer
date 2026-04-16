@@ -6,13 +6,12 @@ import utils
 from datetime import datetime, timedelta
 import streamlit as st
 
-@st.cache_data(ttl=28800)
-def get_pos_income(start, end, _cities, filter_checkbox, moving_average_days, groupBy):
+def get_pos_income(start, end, cities, filter_checkbox, moving_average_days, groupBy):
 
   if start.year == 2025 and start < pd.to_datetime("2025-02-01"):
     start = datetime(year=2025, month=2, day=1, hour=0, minute=0)
 
-  cities_condition = utils.format_array_for_query(_cities)
+  cities_condition = utils.format_array_for_query(cities)
 
   groupBy_select = f", {groupBy}" if groupBy else ""
   groupBy_partition = f"PARTITION BY {groupBy}" if groupBy else ""
@@ -102,13 +101,12 @@ def get_pos_income(start, end, _cities, filter_checkbox, moving_average_days, gr
   return df
   
 
-@st.cache_data(ttl=28800)
-def get_pos_income_by_period(grouping_period, start_date, end_date, _cities, filter_checkbox):
+def get_pos_income_by_period(grouping_period, start_date, end_date, cities, filter_checkbox):
 
   if start_date.year == 2025 and start_date < pd.to_datetime("2025-02-01"):
     start_date = datetime(year=2025, month=2, day=1, hour=0, minute=0)
 
-  cities_condition = utils.format_array_for_query(_cities)
+  cities_condition = utils.format_array_for_query(cities)
 
   group_years = start_date.year != end_date.year
 
@@ -263,13 +261,12 @@ def get_pos_income_by_period(grouping_period, start_date, end_date, _cities, fil
   return df
 
 
-@st.cache_data(ttl=28800)
-def get_pos_cumulative_income(start, end, _cities, filter_checkbox, groupBy):
+def get_pos_cumulative_income(start, end, cities, filter_checkbox, groupBy):
 
   if start.year == 2025 and start < pd.to_datetime("2025-02-01"):
     start = datetime(year=2025, month=2, day=1, hour=0, minute=0)
 
-  cities_condition = utils.format_array_for_query(_cities)
+  cities_condition = utils.format_array_for_query(cities)
 
   groupBy_select = f", {groupBy}" if groupBy else ""
   groupBy_partition = f"PARTITION BY {groupBy}" if groupBy else ""
