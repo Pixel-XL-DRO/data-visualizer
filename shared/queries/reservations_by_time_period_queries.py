@@ -13,7 +13,7 @@ day_of_week_map = {
   7: "6. Sobota"
 }
 
-def get_reservations_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period):
+def get_reservations_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period, show_unended_period):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
@@ -90,12 +90,15 @@ def get_reservations_by_time_period(date_type, since_when, end_when, status, cit
 
     optional_groping = "year," if group_years else ""
 
-    optional_where = f"""
-      AND NOT (
-        EXTRACT(YEAR FROM ecr.{date_type}) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP())
-        AND EXTRACT({grouping_period} FROM ecr.{date_type}) >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP())
-      )
-    """ if not grouping_period == "YEAR" else ""
+    optional_where = (
+      "" if show_unended_period
+      else f"""
+        AND NOT (
+          EXTRACT(YEAR FROM ecr.{date_type}) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP())
+          AND EXTRACT({grouping_period} FROM ecr.{date_type}) >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP())
+        )
+      """ if grouping_period != "YEAR" else ""
+    )
 
     average_select = f"""
     AVG(daily_count) AS avg_count"""
@@ -170,7 +173,7 @@ def get_reservations_by_time_period(date_type, since_when, end_when, status, cit
 
   return df
 
-def get_boardhours_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period):
+def get_boardhours_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period, show_unended_period):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
@@ -243,12 +246,15 @@ def get_boardhours_by_time_period(date_type, since_when, end_when, status, citie
       current_period
     """
 
-    optional_where = f"""
-      AND NOT (
-        EXTRACT(YEAR FROM ecr.{date_type}) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP())
-        AND EXTRACT({grouping_period} FROM ecr.{date_type}) >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP())
-      )
-    """ if not grouping_period == "YEAR" else ""
+    optional_where = (
+      "" if show_unended_period
+      else f"""
+        AND NOT (
+          EXTRACT(YEAR FROM ecr.{date_type}) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP())
+          AND EXTRACT({grouping_period} FROM ecr.{date_type}) >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP())
+        )
+      """ if grouping_period != "YEAR" else ""
+    )
 
     optional_groping = "year," if group_years else ""
 
@@ -334,7 +340,7 @@ def get_boardhours_by_time_period(date_type, since_when, end_when, status, citie
 
   return df
 
-def get_people_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period):
+def get_people_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period, show_unended_period):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
@@ -408,13 +414,16 @@ def get_people_by_time_period(date_type, since_when, end_when, status, cities, l
 
     optional_groping = "year," if group_years else ""
 
-    optional_where = f"""
-      AND NOT (
-        EXTRACT(YEAR FROM ecr.{date_type}) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP() )
-        AND EXTRACT({grouping_period} FROM ecr.{date_type}) >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP())
-      )
-    """ if not grouping_period == "YEAR" else ""
-
+    optional_where = (
+      "" if show_unended_period
+      else f"""
+        AND NOT (
+          EXTRACT(YEAR FROM ecr.{date_type}) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP())
+          AND EXTRACT({grouping_period} FROM ecr.{date_type}) >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP())
+        )
+      """ if grouping_period != "YEAR" else ""
+    )
+    
     average_select = f"""
     AVG(person_count) avg_people"""
 

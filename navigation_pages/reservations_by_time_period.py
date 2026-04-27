@@ -20,20 +20,20 @@ df = auth.filter_locations(df)
 
 # side bar
 try:
-  (x_axis_type, group_dates_by, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_type_groups_checkboxes) = reservations_by_time_period_sidebar.filter_data(df)    
+  (x_axis_type, group_dates_by, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_type_groups_checkboxes, show_unended_period) = reservations_by_time_period_sidebar.filter_data(df)    
   grouping_period, group_dates_by = utils.parse_grouping_period(group_dates_by)
 
   with st.spinner("Ładowanie danych...", show_time=True):
 
     df_reservations, df_boardhours, df_people = utils.run_in_parallel(
         (reservations_by_time_period_queries.get_reservations_by_time_period,
-        (x_axis_type, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_type_groups_checkboxes, grouping_period)),
+        (x_axis_type, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_type_groups_checkboxes, grouping_period, show_unended_period)),
 
         (reservations_by_time_period_queries.get_boardhours_by_time_period,
-        (x_axis_type, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_type_groups_checkboxes, grouping_period)),
+        (x_axis_type, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_type_groups_checkboxes, grouping_period, show_unended_period)),
 
         (reservations_by_time_period_queries.get_people_by_time_period,
-        (x_axis_type, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_type_groups_checkboxes, grouping_period))
+        (x_axis_type, start_date, end_date, status_checkboxes, city_checkboxes, language_checkboxes, attraction_groups_checkboxes, visit_type_groups_checkboxes, grouping_period, show_unended_period))
     )
 
   st.subheader("uwaga: dane z aktualnego niepełnego okresu sa pomijane (poza rokiem)")

@@ -30,6 +30,7 @@ def filter_data(df):
   df['location'] = df['street'].map(utils.street_to_location).fillna(df['street'])
 
   with st.sidebar:
+    show_unended_period = st.checkbox('Pokazuj niepełny okres')
     x_axis_type = st.selectbox('Wybierz rodzaj daty', ['Data stworzenia', 'Data rozpoczecia'])
     group_dates_by = st.selectbox('Wybierz grupowanie po dacie', ['Godzina', 'Dzień tygodnia', 'Tydzien roku', 'Dzień miesiaca', 'Miesiac', 'Rok'], index=1)
     time_range = st.selectbox('Wybierz okres', [*years_possible, 'Od poczatku', "Przedział"], index=len(years_possible)-1)
@@ -73,4 +74,4 @@ def filter_data(df):
     cities = df['street'][df['location'].isin(city_checkboxes)].unique()
     visit_types = df['visit_type'].unique() if "Wszystkie" in visit_type_groups_checkboxes else df['visit_type'][df['visit_type'].isin(visit_type_groups_checkboxes)].unique()
 
-    return (x_axis_type, group_dates_by, start_date, end_date, status_checkboxes, cities, language_checkboxes, attraction_groups_checkboxes, visit_types)
+    return (x_axis_type, group_dates_by, start_date, end_date, status_checkboxes, cities, language_checkboxes, attraction_groups_checkboxes, visit_types, show_unended_period)
