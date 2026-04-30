@@ -143,10 +143,13 @@ def view():
       utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .xlxs")
       utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .csv", format="csv")
       started_but_unchecked = started_but_unchecked_df["started_but_unchecked"][0]
-      not_started_len = len(data)
+      not_checked_len = len(data)
 
-    st.info(f"{round(((all_data_length - not_started_len)/all_data_length * 100), 1)}% wizyt zostało oznaczone jako odbyte")  
-    st.info(f"Z pośród wizyt oznaczonych jako nieodbyte {round(((started_but_unchecked)/not_started_len * 100), 1)}% zostało wystartowane ({started_but_unchecked} wizyty)")  
+    if all_data_length is not 0:
+      st.info(f"{round(((all_data_length - not_checked_len)/all_data_length * 100), 1)}% wizyt zostało oznaczone jako odbyte")  
+    
+    if not_checked_len is not 0:
+      st.info(f"Spośród wizyt oznaczonych jako nieodbyte {round(((started_but_unchecked)/not_checked_len * 100), 1)}% zostało wystartowane ({started_but_unchecked} wizyty)")  
 
   
 view()
