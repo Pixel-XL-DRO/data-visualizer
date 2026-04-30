@@ -89,9 +89,15 @@ def get_safi_data(start, end):
 
     not_checked_reservation.append(no_show_entry)
 
-  started_but_unchecked = nsrq.get_started_reservation_percent_without_mark_as_started(not_checked_reservation_ids)
+  started_but_unchecked_ids = nsrq.get_started_reservation_percent_without_mark_as_started(not_checked_reservation_ids)
 
-  return not_checked_reservation, len(data), started_but_unchecked
+  saved_not_checked_len = len(not_checked_reservation)  
+
+  started_ids = [r for r in started_but_unchecked_ids["reservation_external_id"]]
+
+  not_checked_reservation = [r for r in not_checked_reservation if r["id"] not in started_ids]
+
+  return not_checked_reservation, saved_not_checked_len, len(data), len(started_but_unchecked_ids)
 
 
 def view():
@@ -139,17 +145,16 @@ def view():
 
   if st.button("Generuj"):
     with st.spinner("Ładowanie...", show_time=True):
-      data, all_data_length, started_but_unchecked_df = get_safi_data(utc_start, utc_end)
+      data, saved_not_checked_len, all_data_length, started_but_unchecked_len = get_safi_data(utc_start, utc_end)
       utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .xlxs")
       utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .csv", format="csv")
-      started_but_unchecked = started_but_unchecked_df["started_but_unchecked"][0]
-      not_checked_len = len(data)
+      
 
-    if all_data_length is not 0:
-      st.info(f"{round(((all_data_length - not_checked_len)/all_data_length * 100), 1)}% wizyt zostało oznaczone jako odbyte")  
+    if all_data_length != 0:
+      st.info(f"{round(((all_data_length - saved_not_checked_len)/all_data_length * 100), 1)}% wizyt zostało oznaczone jako odbyte")  
     
-    if not_checked_len is not 0:
-      st.info(f"Spośród wizyt oznaczonych jako nieodbyte {round(((started_but_unchecked)/not_checked_len * 100), 1)}% zostało wystartowane ({started_but_unchecked} wizyty)")  
+    if saved_not_checked_len != 0:
+      st.info(f"Spośród wizyt oznaczonych jako nieodbyte {round((started_but_unchecked_len/saved_not_checked_len * 100), 1)}% zostało wystartowane ({started_but_unchecked_len} wizyty)")  
 
   
 view()

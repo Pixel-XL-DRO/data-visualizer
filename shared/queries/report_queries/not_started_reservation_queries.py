@@ -11,7 +11,7 @@ def get_started_reservation_percent_without_mark_as_started(reservations_ids):
 
   query = f"""
     SELECT 
-      COUNT(DISTINCT ess.reservation_external_id) AS started_but_unchecked
+      DISTINCT ess.reservation_external_id AS reservation_external_id
     FROM
       board_playthroughs.event_start_session ess
     WHERE 
