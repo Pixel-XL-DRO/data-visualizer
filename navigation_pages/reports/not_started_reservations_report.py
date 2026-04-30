@@ -31,15 +31,15 @@ def get_safi_data(start, end):
   data = response.json()
   response.raise_for_status()
 
-  not_started_reservation = []
-  not_started_reservation_ids = []
+  not_checked_reservation = []
+  not_checked_reservation_ids = []
 
   for reservation in data:
 
     if(reservation["customer_present"] == 1):
       continue
 
-    not_started_reservation_ids.append(reservation["reservation_id"])
+    not_checked_reservation_ids.append(reservation["reservation_id"])
 
     if reservation.get("request_data"):
       request_data_parsed = json.loads(reservation["request_data"])
@@ -87,11 +87,11 @@ def get_safi_data(start, end):
       "id": reservation["reservation_id"]
     }
 
-    not_started_reservation.append(no_show_entry)
+    not_checked_reservation.append(no_show_entry)
 
-  started_but_unchecked = nsrq.get_started_reservation_percent_without_mark_as_started(not_started_reservation_ids)
+  started_but_unchecked = nsrq.get_started_reservation_percent_without_mark_as_started(not_checked_reservation_ids)
 
-  return not_started_reservation, len(data), started_but_unchecked
+  return not_checked_reservation, len(data), started_but_unchecked
 
 
 def view():
