@@ -201,7 +201,7 @@ def get_safi_data(iso_start, iso_end):
     for key, value in cities_sum.items():
         st.write(key, f"{value:,.2f} PLN")
 
-    utils.download_button(online_sales, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .xlxs")
+    utils.download_button(online_sales, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .xlsx")
     utils.download_button({"Wszystkie_csv": online_sales["Wszystkie"]}, f"raport_finansowy_safi_{start_date}-{end_date}", label="Pobierz raport safi .csv", format="csv")
 
 
@@ -312,7 +312,7 @@ def get_dotypos_data(iso_start, iso_end):
             "lokalizacja": filtered_order_items["location"]
         })
 
-    utils.download_button({f"{start_date}-{end_date}": df_dotypos_export}, f"raport_finansowy_dotykacka_{start_date}-{end_date}", label="Pobierz raport dotykacka .xlxs")
+    utils.download_button({f"{start_date}-{end_date}": df_dotypos_export}, f"raport_finansowy_dotykacka_{start_date}-{end_date}", label="Pobierz raport dotykacka .xlsx")
 
 def get_branches(cloud_id, token):
     url = f"https://api.dotykacka.cz/v2/clouds/{cloud_id}/branches"

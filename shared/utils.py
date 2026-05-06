@@ -268,7 +268,7 @@ def get_month_from_month_number(month_number):
     12: "12. Grudzień"
   }[month_number]
 
-def download_button(dfs, file_name, label = "Pobierz plik .xlxs", transpose=False, format='xlsx'):
+def download_button(dfs, file_name, label = "Pobierz plik .xlsx", transpose=False, format='xlsx'):
   if format == "csv":
     if len(dfs) > 1:
       raise Exception("download button function with csv format can accept only one dimension (one df)")

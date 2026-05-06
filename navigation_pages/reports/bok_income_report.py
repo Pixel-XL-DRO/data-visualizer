@@ -592,7 +592,7 @@ def download_data(data, start_date, end_date):
     utils.download_button(
         data,
         f"Dane BOK w przedziale {start_date}-{end_date}",
-        label="Pobierz raport .xlxs",
+        label="Pobierz raport .xlsx",
     )
 
 
