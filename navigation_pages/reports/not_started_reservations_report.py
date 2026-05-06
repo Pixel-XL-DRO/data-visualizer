@@ -146,7 +146,7 @@ def view():
   if st.button("Generuj"):
     with st.spinner("Ładowanie...", show_time=True):
       data, saved_not_checked_len, all_data_length, started_but_unchecked_len = get_safi_data(utc_start, utc_end)
-      utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .xlxs")
+      utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .xlsx")
       utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .csv", format="csv")
       
 
