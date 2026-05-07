@@ -34,6 +34,7 @@ reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py"
 bok_income_report = st.Page("navigation_pages/reports/bok_income_report.py", title = "Raport BOK", icon=":material/phone_callback:")
 clients_report = st.Page("navigation_pages/reports/clients_report.py", title = "Klienci", icon=":material/groups_3:")
 not_started_reservations_report = st.Page("navigation_pages/reports/not_started_reservations_report.py", title = "Raport rezerwacji nieodbytych", icon=":material/event_busy:")
+occupancy_report = st.Page("navigation_pages/reports/occupancy_report.py", title = "Raport zajętości", icon=":material/date_range:")
 
 # safi_products_page is hidden until we differentiate products bought and added in data parser
 
@@ -41,7 +42,7 @@ pages_by_role = {
   "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
     "Sprzedaż": [dotypos, income, vouchers],
-    "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page, clients_report, not_started_reservations_report, bok_income_report],
+    "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page, clients_report, not_started_reservations_report, bok_income_report, occupancy_report],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
