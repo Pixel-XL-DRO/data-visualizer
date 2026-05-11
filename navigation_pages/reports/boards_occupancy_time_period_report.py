@@ -7,7 +7,6 @@ sys.path.append("navigation_pages/boards_occupancy")
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 import altair as alt
 from datetime import datetime, date
 
@@ -19,136 +18,10 @@ import occupancy_report_queries
 from safi_view import LAST_HOURS_AVAILABILITY
 
 
-@st.cache_data(ttl=28800)
-def compute_occupancy(df_reservations, df_slots_occupancy, df_locations,
-                      df_location_hours_availability, df_location_boards_availability,
-                      selected_streets, start_date, end_date):
-  all_rows = []
-
-  for street in selected_streets:
-    location_row = df_locations[df_locations['street'] == street]
-    if location_row.empty:
-      continue
-    location_ids = location_row['id'].tolist()
-
-    location_boards_avail = df_location_boards_availability[
-      df_location_boards_availability['boards_availability_dim_location_id'].isin(location_ids)
-    ]
-    location_hours_avail = df_location_hours_availability[
-      df_location_hours_availability['hours_availability_dim_location_id'].isin(location_ids)
-    ]
-
-    current_boards_avail = location_boards_avail[location_boards_avail['boards_availability_until_when'].isnull()]
-    if current_boards_avail.empty:
-      continue
-    time_unit_in_hours = current_boards_avail['boards_availability_time_unit_in_hours'].values[0]
-    time_unit_in_minutes = int(time_unit_in_hours * 60)
-
-    hours_map = {}
-
-    current_iter_date = start_date
-    while current_iter_date <= end_date:
-      weekday = (current_iter_date.weekday() + 1) % 7
-
-      sorted_avail = location_hours_avail[
-        location_hours_avail['hours_availability_day_of_week'] == weekday
-      ].sort_values(by='hours_availability_since_when', ascending=False)
-
-      avail_for_date = sorted_avail[
-        sorted_avail['hours_availability_since_when'] <= pd.to_datetime(current_iter_date).tz_localize('UTC')
-      ]
-      if avail_for_date.empty:
-        current_iter_date += pd.Timedelta(days=1)
-        continue
-
-      current_avail = avail_for_date.iloc[0]
-      starting_hour = current_avail['hours_availability_starting_hour']
-      num_time_units = int(current_avail['hours_availability_number_of_hours'] / time_unit_in_hours)
-
-      hours_map[str(current_iter_date)] = {}
-      hours_array = np.linspace(starting_hour, starting_hour + num_time_units * time_unit_in_hours, num_time_units, endpoint=False)
-
-      for hour in hours_array:
-        hours_map[str(current_iter_date)][str(hour)] = 0
-
-      current_iter_date += pd.Timedelta(days=1)
-
-    street_reservations = df_reservations[df_reservations['street'] == street] if not df_reservations.empty else pd.DataFrame()
-
-    for _, reservation in street_reservations.iterrows():
-      if reservation['reservation_system'] == "plan4u":
-        current_slot = df_slots_occupancy[df_slots_occupancy['slots_occupancy_reservation_id'] == reservation['id']]
-
-        time_sum = 0
-        slots_sum = 0
-        for _, slot in current_slot.iterrows():
-          time_sum += slot['slots_occupancy_time_taken']
-          slots_sum += slot['slots_occupancy_slots_taken']
-
-        time_taken = time_sum
-        if time_taken == 0:
-          continue
-
-        slots_taken = slots_sum / (time_taken / time_unit_in_minutes)
-      else:
-        slots_taken = reservation['reservation_slots_taken']
-        time_taken = reservation['reservation_time_taken']
-
-      start_dt = reservation['start_date']
-      res_date = start_dt.date()
-      hour = start_dt.hour
-      minutes = start_dt.minute
-      minutes_multiplier = 1 if time_unit_in_minutes != 60 else 0
-
-      while time_taken > 0:
-        hour_key = str(f'{hour}.{minutes_multiplier * int(minutes / 60 * 10)}')
-        date_str = str(res_date)
-        if date_str in hours_map and hour_key in hours_map[date_str]:
-          hours_map[date_str][hour_key] += slots_taken
-        time_taken -= time_unit_in_minutes
-        minutes += time_unit_in_minutes
-        if minutes >= 60:
-          hour += 1
-          minutes -= 60
-
-    for date_key, hours_data in hours_map.items():
-      reservation_date = pd.to_datetime(date_key, format='%Y-%m-%d').tz_localize('UTC')
-
-      location_boards_filtered = location_boards_avail[
-        (location_boards_avail['boards_availability_since_when'] <= reservation_date) &
-        (location_boards_avail['boards_availability_until_when'].isnull() |
-         (location_boards_avail['boards_availability_until_when'] >= reservation_date))
-      ]
-      if location_boards_filtered.empty:
-        continue
-      total_boards_base = location_boards_filtered.iloc[0]['boards_availability_number_of_boards']
-      day_of_week = datetime.strptime(date_key, '%Y-%m-%d').weekday()
-
-      for hour_key, slots_taken in hours_data.items():
-        parsed_hour = int(float(hour_key))
-        override = LAST_HOURS_AVAILABILITY.get(street, {}).get(day_of_week, {}).get(parsed_hour)
-        total_boards = override if override else total_boards_base
-
-        boards_occupancy = round(slots_taken / total_boards * 100, 0) if total_boards > 0 else 0
-
-        all_rows.append({
-          'street': street,
-          'date': date_key,
-          'hour_key': hour_key,
-          'slots_taken': slots_taken,
-          'total_boards': float(total_boards),
-          'boards_occupancy': boards_occupancy,
-        })
-
-  return pd.DataFrame(all_rows)
-
-
 with st.spinner("Ładowanie danych..."):
-  df_initial, df_locations, df_location_hours_availability, df_location_boards_availability = utils.run_in_parallel(
+  df_initial, df_locations = utils.run_in_parallel(
     (queries.get_initial_data, ()),
     (queries.get_locations_data, ()),
-    (queries.get_historical_location_hours_availability, ()),
-    (queries.get_historical_location_boards_availability, ()),
   )
 
   df_initial = auth.filter_locations(df_initial)
@@ -172,21 +45,36 @@ start_datetime = pd.Timestamp(start_date).tz_localize("UTC")
 end_datetime = pd.Timestamp(end_date).replace(hour=23, minute=59, second=59).tz_localize("UTC")
 
 with st.spinner("Ładowanie danych rezerwacji...", show_time=True):
-  df_reservations, df_slots_occupancy = utils.run_in_parallel(
-    (occupancy_report_queries.get_reservations_with_visit_type, (selected_streets, attraction_groups, visit_types, start_datetime, end_datetime)),
-    (queries.get_slots_occupancy, (start_datetime, end_datetime)),
-  )
-
-with st.spinner("Obliczanie zajętości...", show_time=True):
-  df_all = compute_occupancy(
-    df_reservations, df_slots_occupancy, df_locations,
-    df_location_hours_availability, df_location_boards_availability,
-    tuple(selected_streets), start_date, end_date,
+  df_all = occupancy_report_queries.get_occupancy_by_hour(
+    tuple(selected_streets),
+    tuple(attraction_groups),
+    tuple(visit_types),
+    start_datetime,
+    end_datetime,
   )
 
 if df_all.empty:
   st.info("Brak danych dla wybranego zakresu dat.")
   st.stop()
+
+override_records = [
+  {'street': s, 'day_of_week': dow, 'slot_hour': hr, '_override': cap}
+  for s, dow_map in LAST_HOURS_AVAILABILITY.items()
+  for dow, hr_map in dow_map.items()
+  for hr, cap in hr_map.items()
+]
+df_override = pd.DataFrame(override_records)
+
+df_all['day_of_week'] = pd.to_datetime(df_all['slot_date']).dt.weekday
+df_all['slot_hour'] = df_all['slot_hour'].astype(int)
+df_all = df_all.merge(df_override, on=['street', 'day_of_week', 'slot_hour'], how='left')
+df_all['total_boards'] = df_all['_override'].where(df_all['_override'].notna(), df_all['total_boards'])
+df_all['boards_occupancy'] = (df_all['slots_taken'] / df_all['total_boards'] * 100).round(0)
+df_all.drop(columns=['day_of_week', '_override'], inplace=True)
+
+df_all = df_all.rename(columns={'slot_date': 'date', 'slot_hour': 'hour_key'})
+df_all['date'] = df_all['date'].astype(str)
+df_all['hour_key'] = df_all['hour_key'].astype(float).astype(str)  # e.g. "10.0"
 
 today = date.today()
 now = datetime.now()
@@ -216,8 +104,6 @@ if df_all.empty:
   st.info("Brak danych dla wybranego zakresu dat.")
   st.stop()
 
-# --- Granularity aggregation ---
-
 df_all['location_name'] = df_all['street'].map(utils.street_to_location).fillna(df_all['street'])
 
 def weighted_occupancy(grp):
@@ -239,8 +125,6 @@ elif granularity == "Tydzień":
 elif granularity == "Miesiąc":
   df_all['_dt'] = pd.to_datetime(df_all['date'])
   df_all['sort_key'] = df_all['_dt'].dt.to_period('M').dt.start_time
-
-# --- Average by sub-period chart ---
 
 if granularity == "Godzina":
   df_all['_sub_sort'] = df_all['_full_hour']
@@ -312,38 +196,36 @@ sub_bar = alt.Chart(sub_agg).mark_bar().encode(
 
 st.altair_chart(sub_bar, use_container_width=True)
 
-# --- Export ---
-
 def build_export_sheet(street_df):
   if granularity == "Godzina":
     grp = street_df.groupby(['sort_key', '_full_hour'], as_index=False).agg(
-      wszystkie_maty=('total_boards', 'sum'),
-      zajete_maty=('slots_taken', 'sum'),
+      wszystkie_sloty=('total_boards', 'sum'),
+      zajete_sloty=('slots_taken', 'sum'),
     )
     grp['okres'] = grp['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + grp['_full_hour'].apply(lambda h: f"{h:02d}:00")
   elif granularity == "Dzień":
     grp = street_df.groupby(['sort_key'], as_index=False).agg(
-      wszystkie_maty=('total_boards', 'sum'),
-      zajete_maty=('slots_taken', 'sum'),
+      wszystkie_sloty=('total_boards', 'sum'),
+      zajete_sloty=('slots_taken', 'sum'),
     )
     grp['okres'] = grp['sort_key'].dt.strftime('%d.%m.%Y')
   elif granularity == "Tydzień":
     grp = street_df.groupby(['sort_key'], as_index=False).agg(
-      wszystkie_maty=('total_boards', 'sum'),
-      zajete_maty=('slots_taken', 'sum'),
+      wszystkie_sloty=('total_boards', 'sum'),
+      zajete_sloty=('slots_taken', 'sum'),
     )
     grp['okres'] = grp['sort_key'].apply(
       lambda d: f"{d.strftime('%d.%m.%Y')} - {(d + pd.Timedelta(days=6)).strftime('%d.%m.%Y')}"
     )
   elif granularity == "Miesiąc":
     grp = street_df.groupby(['sort_key'], as_index=False).agg(
-      wszystkie_maty=('total_boards', 'sum'),
-      zajete_maty=('slots_taken', 'sum'),
+      wszystkie_sloty=('total_boards', 'sum'),
+      zajete_sloty=('slots_taken', 'sum'),
     )
     grp['okres'] = grp['sort_key'].dt.strftime('%m.%Y')
 
-  grp['zajetość (%)'] = (grp['zajete_maty'] / grp['wszystkie_maty'] * 100).round(1)
-  return grp.sort_values('sort_key')[['okres', 'wszystkie_maty', 'zajete_maty', 'zajetość (%)']]
+  grp['zajetość (%)'] = (grp['zajete_sloty'] / grp['wszystkie_sloty'] * 100).round(1)
+  return grp.sort_values('sort_key')[['okres', 'wszystkie_sloty', 'zajete_sloty', 'zajetość (%)']]
 
 export_sheets = {}
 for street in selected_streets:

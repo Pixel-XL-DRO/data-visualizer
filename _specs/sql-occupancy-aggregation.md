@@ -32,6 +32,6 @@ The boards occupancy by time period report currently performs its entire aggrega
 
 ## Open Questions
 
-- Which parts of the slot-distribution logic are truly impossible to express in SQL given the current schema, and which can be moved with schema additions?
-- Should `historical_location_hours_availability` and `historical_location_boards_availability` be loaded into BigQuery as reference tables to enable a full SQL join?
-- Is it acceptable to round hour buckets in SQL (e.g. `EXTRACT(HOUR FROM start_date)`) or must fractional-hour slot distribution be preserved?
+- Which parts of the slot-distribution logic are truly impossible to express in SQL given the current schema, and which can be moved with schema additions? decide 
+- Should `historical_location_hours_availability` and `historical_location_boards_availability` be loaded into BigQuery as reference tables to enable a full SQL join? if it will make computing faster yes
+- Is it acceptable to round hour buckets in SQL (e.g. `EXTRACT(HOUR FROM start_date)`) or must fractional-hour slot distribution be preserved? yes
