@@ -15,7 +15,7 @@ import utils
 import auth
 import boards_occupancy_time_period_sidebar
 import occupancy_report_queries
-from safi_view import LAST_HOURS_AVAILABILITY
+from boards_occupancy import LAST_HOURS_AVAILABILITY
 
 
 with st.spinner("Ładowanie danych..."):
