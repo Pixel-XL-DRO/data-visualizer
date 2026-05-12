@@ -31,7 +31,7 @@ financial_report_page = st.Page("navigation_pages/reports/financial_report.py", 
 safi_products_page = st.Page("navigation_pages/safi_products.py", title="Produkty dodatkowe online", icon=":material/add_shopping_cart:")
 voucher_report_page = st.Page("navigation_pages/reports/voucher_report.py", title = "Raport kodów promocyjnych", icon=":material/sell:")
 reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py", title = "Rezerwacje z fakturą", icon=":material/vertical_split:")
-bok_income_report = st.Page("navigation_pages/reports/bok_income_report.py", title = "Raport BOK", icon=":material/phone_callback:")
+bok_income_report = st.Page("navigation_pages/reports/bok_income_report.py", title = "Źródła tworzenia rezerwacji", icon=":material/note_add:")
 clients_report = st.Page("navigation_pages/reports/clients_report.py", title = "Klienci", icon=":material/groups_3:")
 not_started_reservations_report = st.Page("navigation_pages/reports/not_started_reservations_report.py", title = "Raport rezerwacji nieodbytych", icon=":material/event_busy:")
 

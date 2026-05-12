@@ -605,8 +605,7 @@ def view():
         start_date = st.date_input(
             "Podaj date poczatku",
             now - timedelta(days=7),
-            key="start_date",
-            max_value=now - timedelta(days=1),
+            key="start_date"
         )
 
     with date_col2:
@@ -629,6 +628,10 @@ def view():
         "Wybierz rodzaj daty", ["Data stworzenia", "Data rozpoczecia"], key="date_type"
     )
     use_start_date = True if date_type == "Data rozpoczecia" else False
+
+    if utc_end < utc_start:
+        st.warning("Data początku musi być wcześniejsza niż data końca")
+        return
 
     if st.button("Generuj raport"):
 
