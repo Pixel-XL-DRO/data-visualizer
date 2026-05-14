@@ -168,7 +168,7 @@ def view():
     if saved_not_checked_len != 0:
       st.info(f"Spośród wizyt oznaczonych jako nieodbyte {round((started_but_unchecked_len/saved_not_checked_len * 100), 1)}% zostało wystartowane ({started_but_unchecked_len} wizyty)")
 
-    st.info(f"Spośród wizyt oznaczonych jako odbyte {round(not_started_but_checked_reservations_len, 2)}% się nie odbyło")
-    st.info(f"{round(starts_without_selected_reservation_len, 2)}% startów nie miało wybranej rezerwacji")
+    st.info(f"Spośród wizyt oznaczonych jako odbyte {round(not_started_but_checked_reservations_len, 2)}% nie miało wystartowanej sesji")
+    st.info(f"{round(starts_without_selected_reservation_len, 2)}% startów sesji nie miało wybranej rezerwacji")
 
 view()
