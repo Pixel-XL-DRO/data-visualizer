@@ -22,24 +22,28 @@ def get_safi_data(start, end):
   }
   safi_auth_token = st.secrets["safi"].get("auth_token")
 
-  headers = { 
+  headers = {
     "Authorization": f"Bearer {safi_auth_token}"
   }
 
   response = requests.get(url, params=params, headers=headers)
-  
+
   data = response.json()
   response.raise_for_status()
 
   not_checked_reservation = []
   not_checked_reservation_ids = []
+  checked_reservation_ids = []
 
   for reservation in data:
 
+    reservation_id = reservation["reservation_id"]
+
     if(reservation["customer_present"] == 1):
+      checked_reservation_ids.append(reservation_id)
       continue
 
-    not_checked_reservation_ids.append(reservation["reservation_id"])
+    not_checked_reservation_ids.append(reservation_id)
 
     if reservation.get("request_data"):
       request_data_parsed = json.loads(reservation["request_data"])
@@ -53,8 +57,8 @@ def get_safi_data(start, end):
         line_brutto = line["totalLineValue"] / 100
         tax_rate = int(tax_rates[line["taxRate"]]) if tax_rates.get(line["taxRate"], "").isdigit() else None
 
-        is_reservation = "bilet" in line["productOrServiceName"].lower() 
-        
+        is_reservation = "bilet" in line["productOrServiceName"].lower()
+
         discounts = line.get("rebatesMarkups", [])
         discount_value = sum(d["value"] / 100 for d in discounts) if discounts and is_reservation else 0
 
@@ -84,20 +88,27 @@ def get_safi_data(start, end):
       "kwota netto": round(total_net, 2),
       "link do e-paragonu": reservation.get("document_url"),
       "potwierdzenie płatności": payment_info,
-      "id": reservation["reservation_id"]
+      "id": reservation_id
     }
 
     not_checked_reservation.append(no_show_entry)
 
-  started_but_unchecked_ids = nsrq.get_started_reservation_percent_without_mark_as_started(not_checked_reservation_ids)
+  started_but_unchecked_ids, started_checked_reservations, starts_without_selected_reservation_len = utils.run_in_parallel(
+    (nsrq.get_started_reservation_external_ids, (not_checked_reservation_ids,)),
+    (nsrq.get_started_reservation_external_ids, (checked_reservation_ids,)),
+    (nsrq.get_starts_percent_without_reservation_selected, (start, end))
+  )
 
-  saved_not_checked_len = len(not_checked_reservation)  
+  saved_not_checked_len = len(not_checked_reservation)
 
   started_ids = [r for r in started_but_unchecked_ids["reservation_external_id"]]
 
   not_checked_reservation = [r for r in not_checked_reservation if r["id"] not in started_ids]
 
-  return not_checked_reservation, saved_not_checked_len, len(data), len(started_but_unchecked_ids)
+  not_started_checked_len = len(checked_reservation_ids) - len(started_checked_reservations)
+  not_started_but_checked_reservations_len = not_started_checked_len / len(checked_reservation_ids) * 100 if len(checked_reservation_ids) != 0 else 0
+
+  return not_checked_reservation, saved_not_checked_len, len(data), len(started_but_unchecked_ids), not_started_but_checked_reservations_len, starts_without_selected_reservation_len
 
 
 def view():
@@ -145,16 +156,19 @@ def view():
 
   if st.button("Generuj"):
     with st.spinner("Ładowanie...", show_time=True):
-      data, saved_not_checked_len, all_data_length, started_but_unchecked_len = get_safi_data(utc_start, utc_end)
+      data, saved_not_checked_len, all_data_length, started_but_unchecked_len, not_started_but_checked_reservations_len, starts_without_selected_reservation_len = get_safi_data(utc_start, utc_end)
+
       utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .xlsx")
       utils.download_button({"Rezerwacje": data}, f"Rezerwacje w przedziale {start_date}-{end_date}", label="Pobierz raport .csv", format="csv")
-      
+
 
     if all_data_length != 0:
-      st.info(f"{round(((all_data_length - saved_not_checked_len)/all_data_length * 100), 1)}% wizyt zostało oznaczone jako odbyte")  
-    
-    if saved_not_checked_len != 0:
-      st.info(f"Spośród wizyt oznaczonych jako nieodbyte {round((started_but_unchecked_len/saved_not_checked_len * 100), 1)}% zostało wystartowane ({started_but_unchecked_len} wizyty)")  
+      st.info(f"{round(((all_data_length - saved_not_checked_len)/all_data_length * 100), 1)}% wizyt zostało oznaczone jako odbyte")
 
-  
+    if saved_not_checked_len != 0:
+      st.info(f"Spośród wizyt oznaczonych jako nieodbyte {round((started_but_unchecked_len/saved_not_checked_len * 100), 1)}% zostało wystartowane ({started_but_unchecked_len} wizyty)")
+
+    st.info(f"Spośród wizyt oznaczonych jako odbyte {round(not_started_but_checked_reservations_len, 2)}% się nie odbyło")
+    st.info(f"{round(starts_without_selected_reservation_len, 2)}% startów nie miało wybranej rezerwacji")
+
 view()
