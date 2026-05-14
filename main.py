@@ -28,7 +28,7 @@ dotypos = st.Page("navigation_pages/dotypos.py", title="System kasowy", icon=":m
 income = st.Page("navigation_pages/income.py", title="Przychody", icon=":material/money_bag:")
 vouchers = st.Page("navigation_pages/vouchers.py", title="Vouchery", icon=":material/local_activity:")
 financial_report_page = st.Page("navigation_pages/reports/financial_report.py", title = "Raport finansowy", icon=":material/attach_money:")
-products_online_page = st.Page("navigation_pages/products_online.py", title="Produkty dodatkowe", icon=":material/add_shopping_cart:")
+safi_products_page = st.Page("navigation_pages/safi_products.py", title="Produkty dodatkowe", icon=":material/add_shopping_cart:")
 voucher_report_page = st.Page("navigation_pages/reports/voucher_report.py", title = "Raport kodów promocyjnych", icon=":material/sell:")
 reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py", title = "Rezerwacje z fakturą", icon=":material/vertical_split:")
 bok_income_report = st.Page("navigation_pages/reports/bok_income_report.py", title = "Źródła tworzenia rezerwacji", icon=":material/note_add:")
@@ -38,7 +38,7 @@ not_started_reservations_report = st.Page("navigation_pages/reports/not_started_
 pages_by_role = {
   "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
-    "Sprzedaż": [dotypos, income, vouchers,products_online_page],
+    "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
     "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page, clients_report, not_started_reservations_report, bok_income_report],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],

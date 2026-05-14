@@ -40,7 +40,7 @@ def get_data(start, end, use_start_date):
   return pd.DataFrame(data)
 
 
-def parse_data(df, cities=None):
+def parse_data(df):
 
   df = df.copy()
   df["brutto"] = df["brutto"].astype(float)
@@ -199,10 +199,7 @@ def show_results():
 
   df_sums, df_reservations_by_location = parse_data(data)
 
-  total_paid = df_reservations_by_location["total_reservations_paid"].sum()
-  total_not_paid = df_reservations_by_location["total_reservations_not_paid"].sum()
   total_res = df_reservations_by_location["total_reservations"].sum()
-  pct_total = round((total_paid + total_not_paid) / total_res * 100, 2) if total_res else 0
 
   all_products = sorted(data["name"].dropna().unique().tolist())
   selected_products = st.multiselect("Wybierz produkt(y)", options=all_products, default=[])
