@@ -19,9 +19,22 @@ USER_TZ = ZoneInfo("Europe/Warsaw")
 
 min_date = date(2025, 1, 1)
 
+street_to_city_name = { 
+  "arkadia": "Warszawa - Box",
+  "grunwaldzka": "Gdańsk",
+  "sokolska": "Katowice",
+  "swidnicka": "Wrocław",
+  "swietego-marcina": "Poznań",
+  "lubicz": "Kraków",
+  "ogrodowa": "Łódź",
+  "kijowska": "Warszawa",
+  "szajnochy": "Bydgoszcz"
+}
+
 with st.spinner("Inicjalizacja...", show_time=True):
   df = queries.get_initial_data()
   df = auth.filter_locations(df)
+  df["city"] = df["street"].map(street_to_city_name)
 
 def get_data(start, end, use_start_date):
   url = "https://safi-api.pixel-xl.tech:9999/api/get-products-online"
@@ -172,6 +185,7 @@ def show_results():
     "Integracja firmowe": "Integracje",
     "Wycieczki szkolne": "Szkoły",
   })
+  data = data[data["location_name"].isin(df["city"].unique())]
 
   selected_locations = st.multiselect(
     "Lokalizacje",

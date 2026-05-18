@@ -46,7 +46,7 @@ pages_by_role = {
   },
   "admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
-    "Sprzedaż": [dotypos, income, vouchers],
+    "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
     "Raporty": [voucher_report_page, reservations_for_year_page, clients_report, bok_income_report],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
@@ -54,14 +54,14 @@ pages_by_role = {
   },
   "manager": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page],
-    "Sprzedaż": [dotypos, income, vouchers],
+    "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
     "Raporty": [voucher_report_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
   },
   "marketing": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page],
-    "Sprzedaż": [vouchers],
+    "Sprzedaż": [vouchers, safi_products_page],
     "Raporty": [voucher_report_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
