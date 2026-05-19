@@ -19,7 +19,7 @@ def get_pos_income(start, end, cities, filter_checkbox, moving_average_days, gro
   query = f"""
   WITH initial AS (
   SELECT 
-    SUM(CAST(oi.price_brutto AS FLOAT64) / 100) AS price, 
+    SUM(CAST(oi.price_brutto AS INT64) / 100) AS price, 
     DATE(o.creation_date) AS date
     {groupBy_select}
   FROM 
@@ -192,7 +192,7 @@ def get_pos_income_by_period(grouping_period, start_date, end_date, cities, filt
   WITH initial AS (
   SELECT 
     {select_statement}
-    SUM(CAST(oi.price_brutto AS FLOAT64) / 100) AS price
+    SUM(CAST(oi.price_brutto AS INT64) / 100) AS price
   FROM 
     POS_system_data.order o
   JOIN 
@@ -274,7 +274,7 @@ def get_pos_cumulative_income(start, end, cities, filter_checkbox, groupBy):
   query = f"""
   WITH initial AS (
   SELECT 
-    SUM(CAST(oi.price_brutto AS FLOAT64) / 100) AS price, 
+    SUM(CAST(oi.price_brutto AS INT64) / 100) AS price, 
     DATE(o.creation_date) AS date
     {groupBy_select}
   FROM 
