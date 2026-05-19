@@ -12,7 +12,7 @@ def get_vouchers_worth(since_when, end_when, cities):
 
   query = f"""
     SELECT
-      SUM(voucher.net_amount) as worth,
+      SUM(voucher.net_amount / 100) as worth,
       voucher.voucher_name as name
     FROM
       vouchers_data.voucher voucher
