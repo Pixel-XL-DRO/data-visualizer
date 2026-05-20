@@ -16,8 +16,8 @@ def get_order_items(since_when, cities, moving_average_days, groupBy):
   query = f"""
   WITH initial AS (
   SELECT
-    CAST(order_items.price_brutto AS NUMERIC) as brutto,
-    CAST(order_items.price_netto AS NUMERIC) as netto,
+    CAST(order_items.price_brutto AS NUMERIC) / 100 as brutto,
+    CAST(order_items.price_netto AS NUMERIC) / 100 as netto,
     o.creation_date as creation_date
     {groupBy_select}
   FROM
@@ -102,8 +102,8 @@ def get_order_items_per_sale(since_when, cities, moving_average_days, groupBy):
   query = f"""
   WITH initial AS (
   SELECT
-    CAST(order_items.price_brutto AS NUMERIC) as brutto,
-    CAST(order_items.price_netto AS NUMERIC) as netto,
+    CAST(order_items.price_brutto AS NUMERIC) / 100 as brutto,
+    CAST(order_items.price_netto AS NUMERIC) / 100 as netto,
     o.creation_date as creation_date
     {groupBy_select}
   FROM
@@ -372,10 +372,10 @@ def get_items_sold(start_date, end_date, cities, items, groupBy):
   SELECT 
     i.name,
     SUM(oi.quantity) AS count,
-    SUM(CAST(oi.price_brutto AS NUMERIC)) AS brutto,
-    SUM(CAST(oi.price_netto AS NUMERIC)) AS netto,
-    AVG(CAST(oi.price_brutto AS NUMERIC)) AS avg_brutto,
-    AVG(CAST(oi.price_netto AS NUMERIC)) AS avg_netto
+    SUM(CAST(oi.price_brutto AS NUMERIC) / 100) AS brutto,
+    SUM(CAST(oi.price_netto AS NUMERIC) / 100) AS netto,
+    AVG(CAST(oi.price_brutto AS NUMERIC) / 100) AS avg_brutto,
+    AVG(CAST(oi.price_netto AS NUMERIC) / 100) AS avg_netto
     {groupBy_select}
   FROM
     POS_system_data.order_items oi

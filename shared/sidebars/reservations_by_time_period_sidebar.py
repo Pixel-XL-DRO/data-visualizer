@@ -1,7 +1,10 @@
 import sys
 sys.path.append("shared")
 
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, timezone
+from zoneinfo import ZoneInfo
+
+WARSAW_TZ = ZoneInfo("Europe/Warsaw")
 import utils
 import streamlit as st
 import numpy as np
@@ -54,14 +57,16 @@ def filter_data(df):
       x_axis_type = 'start_date'
 
     if type(time_range) is int:
-      df_year = df[df[x_axis_type].dt.year == time_range]
-      min_date = df_year[x_axis_type].min() 
-      start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, day=min_date.day, month=min_date.month, year=min_date.year)
+      start_date = datetime(time_range, 1, 1, 0, 0, 0)
       
       if time_range == datetime.now().year:
         end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
       else:
-        end_date = datetime(time_range, 12, 31, 23, 59, 59)
+        end_date = (
+          datetime(time_range, 12, 31, 23, 59, 59, tzinfo=WARSAW_TZ)
+          .astimezone(timezone.utc)
+          .replace(tzinfo=None)
+        )
     elif time_range == 'Od poczatku':
       min_date = df[x_axis_type].min()
       start_date = datetime.now().replace(hour=min_date.hour, minute=min_date.minute, second=min_date.second, microsecond=min_date.microsecond, day=min_date.day, month=min_date.month, year=min_date.year)

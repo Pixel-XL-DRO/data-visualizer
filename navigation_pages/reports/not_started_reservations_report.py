@@ -16,20 +16,35 @@ def get_safi_data(start, end):
 
   url = "https://safi-api.pixel-xl.tech:9999/api/get-not-started-reservations"
 
-  params = {
-    "start_date_from": start,
-    "start_date_to": end,
-  }
+
   safi_auth_token = st.secrets["safi"].get("auth_token")
 
   headers = {
     "Authorization": f"Bearer {safi_auth_token}"
   }
 
-  response = requests.get(url, params=params, headers=headers)
+  data = []
+  page = 0
+  should_fetch = True
 
-  data = response.json()
-  response.raise_for_status()
+  while should_fetch:
+
+    params = {
+      "start_date_from": start,
+      "start_date_to": end,
+      "page": page
+    }
+
+    response = requests.get(url, params=params, headers=headers)
+
+    parsed_res = response.json()
+
+    if len(parsed_res) == 0 or "error" in parsed_res:
+      should_fetch = False
+      break
+
+    data.extend(parsed_res)
+    page += 1  
 
   not_checked_reservation = []
   not_checked_reservation_ids = []
@@ -101,7 +116,7 @@ def get_safi_data(start, end):
 
   saved_not_checked_len = len(not_checked_reservation)
 
-  started_ids = [r for r in started_but_unchecked_ids["reservation_external_id"]]
+  started_ids = [r for r in started_but_unchecked_ids["reservation_external_id"] if len(started_but_unchecked_ids) > 0]
 
   not_checked_reservation = [r for r in not_checked_reservation if r["id"] not in started_ids]
 

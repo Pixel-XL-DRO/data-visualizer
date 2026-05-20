@@ -78,8 +78,8 @@ def get_reservations_by_time_period(date_type, since_when, end_when, status, cit
 
   else:
     select_statement = f"""
-      {f"EXTRACT(YEAR FROM ecr.{date_type}) AS year," if  group_years  else ""}
-      EXTRACT({grouping_period} FROM ecr.{date_type}) AS period,
+      {f"EXTRACT(YEAR FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') AS year," if  group_years  else ""}
+      EXTRACT({grouping_period} FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') AS period,
       EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP() AT TIME ZONE 'Europe/Warsaw') AS current_period,
     """
 
@@ -94,8 +94,8 @@ def get_reservations_by_time_period(date_type, since_when, end_when, status, cit
       "" if show_unended_period
       else f"""
         AND NOT (
-          EXTRACT(YEAR FROM ecr.{date_type}) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP())
-          AND EXTRACT({grouping_period} FROM ecr.{date_type}) >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP())
+          EXTRACT(YEAR FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') = EXTRACT(YEAR FROM CURRENT_TIMESTAMP() AT TIME ZONE 'Europe/Warsaw')
+          AND EXTRACT({grouping_period} FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP() AT TIME ZONE 'Europe/Warsaw')
         )
       """ if grouping_period != "YEAR" else ""
     )
@@ -125,8 +125,8 @@ def get_reservations_by_time_period(date_type, since_when, end_when, status, cit
       dvt.id = ecr.visit_type_id
     WHERE
       ecr.deleted_at IS NULL
-      AND DATE({date_type}) >= DATE(@since_when)
-      AND DATE({date_type}) <= DATE(@end_when)
+      AND DATE(ecr.{date_type}, 'Europe/Warsaw') >= DATE(@since_when, 'Europe/Warsaw')
+      AND DATE(ecr.{date_type}, 'Europe/Warsaw') <= DATE(@end_when, 'Europe/Warsaw')
       AND CASE
         WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
         WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
@@ -236,8 +236,8 @@ def get_boardhours_by_time_period(date_type, since_when, end_when, status, citie
 
   else:
     select_statement = f"""
-      {f"EXTRACT(YEAR FROM ecr.{date_type}) AS year," if  group_years  else ""}
-      EXTRACT({grouping_period} FROM ecr.{date_type}) AS period,
+      {f"EXTRACT(YEAR FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') AS year," if  group_years  else ""}
+      EXTRACT({grouping_period} FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') AS period,
       EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP() AT TIME ZONE 'Europe/Warsaw') AS current_period,
     """
 
@@ -250,8 +250,8 @@ def get_boardhours_by_time_period(date_type, since_when, end_when, status, citie
       "" if show_unended_period
       else f"""
         AND NOT (
-          EXTRACT(YEAR FROM ecr.{date_type}) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP())
-          AND EXTRACT({grouping_period} FROM ecr.{date_type}) >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP())
+          EXTRACT(YEAR FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') = EXTRACT(YEAR FROM CURRENT_TIMESTAMP() AT TIME ZONE 'Europe/Warsaw')
+          AND EXTRACT({grouping_period} FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP() AT TIME ZONE 'Europe/Warsaw')
         )
       """ if grouping_period != "YEAR" else ""
     )
@@ -293,8 +293,8 @@ def get_boardhours_by_time_period(date_type, since_when, end_when, status, citie
       ecr.id = rso.reservation_id
     WHERE
       ecr.deleted_at IS NULL
-      AND DATE({date_type}) >= DATE(@since_when)
-      AND DATE({date_type}) <= DATE(@end_when)
+      AND DATE(ecr.{date_type}, 'Europe/Warsaw') >= DATE(@since_when, 'Europe/Warsaw')
+      AND DATE(ecr.{date_type}, 'Europe/Warsaw') <= DATE(@end_when, 'Europe/Warsaw')
       AND CASE
         WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
         WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
@@ -402,8 +402,8 @@ def get_people_by_time_period(date_type, since_when, end_when, status, cities, l
 
   else:
     select_statement = f"""
-      {f"EXTRACT(YEAR FROM ecr.{date_type}) AS year," if group_years else ""}
-      EXTRACT({grouping_period} FROM ecr.{date_type}) AS period,
+      {f"EXTRACT(YEAR FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') AS year," if group_years else ""}
+      EXTRACT({grouping_period} FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') AS period,
       EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP() AT TIME ZONE 'Europe/Warsaw') AS current_period,
     """
 
@@ -418,12 +418,12 @@ def get_people_by_time_period(date_type, since_when, end_when, status, cities, l
       "" if show_unended_period
       else f"""
         AND NOT (
-          EXTRACT(YEAR FROM ecr.{date_type}) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP())
-          AND EXTRACT({grouping_period} FROM ecr.{date_type}) >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP())
+          EXTRACT(YEAR FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') = EXTRACT(YEAR FROM CURRENT_TIMESTAMP() AT TIME ZONE 'Europe/Warsaw')
+          AND EXTRACT({grouping_period} FROM ecr.{date_type} AT TIME ZONE 'Europe/Warsaw') >= EXTRACT({grouping_period} FROM CURRENT_TIMESTAMP() AT TIME ZONE 'Europe/Warsaw')
         )
       """ if grouping_period != "YEAR" else ""
     )
-    
+
     average_select = f"""
     AVG(person_count) avg_people"""
 
@@ -498,8 +498,8 @@ def get_people_by_time_period(date_type, since_when, end_when, status, cities, l
       dvt.id = ecr.visit_type_id
     WHERE
       ecr.deleted_at IS NULL
-      AND DATE({date_type}) >= DATE(@since_when)
-      AND DATE({date_type}) <= DATE(@end_when)
+      AND DATE(ecr.{date_type}, 'Europe/Warsaw') >= DATE(@since_when, 'Europe/Warsaw')
+      AND DATE(ecr.{date_type}, 'Europe/Warsaw') <= DATE(@end_when, 'Europe/Warsaw')
       AND CASE
         WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
         WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
