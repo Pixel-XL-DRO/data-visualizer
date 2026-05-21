@@ -58,6 +58,14 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
   all_rows = []
   _vt_slots = {}  # street -> date_str -> h_key -> attraction_group -> slots_taken
 
+  if not df_slots_occupancy.empty:
+    _slots_agg = df_slots_occupancy.groupby('slots_occupancy_reservation_id').agg(
+      time_sum=('slots_occupancy_time_taken', 'sum'),
+      slots_sum=('slots_occupancy_slots_taken', 'sum'),
+    )
+  else:
+    _slots_agg = pd.DataFrame(columns=['time_sum', 'slots_sum'])
+
   for street in selected_streets:
     location_row = df_locations[df_locations['street'] == street]
     if location_row.empty:
@@ -110,18 +118,13 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
 
     for _, reservation in street_reservations.iterrows():
       if reservation['reservation_system'] == "plan4u":
-        current_slot = df_slots_occupancy[df_slots_occupancy['slots_occupancy_reservation_id'] == reservation['id']]
-
-        time_sum = 0
-        slots_sum = 0
-        for _, slot in current_slot.iterrows():
-          time_sum += slot['slots_occupancy_time_taken']
-          slots_sum += slot['slots_occupancy_slots_taken']
-
-        time_taken = time_sum
+        rid = reservation['id']
+        if rid not in _slots_agg.index:
+          continue
+        time_taken = _slots_agg.loc[rid, 'time_sum']
+        slots_sum = _slots_agg.loc[rid, 'slots_sum']
         if time_taken == 0:
           continue
-
         slots_taken = slots_sum / (time_taken / time_unit_in_minutes)
       else:
         slots_taken = reservation['reservation_slots_taken']
