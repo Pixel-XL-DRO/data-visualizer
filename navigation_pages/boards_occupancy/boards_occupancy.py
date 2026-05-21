@@ -5,7 +5,6 @@ sys.path.append("shared/queries")
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 import altair as alt
 import math
 from datetime import datetime
@@ -15,56 +14,7 @@ import utils
 import auth
 import boards_occupancy_sidebar
 import boards_occupancy_queries
-
-NUMPY_FOUR = np.float64(4)
-
-LAST_HOURS_AVAILABILITY = {
-    "lubicz": {
-        0: {20: NUMPY_FOUR},
-        1: {20: NUMPY_FOUR},
-        2: {20: NUMPY_FOUR},
-        3: {20: NUMPY_FOUR},
-        4: {22: NUMPY_FOUR},
-        5: {22: NUMPY_FOUR},
-        6: {20: NUMPY_FOUR},
-    },
-    "swietego-marcina": {
-        0: {22: NUMPY_FOUR},
-        1: {22: NUMPY_FOUR},
-        2: {22: NUMPY_FOUR},
-        3: {22: NUMPY_FOUR},
-        4: {23: NUMPY_FOUR},
-        5: {23: NUMPY_FOUR},
-        6: {21: NUMPY_FOUR},
-    },
-    "sokolska": {
-        0: {21: NUMPY_FOUR},
-        1: {21: NUMPY_FOUR},
-        2: {21: NUMPY_FOUR},
-        3: {21: NUMPY_FOUR},
-        4: {22: NUMPY_FOUR},
-        5: {22: NUMPY_FOUR},
-        6: {20: NUMPY_FOUR},
-    },
-    "grunwaldzka": {
-        0: {21: NUMPY_FOUR},
-        1: {21: NUMPY_FOUR},
-        2: {21: NUMPY_FOUR},
-        3: {21: NUMPY_FOUR},
-        4: {22: NUMPY_FOUR},
-        5: {22: NUMPY_FOUR},
-        6: {21: NUMPY_FOUR},
-    },
-    "kijowska": {
-        0: {21: np.float64(5)},
-        1: {21: np.float64(5)},
-        2: {21: np.float64(5)},
-        3: {21: np.float64(5)},
-        4: {23: np.float64(5)},
-        5: {23: np.float64(5)},
-        6: {21: np.float64(5)},
-    } 
-}
+from boards_occupancy_config import LAST_HOURS_AVAILABILITY
 
 with st.spinner("Ładowanie danych..."):
   df_initial, df_locations, df_location_hours_availability, df_location_boards_availability = utils.run_in_parallel(

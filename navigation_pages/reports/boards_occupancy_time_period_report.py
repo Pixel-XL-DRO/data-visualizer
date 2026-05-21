@@ -16,7 +16,7 @@ import utils
 import auth
 import boards_occupancy_time_period_sidebar
 import occupancy_report_queries
-from boards_occupancy import LAST_HOURS_AVAILABILITY
+from boards_occupancy_config import LAST_HOURS_AVAILABILITY
 
 
 with st.spinner("Ładowanie danych..."):
@@ -56,6 +56,7 @@ with st.spinner("Ładowanie danych rezerwacji...", show_time=True):
 with st.spinner("Obliczanie zajętości...", show_time=True):
 
   all_rows = []
+  _vt_slots = {}  # street -> date_str -> h_key -> attraction_group -> slots_taken
 
   for street in selected_streets:
     location_row = df_locations[df_locations['street'] == street]
@@ -132,11 +133,14 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
       start_total_minutes = start_dt.hour * 60 + start_minute
       num_slots = math.ceil(time_taken / time_unit_in_minutes)
       date_str = str(res_date)
+      vt = reservation['attraction_group']
       for i in range(num_slots):
         total_min = start_total_minutes + i * time_unit_in_minutes
         h_key = f"{total_min // 60}:{total_min % 60:02d}"
         if date_str in hours_map and h_key in hours_map[date_str]:
           hours_map[date_str][h_key] += slots_taken
+          _vt_slots.setdefault(street, {}).setdefault(date_str, {}).setdefault(h_key, {})
+          _vt_slots[street][date_str][h_key][vt] = _vt_slots[street][date_str][h_key].get(vt, 0) + slots_taken
 
     for date_key, hours_data in hours_map.items():
       reservation_date = pd.to_datetime(date_key, format='%Y-%m-%d').tz_localize('UTC')
@@ -165,6 +169,14 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
         })
 
   df_all = pd.DataFrame(all_rows)
+
+  vt_rows = []
+  for _s, _dates in _vt_slots.items():
+    for _d, _hours in _dates.items():
+      for _hk, _vts in _hours.items():
+        for _vt, _slots in _vts.items():
+          vt_rows.append({'street': _s, 'date': _d, 'hour_key': _hk, 'attraction_group': _vt, 'slots_taken': _slots})
+  df_vt = pd.DataFrame(vt_rows) if vt_rows else pd.DataFrame(columns=['street', 'date', 'hour_key', 'attraction_group', 'slots_taken'])
 
 if df_all.empty:
   st.info("Brak danych dla wybranego zakresu dat.")
@@ -290,40 +302,46 @@ sub_bar = alt.Chart(sub_agg).mark_bar().encode(
 
 st.altair_chart(sub_bar, use_container_width=True)
 
-def build_export_sheet(street_df):
-  if granularity == "Godzina":
-    grp = street_df.groupby(['sort_key', '_full_hour'], as_index=False).agg(
-      wszystkie_sloty=('total_boards', 'sum'),
-      zajete_sloty=('slots_taken', 'sum'),
-    )
-    grp['okres'] = grp['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + grp['_full_hour'].apply(lambda h: f"{h:02d}:00")
-  elif granularity == "Dzień tygodnia":
-    grp = street_df.groupby(['sort_key'], as_index=False).agg(
-      wszystkie_sloty=('total_boards', 'sum'),
-      zajete_sloty=('slots_taken', 'sum'),
-    )
-    grp['okres'] = grp['sort_key'].dt.strftime('%d.%m.%Y')
-  elif granularity == "Tydzień":
-    grp = street_df.groupby(['sort_key'], as_index=False).agg(
-      wszystkie_sloty=('total_boards', 'sum'),
-      zajete_sloty=('slots_taken', 'sum'),
-    )
-    grp['okres'] = grp['sort_key'].apply(
-      lambda d: f"{d.strftime('%d.%m.%Y')} - {(d + pd.Timedelta(days=6)).strftime('%d.%m.%Y')}"
-    )
-  elif granularity == "Miesiąc":
-    grp = street_df.groupby(['sort_key'], as_index=False).agg(
-      wszystkie_sloty=('total_boards', 'sum'),
-      zajete_sloty=('slots_taken', 'sum'),
-    )
-    grp['okres'] = grp['sort_key'].dt.strftime('%m.%Y')
+# Add sort_key (and _full_hour for Godzina) to df_vt via lookup from df_all
+_vt_lookup_cols = ['date', 'hour_key', 'sort_key']
+if granularity == "Godzina":
+  _vt_lookup_cols.append('_full_hour')
+_vt_lookup = df_all[_vt_lookup_cols].drop_duplicates(subset=['date', 'hour_key'])
+if not df_vt.empty:
+  df_vt = df_vt.merge(_vt_lookup, on=['date', 'hour_key'], how='left')
 
-  grp['zajetość (%)'] = (grp['zajete_sloty'] / grp['wszystkie_sloty'] * 100).round(1)
-  return grp.sort_values('sort_key')[['okres', 'wszystkie_sloty', 'zajete_sloty', 'zajetość (%)']]
+def build_export_sheet(street_df, street_vt_df):
+  if granularity == "Godzina":
+    cap = street_df.groupby(['sort_key', '_full_hour'], as_index=False).agg(total_boards=('total_boards', 'sum'))
+    cap['okres'] = cap['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + cap['_full_hour'].apply(lambda h: f"{h:02d}:00")
+    vt = street_vt_df.groupby(['sort_key', '_full_hour', 'attraction_group'], as_index=False).agg(zajete_sloty=('slots_taken', 'sum'))
+    vt['okres'] = vt['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + vt['_full_hour'].apply(lambda h: f"{h:02d}:00")
+  elif granularity == "Dzień tygodnia":
+    cap = street_df.groupby(['sort_key'], as_index=False).agg(total_boards=('total_boards', 'sum'))
+    cap['okres'] = cap['sort_key'].dt.strftime('%d.%m.%Y')
+    vt = street_vt_df.groupby(['sort_key', 'attraction_group'], as_index=False).agg(zajete_sloty=('slots_taken', 'sum'))
+    vt['okres'] = vt['sort_key'].dt.strftime('%d.%m.%Y')
+  elif granularity == "Tydzień":
+    cap = street_df.groupby(['sort_key'], as_index=False).agg(total_boards=('total_boards', 'sum'))
+    cap['okres'] = cap['sort_key'].apply(lambda d: f"{d.strftime('%d.%m.%Y')} - {(d + pd.Timedelta(days=6)).strftime('%d.%m.%Y')}")
+    vt = street_vt_df.groupby(['sort_key', 'attraction_group'], as_index=False).agg(zajete_sloty=('slots_taken', 'sum'))
+    vt['okres'] = vt['sort_key'].apply(lambda d: f"{d.strftime('%d.%m.%Y')} - {(d + pd.Timedelta(days=6)).strftime('%d.%m.%Y')}")
+  elif granularity == "Miesiąc":
+    cap = street_df.groupby(['sort_key'], as_index=False).agg(total_boards=('total_boards', 'sum'))
+    cap['okres'] = cap['sort_key'].dt.strftime('%m.%Y')
+    vt = street_vt_df.groupby(['sort_key', 'attraction_group'], as_index=False).agg(zajete_sloty=('slots_taken', 'sum'))
+    vt['okres'] = vt['sort_key'].dt.strftime('%m.%Y')
+
+  result = vt.merge(cap[['okres', 'total_boards']], on='okres', how='left')
+  result['zajetość (%)'] = (result['zajete_sloty'] / result['total_boards'] * 100).round(1)
+  return result.sort_values(['sort_key', 'attraction_group'])[['okres', 'attraction_group', 'zajetość (%)']]
 
 export_sheets = {}
 for street in selected_streets:
-  export_sheets[street] = build_export_sheet(df_all[df_all['street'] == street])
+  export_sheets[street] = build_export_sheet(
+    df_all[df_all['street'] == street],
+    df_vt[df_vt['street'] == street] if not df_vt.empty else pd.DataFrame(columns=['street', 'date', 'hour_key', 'attraction_group', 'slots_taken', 'sort_key']),
+  )
 
 locations_part = "_".join(selected_streets)
 groups_part = "_".join(attraction_groups)

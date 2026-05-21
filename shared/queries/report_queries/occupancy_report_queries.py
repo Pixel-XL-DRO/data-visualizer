@@ -15,6 +15,7 @@ def get_reservations_for_report(streets, attraction_groups, visit_types, start_d
       res.reservation_system AS reservation_system,
       res.start_date AS start_date,
       loc.street AS street,
+      dvt.attraction_group AS attraction_group,
     FROM
       `pixelxl-database-dev.reservation_data.event_create_reservation` res
     JOIN

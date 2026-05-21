@@ -12,25 +12,25 @@ def filter_data(df, df_locations):
   years_possible = list(range(2022, datetime.datetime.now().year + 1))
 
   with st.sidebar:
-    show_unended_period = st.checkbox('Pokazuj niepełny okres')
-    time_range = st.selectbox('Wybierz okres', [*years_possible, 'Od początku', 'Przedział'], index=len(years_possible) - 1)
+    show_unended_period = st.checkbox('Pokazuj niepełny okres', key='botp_show_unended_period')
+    time_range = st.selectbox('Wybierz okres', [*years_possible, 'Od początku', 'Przedział'], index=len(years_possible) - 1, key='botp_time_range')
 
     start_date = None
     end_date = None
 
     if time_range == 'Przedział':
-      start_date = st.date_input('Data od', value=datetime.date.today() - datetime.timedelta(days=30))
-      end_date = st.date_input('Data do', value=datetime.date.today() - datetime.timedelta(days=1))
+      start_date = st.date_input('Data od', value=datetime.date.today() - datetime.timedelta(days=30), key='botp_start_date')
+      end_date = st.date_input('Data do', value=datetime.date.today() - datetime.timedelta(days=1), key='botp_end_date')
 
     with st.expander("Filtry", expanded=True):
       with st.container(border=True):
-        attraction_groups = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique())
+        attraction_groups = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique(), key='botp_attraction_groups')
       with st.container(border=True):
-        visit_types = st.multiselect('Typy wizyty', df['visit_type'].unique(), default=df['visit_type'].unique())
+        visit_types = st.multiselect('Typy wizyty', df['visit_type'].unique(), default=df['visit_type'].unique(), key='botp_visit_types')
       with st.container(border=True):
-        filtered_locations = st.multiselect('Lokacje', df_locations['location'].unique(), default=df_locations['location'].unique())
+        filtered_locations = st.multiselect('Lokacje', df_locations['location'].unique(), default=df_locations['location'].unique(), key='botp_locations')
       with st.container(border=True):
-        granularity = st.selectbox('Granularność', ['Godzina', 'Dzień tygodnia', 'Tydzień', 'Miesiąc'])
+        granularity = st.selectbox('Granularność', ['Godzina', 'Dzień tygodnia', 'Tydzień', 'Miesiąc'], key='botp_granularity')
 
   if isinstance(time_range, int):
     start_date = datetime.date(time_range, 1, 1)
