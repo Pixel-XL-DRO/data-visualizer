@@ -192,7 +192,11 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
       starting_hour = int(current_avail['hours_availability_starting_hour'])
       num_hours = int(current_avail['hours_availability_number_of_hours'])
 
-      hours_map[str(current_iter_date)] = {str(h): 0 for h in range(starting_hour, starting_hour + num_hours)}
+      hours_map[str(current_iter_date)] = {
+        f"{h}:{m:02d}": 0
+        for h in range(starting_hour, starting_hour + num_hours)
+        for m in range(0, 60, time_unit_in_minutes)
+      }
 
       current_iter_date += pd.Timedelta(days=1)
 
@@ -219,11 +223,13 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
 
       start_dt = reservation['start_date']
       date = start_dt.date()
-      floor_hour = start_dt.hour
-      num_hour_slots = math.ceil(time_taken / 60)
+      start_minute = (start_dt.minute // time_unit_in_minutes) * time_unit_in_minutes
+      start_total_minutes = start_dt.hour * 60 + start_minute
+      num_slots = math.ceil(time_taken / time_unit_in_minutes)
       date_str = str(date)
-      for i in range(num_hour_slots):
-        h_key = str(floor_hour + i)
+      for i in range(num_slots):
+        total_min = start_total_minutes + i * time_unit_in_minutes
+        h_key = f"{total_min // 60}:{total_min % 60:02d}"
         if date_str in hours_map and h_key in hours_map[date_str]:
           hours_map[date_str][h_key] += slots_taken
 
@@ -241,7 +247,7 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
       day_of_week = datetime.strptime(date_key, '%Y-%m-%d').weekday()
 
       for hour_key, slots_taken in hours_data.items():
-        parsed_hour = int(hour_key)
+        parsed_hour = int(hour_key.split(':')[0])
         override = LAST_HOURS_AVAILABILITY.get(street, {}).get(day_of_week, {}).get(parsed_hour)
         total_boards = override if override else total_boards_base
 
@@ -278,7 +284,7 @@ if granularity == "Godzina":
     lambda d: utils.get_day_of_week_string_shortcut(datetime.strptime(d, '%Y-%m-%d').weekday())
   )
   df_all['display_label'] = df_all['display_date'] + ', ' + df_all['day_name']
-  df_all['start_date_hour'] = df_all['hour_key'].apply(lambda h: f"{int(h):02d}:00")
+  df_all['start_date_hour'] = df_all['hour_key'].apply(lambda h: f"{int(h.split(':')[0]):02d}:00")
 
   agg = (
     df_all
@@ -344,9 +350,10 @@ else:
 if granularity == "Godzina":
   def _hour_sort_key(h):
     try:
-      return int(h.split(':')[0])
+      hh, mm = h.split(':')
+      return int(hh) * 60 + int(mm)
     except Exception:
-      return 9999
+      return 9999 * 60
   heatmap_df['_y_sort'] = heatmap_df[y_field].apply(_hour_sort_key)
 else:
   _loc_order = {loc: i for i, loc in enumerate(sorted(heatmap_df[y_field].unique()))}
