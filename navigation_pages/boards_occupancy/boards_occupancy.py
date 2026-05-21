@@ -84,13 +84,56 @@ if not selected_streets or not attraction_groups:
   st.stop()
 
 import datetime as _dt
-_default_end = _dt.date.today() - _dt.timedelta(days=1)
+import calendar as _calendar
+
+_today = _dt.date.today()
+_default_end = _today - _dt.timedelta(days=1)
 _default_start = _default_end - _dt.timedelta(days=7)
-col_from, col_to = st.columns(2)
-with col_from:
-  start_date = st.date_input('Data od', value=_default_start)
-with col_to:
-  end_date = st.date_input('Data do', value=_default_end)
+
+if granularity == "Miesiąc":
+  _months_pl = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
+                'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień']
+  _years = list(range(_today.year - 2, _today.year + 1))
+  _prev_m = _today.month - 1 or 12
+  _prev_y = _today.year if _today.month > 1 else _today.year - 1
+  col_fy, col_fm, col_tm, col_ty, = st.columns(4)
+  with col_fy:
+    _start_year = st.selectbox('Rok od', _years, index=_years.index(_prev_y))
+  with col_fm:
+    _start_month = st.selectbox('Miesiąc od', range(1, 13), format_func=lambda m: _months_pl[m-1], index=_prev_m - 1)
+  with col_tm:
+    _end_month = st.selectbox('Miesiąc do', range(1, 13), format_func=lambda m: _months_pl[m-1], index=_today.month - 1)
+  with col_ty:
+    _end_year = st.selectbox('Rok do', _years, index=_years.index(_today.year))
+  start_date = _dt.date(_start_year, _start_month, 1)
+  end_date = _dt.date(_end_year, _end_month, _calendar.monthrange(_end_year, _end_month)[1])
+
+elif granularity == "Tydzień":
+  def _year_weeks(year):
+    periods = pd.period_range(start=f'{year}-01-01', end=f'{year}-12-31', freq='W')
+    return [(p.start_time.date(), p.end_time.date()) for p in periods]
+
+  _years = list(range(_today.year - 2, _today.year + 1))
+  _prev_week_mon = _today - _dt.timedelta(days=_today.weekday()) - _dt.timedelta(days=7)
+
+  col_wy, col_ww = st.columns(2)
+  with col_wy:
+    _week_year = st.selectbox('Rok', _years, index=_years.index(_today.year))
+  _weeks = _year_weeks(_week_year)
+  _week_labels = [f"{s.strftime('%d.%m')}–{e.strftime('%d.%m')}" for s, e in _weeks]
+  _week_default = next((i for i, (s, _) in enumerate(_weeks) if s == _prev_week_mon), max(0, len(_weeks) - 2))
+  with col_ww:
+    _week_idx = st.selectbox('Tydzień', range(len(_weeks)), format_func=lambda i: _week_labels[i], index=_week_default)
+
+  start_date = _weeks[_week_idx][0]
+  end_date = _weeks[_week_idx][1]
+
+else:
+  col_from, col_to = st.columns(2)
+  with col_from:
+    start_date = st.date_input('Data od', value=_default_start)
+  with col_to:
+    end_date = st.date_input('Data do', value=_default_end)
 
 if start_date > end_date:
   st.error("Data początku musi być wcześniej niż data końca")
@@ -248,7 +291,7 @@ if granularity == "Godzina":
     .groupby(['sort_key', 'display_label'], as_index=False)
     .apply(lambda g: pd.Series({'boards_occupancy': weighted_occupancy(g)}), include_groups=False)
   )
-  daily_avg['start_date_hour'] = 'Średnia'
+  daily_avg['start_date_hour'] = 'Wszystkie.'
 
   heatmap_df = pd.concat([agg, daily_avg], ignore_index=True)
 
@@ -272,6 +315,9 @@ else:
     df_all['_dt'] = pd.to_datetime(df_all['date'])
     df_all['sort_key'] = df_all['_dt'].dt.to_period('M').dt.start_time
     df_all['display_label'] = df_all['_dt'].apply(lambda d: d.strftime('%m.%Y'))
+  elif granularity == "Zakres":
+    df_all['sort_key'] = pd.Timestamp(start_date)
+    df_all['display_label'] = start_date.strftime('%d.%m') + '–' + end_date.strftime('%d.%m')
 
   agg = (
     df_all
@@ -284,7 +330,7 @@ else:
     .groupby(['sort_key', 'display_label'], as_index=False)
     .apply(lambda g: pd.Series({'boards_occupancy': weighted_occupancy(g)}), include_groups=False)
   )
-  avg_row['location_name'] = 'Średnia'
+  avg_row['location_name'] = 'wszystkie'
   avg_row['street'] = '__avg__'
 
   heatmap_df = pd.concat([agg, avg_row], ignore_index=True)
@@ -295,11 +341,24 @@ else:
 
 # --- Heatmap ---
 
+if granularity == "Godzina":
+  def _hour_sort_key(h):
+    try:
+      return int(h.split(':')[0])
+    except Exception:
+      return 9999
+  heatmap_df['_y_sort'] = heatmap_df[y_field].apply(_hour_sort_key)
+else:
+  _loc_order = {loc: i for i, loc in enumerate(sorted(heatmap_df[y_field].unique()))}
+  _loc_order['wszystkie'] = 9999
+  heatmap_df['_y_sort'] = heatmap_df[y_field].map(_loc_order)
+
 x_sort = alt.EncodingSortField(sort_field, order='ascending')
+y_sort = alt.EncodingSortField('_y_sort', op='min', order='ascending')
 
 heatmap = alt.Chart(heatmap_df).mark_rect(stroke='black', strokeWidth=1).encode(
   x=alt.X(f'{x_field}:O', title='', sort=x_sort, axis=alt.Axis(orient='top', labelFontSize=13, labelAngle=-90)),
-  y=alt.Y(f'{y_field}:O', title='', axis=alt.Axis(labelFontSize=13)),
+  y=alt.Y(f'{y_field}:O', title='', sort=y_sort, axis=alt.Axis(labelFontSize=13)),
   color=alt.Color('boards_occupancy:Q', scale=alt.Scale(scheme='redyellowgreen'), title='Zajętość (%)'),
   tooltip=[
     alt.Tooltip(f'{x_field}:O', title='Okres'),
@@ -350,6 +409,12 @@ def build_export_sheet(street_df):
       zajete_maty=('slots_taken', 'sum'),
     )
     grp['okres'] = grp['sort_key'].dt.strftime('%m.%Y')
+  elif granularity == "Zakres":
+    grp = street_df.groupby(['sort_key'], as_index=False).agg(
+      wszystkie_maty=('total_boards', 'sum'),
+      zajete_maty=('slots_taken', 'sum'),
+    )
+    grp['okres'] = start_date.strftime('%d.%m.%Y') + ' – ' + end_date.strftime('%d.%m.%Y')
 
   grp['zajetość (%)'] = (grp['zajete_maty'] / grp['wszystkie_maty'] * 100).round(1)
   return grp.sort_values('sort_key')[['okres', 'wszystkie_maty', 'zajete_maty', 'zajetość (%)']]

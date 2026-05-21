@@ -20,7 +20,7 @@ def filter_data(df, df_locations):
       with st.container(border=True):
         filtered_locations = st.multiselect('Lokacje', df_locations["location"].unique(), default=df_locations['location'].unique())
       with st.container(border=True):
-        granularity = st.selectbox('Granularność', ['Godzina', 'Dzień', 'Tydzień', 'Miesiąc'])
+        granularity = st.selectbox('Granularność', ['Godzina', 'Dzień', 'Tydzień', 'Miesiąc', 'Zakres'])
 
   selected_streets = [location_to_street[loc] for loc in filtered_locations if loc in location_to_street]
 

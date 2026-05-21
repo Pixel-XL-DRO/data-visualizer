@@ -30,7 +30,7 @@ def filter_data(df, df_locations):
       with st.container(border=True):
         filtered_locations = st.multiselect('Lokacje', df_locations['location'].unique(), default=df_locations['location'].unique())
       with st.container(border=True):
-        granularity = st.selectbox('Granularność', ['Godzina', 'Dzień', 'Tydzień', 'Miesiąc'])
+        granularity = st.selectbox('Granularność', ['Godzina', 'Dzień tygodnia', 'Tydzień', 'Miesiąc'])
 
   if isinstance(time_range, int):
     start_date = datetime.date(time_range, 1, 1)
