@@ -15,7 +15,7 @@ QUARTER_LABELS = ["Q1", "Q2", "Q3", "Q4"]
 SECTION_LABEL_ROWS = 1
 ROWS_BETWEEN_TABLES = 2
 FIXED_ROWS_PER_SECTION = 6
-GROUP_ORDER = ["Indywidualnie", "Urodziny", "Szkoły", "Integracja Firmowa"]
+GROUP_ORDER = ["indywidualnie", "urodziny", "szkoły", "integracja firmowa"]
 
 def to_utc_range(start, end):
   utc_start = (
