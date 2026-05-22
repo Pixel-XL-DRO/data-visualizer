@@ -8,7 +8,7 @@ def get_reservations_count(start, end):
   query = """
     SELECT
       EXTRACT(MONTH FROM ecr.start_date) AS month,
-      dvt.attraction_group,
+      LOWER(dvt.attraction_group) as attraction_group,
       dl.city,
       COUNT(DISTINCT ecr.id) AS count
     FROM

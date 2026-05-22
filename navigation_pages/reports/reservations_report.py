@@ -12,6 +12,9 @@ from zoneinfo import ZoneInfo
 USER_TZ = ZoneInfo("Europe/Warsaw")
 min_date = date(2023, 1, 1)
 QUARTER_LABELS = ["Q1", "Q2", "Q3", "Q4"]
+SECTION_LABEL_ROWS = 1
+ROWS_BETWEEN_TABLES = 2
+FIXED_ROWS_PER_SECTION = 6
 GROUP_ORDER = ["Indywidualnie", "Urodziny", "Szkoły", "Integracja Firmowa"]
 
 def to_utc_range(start, end):
@@ -107,11 +110,11 @@ def view():
         for label, d in tables:
           monthly = monthly_fn(d)
           quarterly = quarterly_fn(d)
-          monthly.to_excel(writer, sheet_name=sheet_name, startrow=current_row + 1)
-          quarterly.to_excel(writer, sheet_name=sheet_name, startrow=current_row + 1 + len(monthly) + 2)
+          monthly.to_excel(writer, sheet_name=sheet_name, startrow=current_row + SECTION_LABEL_ROWS)
+          quarterly.to_excel(writer, sheet_name=sheet_name, startrow=current_row + SECTION_LABEL_ROWS + len(monthly) + ROWS_BETWEEN_TABLES)
           ws = writer.sheets[sheet_name]
           ws.merge_range(current_row, 0, current_row, last_col, label, label_fmt)
-          current_row += len(monthly) + len(quarterly) + 6
+          current_row += len(monthly) + len(quarterly) + FIXED_ROWS_PER_SECTION
 
     st.download_button(
       label="Pobierz plik .xlsx",
