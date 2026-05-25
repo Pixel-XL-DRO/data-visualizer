@@ -44,8 +44,8 @@ if start_date > end_date:
   st.error("Data początku musi być wcześniej niż data końca")
   st.stop()
 
-start_datetime = pd.Timestamp(start_date).tz_localize("UTC")
-end_datetime = pd.Timestamp(end_date).replace(hour=23, minute=59, second=59).tz_localize("UTC")
+start_datetime = pd.Timestamp(start_date).tz_localize("Europe/Warsaw")
+end_datetime = pd.Timestamp(end_date).replace(hour=23, minute=59, second=59).tz_localize("Europe/Warsaw")
 
 with st.spinner("Ładowanie danych rezerwacji...", show_time=True):
   df_reservations, df_slots_occupancy = utils.run_in_parallel(
@@ -56,15 +56,15 @@ with st.spinner("Ładowanie danych rezerwacji...", show_time=True):
 with st.spinner("Obliczanie zajętości...", show_time=True):
 
   all_rows = []
-  _vt_slots = {}  # street -> date_str -> h_key -> attraction_group -> slots_taken
+  vt_slots = {}  # street -> date_str -> h_key -> attraction_group -> slots_taken
 
   if not df_slots_occupancy.empty:
-    _slots_agg = df_slots_occupancy.groupby('slots_occupancy_reservation_id').agg(
+    slots_agg = df_slots_occupancy.groupby('slots_occupancy_reservation_id').agg(
       time_sum=('slots_occupancy_time_taken', 'sum'),
       slots_sum=('slots_occupancy_slots_taken', 'sum'),
     )
   else:
-    _slots_agg = pd.DataFrame(columns=['time_sum', 'slots_sum'])
+    slots_agg = pd.DataFrame(columns=['time_sum', 'slots_sum'])
 
   for street in selected_streets:
     location_row = df_locations[df_locations['street'] == street]
@@ -96,7 +96,7 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
       ].sort_values(by='hours_availability_since_when', ascending=False)
 
       avail_for_date = sorted_avail[
-        sorted_avail['hours_availability_since_when'] <= pd.to_datetime(current_iter_date).tz_localize('UTC')
+        sorted_avail['hours_availability_since_when'] <= pd.to_datetime(current_iter_date).tz_localize('Europe/Warsaw')
       ]
       if avail_for_date.empty:
         current_iter_date += pd.Timedelta(days=1)
@@ -119,10 +119,10 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
     for _, reservation in street_reservations.iterrows():
       if reservation['reservation_system'] == "plan4u":
         rid = reservation['id']
-        if rid not in _slots_agg.index:
+        if rid not in slots_agg.index:
           continue
-        time_taken = _slots_agg.loc[rid, 'time_sum']
-        slots_sum = _slots_agg.loc[rid, 'slots_sum']
+        time_taken = slots_agg.loc[rid, 'time_sum']
+        slots_sum = slots_agg.loc[rid, 'slots_sum']
         if time_taken == 0:
           continue
         slots_taken = slots_sum / (time_taken / time_unit_in_minutes)
@@ -142,11 +142,11 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
         h_key = f"{total_min // 60}:{total_min % 60:02d}"
         if date_str in hours_map and h_key in hours_map[date_str]:
           hours_map[date_str][h_key] += slots_taken
-          _vt_slots.setdefault(street, {}).setdefault(date_str, {}).setdefault(h_key, {})
-          _vt_slots[street][date_str][h_key][vt] = _vt_slots[street][date_str][h_key].get(vt, 0) + slots_taken
+          vt_slots.setdefault(street, {}).setdefault(date_str, {}).setdefault(h_key, {})
+          vt_slots[street][date_str][h_key][vt] = vt_slots[street][date_str][h_key].get(vt, 0) + slots_taken
 
     for date_key, hours_data in hours_map.items():
-      reservation_date = pd.to_datetime(date_key, format='%Y-%m-%d').tz_localize('UTC')
+      reservation_date = pd.to_datetime(date_key, format='%Y-%m-%d').tz_localize('Europe/Warsaw')
 
       location_boards_filtered = location_boards_avail[
         (location_boards_avail['boards_availability_since_when'] <= reservation_date) &
@@ -174,11 +174,11 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
   df_all = pd.DataFrame(all_rows)
 
   vt_rows = []
-  for _s, _dates in _vt_slots.items():
-    for _d, _hours in _dates.items():
-      for _hk, _vts in _hours.items():
-        for _vt, _slots in _vts.items():
-          vt_rows.append({'street': _s, 'date': _d, 'hour_key': _hk, 'attraction_group': _vt, 'slots_taken': _slots})
+  for s, dates in vt_slots.items():
+    for d, hours in dates.items():
+      for hk, vts in hours.items():
+        for vt_key, slots in vts.items():
+          vt_rows.append({'street': s, 'date': d, 'hour_key': hk, 'attraction_group': vt_key, 'slots_taken': slots})
   df_vt = pd.DataFrame(vt_rows) if vt_rows else pd.DataFrame(columns=['street', 'date', 'hour_key', 'attraction_group', 'slots_taken'])
 
 if df_all.empty:
@@ -200,8 +200,8 @@ if not show_unended_period:
   elif granularity == "Tydzień":
     current_iso = today.isocalendar()
     current_year, current_week = current_iso.year, current_iso.week
-    _dt = pd.to_datetime(df_all['date'])
-    iso = _dt.dt.isocalendar()
+    dt_series = pd.to_datetime(df_all['date'])
+    iso = dt_series.dt.isocalendar()
     df_all = df_all[~((iso.year == current_year) & (iso.week == current_week))]
   elif granularity == "Miesiąc":
     df_all = df_all[~(
@@ -220,105 +220,105 @@ def weighted_occupancy(grp):
   return round(grp['slots_taken'].sum() / total * 100, 0) if total > 0 else 0
 
 if granularity == "Godzina":
-  df_all['_dt'] = pd.to_datetime(df_all['date'])
-  df_all['_full_hour'] = df_all['hour_key'].apply(lambda h: int(h.split(':')[0]))
-  df_all['sort_key'] = df_all['_dt'] + pd.to_timedelta(df_all['_full_hour'], unit='h')
+  df_all['dt'] = pd.to_datetime(df_all['date'])
+  df_all['full_hour'] = df_all['hour_key'].apply(lambda h: int(h.split(':')[0]))
+  df_all['sort_key'] = df_all['dt'] + pd.to_timedelta(df_all['full_hour'], unit='h')
 
 elif granularity == "Dzień tygodnia":
   df_all['sort_key'] = pd.to_datetime(df_all['date'])
 
 elif granularity == "Tydzień":
-  df_all['_dt'] = pd.to_datetime(df_all['date'])
-  df_all['sort_key'] = pd.to_datetime(df_all['_dt'].dt.to_period('W').dt.start_time)
+  df_all['dt'] = pd.to_datetime(df_all['date'])
+  df_all['sort_key'] = pd.to_datetime(df_all['dt'].dt.to_period('W').dt.start_time)
 
 elif granularity == "Miesiąc":
-  df_all['_dt'] = pd.to_datetime(df_all['date'])
-  df_all['sort_key'] = df_all['_dt'].dt.to_period('M').dt.start_time
+  df_all['dt'] = pd.to_datetime(df_all['date'])
+  df_all['sort_key'] = df_all['dt'].dt.to_period('M').dt.start_time
 
 if granularity == "Godzina":
-  df_all['_sub_sort'] = df_all['_full_hour']
-  df_all['_sub_label'] = df_all['_full_hour'].apply(lambda h: f"{h:02d}:00")
+  df_all['sub_sort'] = df_all['full_hour']
+  df_all['sub_label'] = df_all['full_hour'].apply(lambda h: f"{h:02d}:00")
   sub_title = 'Średnia zajętość wg godziny'
 
 elif granularity == "Dzień tygodnia":
-  df_all['_weekday'] = pd.to_datetime(df_all['date']).dt.weekday  # 0=Mon
-  df_all['_sub_sort'] = df_all['_weekday']
-  df_all['_sub_label'] = df_all['_weekday'].apply(utils.get_day_of_week_string_shortcut)
+  df_all['weekday'] = pd.to_datetime(df_all['date']).dt.weekday  # 0=Mon
+  df_all['sub_sort'] = df_all['weekday']
+  df_all['sub_label'] = df_all['weekday'].apply(utils.get_day_of_week_string_shortcut)
   sub_title = 'Średnia zajętość wg dnia tygodnia'
 
 elif granularity == "Tydzień":
-  _dt = pd.to_datetime(df_all['date'])
-  df_all['_iso_week'] = _dt.dt.isocalendar().week.astype(int)
-  df_all['_sub_sort'] = df_all['_iso_week']
-  df_all['_sub_label'] = df_all['_iso_week'].apply(lambda w: f"Tydzień {w}")
-  _week_monday = df_all.groupby('_iso_week')['sort_key'].min()
-  df_all['_week_range'] = df_all['_iso_week'].map(
-    lambda w: _week_monday[w].strftime('%d.%m') + ' – ' + (_week_monday[w] + pd.Timedelta(days=6)).strftime('%d.%m')
+  dt_series = pd.to_datetime(df_all['date'])
+  df_all['iso_week'] = dt_series.dt.isocalendar().week.astype(int)
+  df_all['sub_sort'] = df_all['iso_week']
+  df_all['sub_label'] = df_all['iso_week'].apply(lambda w: f"Tydzień {w}")
+  week_monday = df_all.groupby('iso_week')['sort_key'].min()
+  df_all['week_range'] = df_all['iso_week'].map(
+    lambda w: week_monday[w].strftime('%d.%m') + ' – ' + (week_monday[w] + pd.Timedelta(days=6)).strftime('%d.%m')
   )
   sub_title = 'Średnia zajętość wg tygodnia roku'
 
 elif granularity == "Miesiąc":
-  df_all['_month'] = pd.to_datetime(df_all['date']).dt.month
-  df_all['_sub_sort'] = df_all['_month']
-  df_all['_sub_label'] = df_all['_month'].apply(utils.get_month_from_month_number)
+  df_all['month'] = pd.to_datetime(df_all['date']).dt.month
+  df_all['sub_sort'] = df_all['month']
+  df_all['sub_label'] = df_all['month'].apply(utils.get_month_from_month_number)
   sub_title = 'Średnia zajętość wg miesiąca'
 
-_sub_groupby_keys = ['_sub_sort', '_sub_label', 'street', 'location_name']
+sub_groupby_keys = ['sub_sort', 'sub_label', 'street', 'location_name']
 if granularity == "Tydzień":
-  _sub_groupby_keys.insert(2, '_week_range')
+  sub_groupby_keys.insert(2, 'week_range')
 
-_sub_total_boards = df_all.groupby('_sub_sort')['total_boards'].sum().rename('_sub_total_boards')
+sub_total_boards = df_all.groupby('sub_sort')['total_boards'].sum().rename('sub_total_boards')
 
 sub_agg = (
   df_all
-  .groupby(_sub_groupby_keys, as_index=False)
+  .groupby(sub_groupby_keys, as_index=False)
   .agg(slots_taken=('slots_taken', 'sum'), total_boards=('total_boards', 'sum'))
-  .merge(_sub_total_boards, on='_sub_sort')
+  .merge(sub_total_boards, on='sub_sort')
   .assign(
-    boards_occupancy=lambda d: (d['slots_taken'] / d['_sub_total_boards'] * 100).round(0),
+    boards_occupancy=lambda d: (d['slots_taken'] / d['sub_total_boards'] * 100).round(0),
     city_occupancy=lambda d: (d['slots_taken'] / d['total_boards'] * 100).round(0).where(d['total_boards'] > 0, 0),
   )
-  .sort_values('_sub_sort')
+  .sort_values('sub_sort')
 )
 
-sorted_sub_labels = sub_agg.drop_duplicates('_sub_label').sort_values('_sub_sort')['_sub_label'].tolist()
+sorted_sub_labels = sub_agg.drop_duplicates('sub_label').sort_values('sub_sort')['sub_label'].tolist()
 
-_sub_tooltips = [
-  alt.Tooltip('_sub_label:O', title='Tydzień'),
-  alt.Tooltip('_week_range:N', title='Zakres dat'),
+sub_tooltips = [
+  alt.Tooltip('sub_label:O', title='Tydzień'),
+  alt.Tooltip('week_range:N', title='Zakres dat'),
   alt.Tooltip('location_name:N', title='Lokacja'),
   alt.Tooltip('boards_occupancy:Q', title='Udział globalny (%)'),
   alt.Tooltip('city_occupancy:Q', title='Zajętość lokacji (%)'),
 ] if granularity == "Tydzień" else [
-  alt.Tooltip('_sub_label:O', title='Okres'),
+  alt.Tooltip('sub_label:O', title='Okres'),
   alt.Tooltip('location_name:N', title='Lokacja'),
   alt.Tooltip('boards_occupancy:Q', title='Udział globalny (%)'),
   alt.Tooltip('city_occupancy:Q', title='Zajętość lokacji (%)'),
 ]
 
 sub_bar = alt.Chart(sub_agg).mark_bar().encode(
-  x=alt.X('_sub_label:O', sort=sorted_sub_labels, title='', axis=alt.Axis(labelAngle=-45)),
+  x=alt.X('sub_label:O', sort=sorted_sub_labels, title='', axis=alt.Axis(labelAngle=-45)),
   y=alt.Y('boards_occupancy:Q', title='Zajętość mat (%)'),
   color=alt.Color('location_name:N', title='Lokacja'),
-  tooltip=_sub_tooltips
+  tooltip=sub_tooltips
 ).properties(width=800, title=sub_title)
 
 st.altair_chart(sub_bar, use_container_width=True)
 
-# Add sort_key (and _full_hour for Godzina) to df_vt via lookup from df_all
-_vt_lookup_cols = ['date', 'hour_key', 'sort_key']
+# Add sort_key (and full_hour for Godzina) to df_vt via lookup from df_all
+vt_lookup_cols = ['date', 'hour_key', 'sort_key']
 if granularity == "Godzina":
-  _vt_lookup_cols.append('_full_hour')
-_vt_lookup = df_all[_vt_lookup_cols].drop_duplicates(subset=['date', 'hour_key'])
+  vt_lookup_cols.append('full_hour')
+vt_lookup = df_all[vt_lookup_cols].drop_duplicates(subset=['date', 'hour_key'])
 if not df_vt.empty:
-  df_vt = df_vt.merge(_vt_lookup, on=['date', 'hour_key'], how='left')
+  df_vt = df_vt.merge(vt_lookup, on=['date', 'hour_key'], how='left')
 
 def build_export_sheet(street_df, street_vt_df):
   if granularity == "Godzina":
-    cap = street_df.groupby(['sort_key', '_full_hour'], as_index=False).agg(total_boards=('total_boards', 'sum'))
-    cap['okres'] = cap['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + cap['_full_hour'].apply(lambda h: f"{h:02d}:00")
-    vt = street_vt_df.groupby(['sort_key', '_full_hour', 'attraction_group'], as_index=False).agg(zajete_sloty=('slots_taken', 'sum'))
-    vt['okres'] = vt['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + vt['_full_hour'].apply(lambda h: f"{h:02d}:00")
+    cap = street_df.groupby(['sort_key', 'full_hour'], as_index=False).agg(total_boards=('total_boards', 'sum'))
+    cap['okres'] = cap['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + cap['full_hour'].apply(lambda h: f"{h:02d}:00")
+    vt = street_vt_df.groupby(['sort_key', 'full_hour', 'attraction_group'], as_index=False).agg(zajete_sloty=('slots_taken', 'sum'))
+    vt['okres'] = vt['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + vt['full_hour'].apply(lambda h: f"{h:02d}:00")
   elif granularity == "Dzień tygodnia":
     cap = street_df.groupby(['sort_key'], as_index=False).agg(total_boards=('total_boards', 'sum'))
     cap['okres'] = cap['sort_key'].dt.strftime('%d.%m.%Y')

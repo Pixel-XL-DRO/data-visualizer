@@ -2,12 +2,14 @@ import sys
 sys.path.append("shared")
 sys.path.append("shared/sidebars")
 sys.path.append("shared/queries")
+sys.path.append("navigation_pages/boards_occupancy")
 
 import streamlit as st
 import pandas as pd
 import altair as alt
 import math
-from datetime import datetime
+import datetime as dt
+import calendar as calendar
 
 import queries
 import utils
@@ -15,6 +17,8 @@ import auth
 import boards_occupancy_sidebar
 import boards_occupancy_queries
 from boards_occupancy_config import LAST_HOURS_AVAILABILITY
+
+BEGGINING_YEAR = 2023
 
 with st.spinner("Ładowanie danych..."):
   df_initial, df_locations, df_location_hours_availability, df_location_boards_availability = utils.run_in_parallel(
@@ -33,64 +37,61 @@ if not selected_streets or not attraction_groups:
   st.info("Wybierz co najmniej jedną lokację i grupę atrakcji.")
   st.stop()
 
-import datetime as _dt
-import calendar as _calendar
-
-_today = _dt.date.today()
-_default_end = _today - _dt.timedelta(days=1)
-_default_start = _default_end - _dt.timedelta(days=7)
+today = dt.date.today()
+default_end = today - dt.timedelta(days=1)
+default_start = default_end - dt.timedelta(days=7)
 
 if granularity == "Miesiąc":
-  _months_pl = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
+  months_pl = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
                 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień']
-  _years = list(range(_today.year - 2, _today.year + 1))
-  _prev_m = _today.month - 1 or 12
-  _prev_y = _today.year if _today.month > 1 else _today.year - 1
+  years = list(range(BEGGINING_YEAR, today.year + 1))
+  prev_m = today.month - 1 or 12
+  prev_y = today.year if today.month > 1 else today.year - 1
   col_fy, col_fm, col_tm, col_ty, = st.columns(4)
   with col_fy:
-    _start_year = st.selectbox('Rok od', _years, index=_years.index(_prev_y))
+    start_year = st.selectbox('Rok od', years, index=years.index(prev_y))
   with col_fm:
-    _start_month = st.selectbox('Miesiąc od', range(1, 13), format_func=lambda m: _months_pl[m-1], index=_prev_m - 1)
+    start_month = st.selectbox('Miesiąc od', range(1, 13), format_func=lambda m: months_pl[m-1], index=prev_m - 1)
   with col_tm:
-    _end_month = st.selectbox('Miesiąc do', range(1, 13), format_func=lambda m: _months_pl[m-1], index=_today.month - 1)
+    end_month = st.selectbox('Miesiąc do', range(1, 13), format_func=lambda m: months_pl[m-1], index=today.month - 1)
   with col_ty:
-    _end_year = st.selectbox('Rok do', _years, index=_years.index(_today.year))
-  start_date = _dt.date(_start_year, _start_month, 1)
-  end_date = _dt.date(_end_year, _end_month, _calendar.monthrange(_end_year, _end_month)[1])
+    end_year = st.selectbox('Rok do', years, index=years.index(today.year))
+  start_date = dt.date(start_year, start_month, 1)
+  end_date = dt.date(end_year, end_month, calendar.monthrange(end_year, end_month)[1])
 
 elif granularity == "Tydzień":
-  def _year_weeks(year):
+  def year_weeks(year):
     periods = pd.period_range(start=f'{year}-01-01', end=f'{year}-12-31', freq='W')
     return [(p.start_time.date(), p.end_time.date()) for p in periods]
 
-  _years = list(range(_today.year - 2, _today.year + 1))
-  _prev_week_mon = _today - _dt.timedelta(days=_today.weekday()) - _dt.timedelta(days=7)
+  years = list(range(BEGGINING_YEAR, today.year + 1))
+  prev_week_mon = today - dt.timedelta(days=today.weekday()) - dt.timedelta(days=7)
 
   col_wy, col_ww = st.columns(2)
   with col_wy:
-    _week_year = st.selectbox('Rok', _years, index=_years.index(_today.year))
-  _weeks = _year_weeks(_week_year)
-  _week_labels = [f"{s.strftime('%d.%m')}–{e.strftime('%d.%m')}" for s, e in _weeks]
-  _week_default = next((i for i, (s, _) in enumerate(_weeks) if s == _prev_week_mon), max(0, len(_weeks) - 2))
+    week_year = st.selectbox('Rok', years, index=years.index(today.year))
+  weeks = year_weeks(week_year)
+  week_labels = [f"{s.strftime('%d.%m')}–{e.strftime('%d.%m')}" for s, e in weeks]
+  week_default = next((i for i, (s, _) in enumerate(weeks) if s == prev_week_mon), max(0, len(weeks) - 2))
   with col_ww:
-    _week_idx = st.selectbox('Tydzień', range(len(_weeks)), format_func=lambda i: _week_labels[i], index=_week_default)
+    week_idx = st.selectbox('Tydzień', range(len(weeks)), format_func=lambda i: week_labels[i], index=week_default)
 
-  start_date = _weeks[_week_idx][0]
-  end_date = _weeks[_week_idx][1]
+  start_date = weeks[week_idx][0]
+  end_date = weeks[week_idx][1]
 
 else:
   col_from, col_to = st.columns(2)
   with col_from:
-    start_date = st.date_input('Data od', value=_default_start)
+    start_date = st.date_input('Data od', value=default_start)
   with col_to:
-    end_date = st.date_input('Data do', value=_default_end)
+    end_date = st.date_input('Data do', value=default_end)
 
 if start_date > end_date:
   st.error("Data początku musi być wcześniej niż data końca")
   st.stop()
 
-start_datetime = pd.Timestamp(start_date).tz_localize("UTC")
-end_datetime = pd.Timestamp(end_date).replace(hour=23, minute=59, second=59).tz_localize("UTC")
+start_datetime = pd.Timestamp(start_date).tz_localize("Europe/Warsaw")
+end_datetime = pd.Timestamp(end_date).replace(hour=23, minute=59, second=59).tz_localize("Europe/Warsaw")
 
 with st.spinner("Ładowanie danych rezerwacji...", show_time=True):
   df_reservations, df_slots_occupancy = utils.run_in_parallel(
@@ -171,10 +172,10 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
         slots_taken = reservation['reservation_slots_taken']
         time_taken = reservation['reservation_time_taken']
 
-      start_dt = reservation['start_date']
-      date = start_dt.date()
-      start_minute = (start_dt.minute // time_unit_in_minutes) * time_unit_in_minutes
-      start_total_minutes = start_dt.hour * 60 + start_minute
+      startdt = reservation['start_date']
+      date = startdt.date()
+      start_minute = (startdt.minute // time_unit_in_minutes) * time_unit_in_minutes
+      start_total_minutes = startdt.hour * 60 + start_minute
       num_slots = math.ceil(time_taken / time_unit_in_minutes)
       date_str = str(date)
       for i in range(num_slots):
@@ -194,7 +195,7 @@ with st.spinner("Obliczanie zajętości...", show_time=True):
       if location_boards_filtered.empty:
         continue
       total_boards_base = location_boards_filtered.iloc[0]['boards_availability_number_of_boards']
-      day_of_week = datetime.strptime(date_key, '%Y-%m-%d').weekday()
+      day_of_week = dt.datetime.strptime(date_key, '%Y-%m-%d').weekday()
 
       for hour_key, slots_taken in hours_data.items():
         parsed_hour = int(hour_key.split(':')[0])
@@ -231,7 +232,7 @@ if granularity == "Godzina":
   df_all['sort_key'] = pd.to_datetime(df_all['date'])
   df_all['display_date'] = df_all['date'].apply(lambda d: pd.to_datetime(d).strftime('%d.%m'))
   df_all['day_name'] = df_all['date'].apply(
-    lambda d: utils.get_day_of_week_string_shortcut(datetime.strptime(d, '%Y-%m-%d').weekday())
+    lambda d: utils.get_day_of_week_string_shortcut(dt.datetime.strptime(d, '%Y-%m-%d').weekday())
   )
   df_all['display_label'] = df_all['display_date'] + ', ' + df_all['day_name']
   df_all['start_date_hour'] = df_all['hour_key'].apply(lambda h: f"{int(h.split(':')[0]):02d}:00")
@@ -260,17 +261,17 @@ else:
     df_all['sort_key'] = pd.to_datetime(df_all['date'])
     df_all['display_label'] = df_all['date'].apply(lambda d: pd.to_datetime(d).strftime('%d.%m'))
   elif granularity == "Tydzień":
-    df_all['_dt'] = pd.to_datetime(df_all['date'])
-    df_all['sort_key'] = pd.to_datetime(df_all['_dt'].dt.to_period('W').dt.start_time)
-    def _week_label(monday):
+    df_all['dt'] = pd.to_datetime(df_all['date'])
+    df_all['sort_key'] = pd.to_datetime(df_all['dt'].dt.to_period('W').dt.start_time)
+    def week_label(monday):
       week_start = max(monday.date(), start_date)
       week_end = min((monday + pd.Timedelta(days=6)).date(), end_date)
       return week_start.strftime('%d.%m') + '–' + week_end.strftime('%d.%m')
-    df_all['display_label'] = df_all['sort_key'].apply(_week_label)
+    df_all['display_label'] = df_all['sort_key'].apply(week_label)
   elif granularity == "Miesiąc":
-    df_all['_dt'] = pd.to_datetime(df_all['date'])
-    df_all['sort_key'] = df_all['_dt'].dt.to_period('M').dt.start_time
-    df_all['display_label'] = df_all['_dt'].apply(lambda d: d.strftime('%m.%Y'))
+    df_all['dt'] = pd.to_datetime(df_all['date'])
+    df_all['sort_key'] = df_all['dt'].dt.to_period('M').dt.start_time
+    df_all['display_label'] = df_all['dt'].apply(lambda d: d.strftime('%m.%Y'))
   elif granularity == "Zakres":
     df_all['sort_key'] = pd.Timestamp(start_date)
     df_all['display_label'] = start_date.strftime('%d.%m') + '–' + end_date.strftime('%d.%m')
@@ -298,17 +299,17 @@ else:
 # --- Heatmap ---
 
 if granularity == "Godzina":
-  def _hour_sort_key(h):
+  def hour_sort_key(h):
     try:
       hh, mm = h.split(':')
       return int(hh) * 60 + int(mm)
     except Exception:
-      return 9999 * 60
-  heatmap_df['_y_sort'] = heatmap_df[y_field].apply(_hour_sort_key)
+      return 9999 * 60  # this sorts last non-parseable labels like "Wszystkie."
+  heatmap_df['_y_sort'] = heatmap_df[y_field].apply(hour_sort_key)
 else:
-  _loc_order = {loc: i for i, loc in enumerate(sorted(heatmap_df[y_field].unique()))}
-  _loc_order['wszystkie'] = 9999
-  heatmap_df['_y_sort'] = heatmap_df[y_field].map(_loc_order)
+  loc_order = {loc: i for i, loc in enumerate(sorted(heatmap_df[y_field].unique()))}
+  loc_order['wszystkie'] = 9999
+  heatmap_df['_y_sort'] = heatmap_df[y_field].map(loc_order)
 
 x_sort = alt.EncodingSortField(sort_field, order='ascending')
 y_sort = alt.EncodingSortField('_y_sort', op='min', order='ascending')
