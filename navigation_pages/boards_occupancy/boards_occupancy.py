@@ -31,7 +31,15 @@ with st.spinner("Ładowanie danych..."):
   df_initial = auth.filter_locations(df_initial)
   df_locations = auth.filter_locations(df_locations)
 
-(attraction_groups, selected_streets, granularity) = boards_occupancy_sidebar.filter_data(df_initial, df_locations)
+df_locations_mapped = df_locations.copy()
+df_locations_mapped['location'] = df_locations_mapped['street'].map(utils.street_to_location).fillna(df_locations_mapped['street'])
+location_to_street = dict(zip(df_locations_mapped['location'], df_locations_mapped['street']))
+filtered_locations = st.multiselect('Lokacje', df_locations_mapped['location'].unique(), default=[])
+selected_streets = [location_to_street[loc] for loc in filtered_locations if loc in location_to_street]
+
+granularity = st.selectbox('Granularność', ['Godzina', 'Dzień', 'Tydzień', 'Miesiąc', 'Zakres'])
+
+attraction_groups = boards_occupancy_sidebar.filter_data(df_initial)
 
 if not selected_streets or not attraction_groups:
   st.info("Wybierz co najmniej jedną lokację i grupę atrakcji.")
@@ -222,7 +230,7 @@ if df_all.empty:
 # --- Granularity aggregation ---
 
 location_label = df_all['street'].map(utils.street_to_location).fillna(df_all['street'])
-df_all['location_name'] = location_label
+df_all['Lokalizacja'] = location_label
 
 def weighted_occupancy(grp):
   total = grp['total_boards'].sum()
@@ -235,11 +243,11 @@ if granularity == "Godzina":
     lambda d: utils.get_day_of_week_string_shortcut(dt.datetime.strptime(d, '%Y-%m-%d').weekday())
   )
   df_all['display_label'] = df_all['display_date'] + ', ' + df_all['day_name']
-  df_all['start_date_hour'] = df_all['hour_key'].apply(lambda h: f"{int(h.split(':')[0]):02d}:00")
+  df_all['Godzina'] = df_all['hour_key'].apply(lambda h: f"{int(h.split(':')[0]):02d}:00")
 
   agg = (
     df_all
-    .groupby(['sort_key', 'display_label', 'start_date_hour'], as_index=False)
+    .groupby(['sort_key', 'display_label', 'Godzina'], as_index=False)
     .apply(lambda g: pd.Series({'boards_occupancy': weighted_occupancy(g)}), include_groups=False)
   )
 
@@ -248,18 +256,20 @@ if granularity == "Godzina":
     .groupby(['sort_key', 'display_label'], as_index=False)
     .apply(lambda g: pd.Series({'boards_occupancy': weighted_occupancy(g)}), include_groups=False)
   )
-  daily_avg['start_date_hour'] = 'Wszystkie.'
+  daily_avg['Godzina'] = 'Wszystkie.'
 
   heatmap_df = pd.concat([agg, daily_avg], ignore_index=True)
 
   x_field = 'display_label'
-  y_field = 'start_date_hour'
+  y_field = 'Godzina'
   sort_field = 'sort_key'
 
 else:
   if granularity == "Dzień":
     df_all['sort_key'] = pd.to_datetime(df_all['date'])
-    df_all['display_label'] = df_all['date'].apply(lambda d: pd.to_datetime(d).strftime('%d.%m'))
+    df_all['display_label'] = df_all['date'].apply(
+      lambda d: pd.to_datetime(d).strftime('%d.%m') + ', ' + utils.get_day_of_week_string_shortcut(dt.datetime.strptime(d, '%Y-%m-%d').weekday())
+    )
   elif granularity == "Tydzień":
     df_all['dt'] = pd.to_datetime(df_all['date'])
     df_all['sort_key'] = pd.to_datetime(df_all['dt'].dt.to_period('W').dt.start_time)
@@ -278,7 +288,7 @@ else:
 
   agg = (
     df_all
-    .groupby(['sort_key', 'display_label', 'street', 'location_name'], as_index=False)
+    .groupby(['sort_key', 'display_label', 'street', 'Lokalizacja'], as_index=False)
     .apply(lambda g: pd.Series({'boards_occupancy': weighted_occupancy(g)}), include_groups=False)
   )
 
@@ -287,13 +297,13 @@ else:
     .groupby(['sort_key', 'display_label'], as_index=False)
     .apply(lambda g: pd.Series({'boards_occupancy': weighted_occupancy(g)}), include_groups=False)
   )
-  avg_row['location_name'] = 'wszystkie'
+  avg_row['Lokalizacja'] = 'wszystkie'
   avg_row['street'] = '__avg__'
 
   heatmap_df = pd.concat([agg, avg_row], ignore_index=True)
 
   x_field = 'display_label'
-  y_field = 'location_name'
+  y_field = 'Lokalizacja'
   sort_field = 'sort_key'
 
 # --- Heatmap ---
@@ -342,11 +352,11 @@ st.altair_chart(heatmap + text, use_container_width=True)
 
 def build_export_sheet(street_df):
   if granularity == "Godzina":
-    grp = street_df.groupby(['sort_key', 'start_date_hour'], as_index=False).agg(
+    grp = street_df.groupby(['sort_key', 'Godzina'], as_index=False).agg(
       wszystkie_maty=('total_boards', 'sum'),
       zajete_maty=('slots_taken', 'sum'),
     )
-    grp['okres'] = grp['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + grp['start_date_hour']
+    grp['okres'] = grp['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + grp['Godzina']
   elif granularity == "Dzień":
     grp = street_df.groupby(['sort_key'], as_index=False).agg(
       wszystkie_maty=('total_boards', 'sum'),

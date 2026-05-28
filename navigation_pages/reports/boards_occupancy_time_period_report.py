@@ -263,49 +263,6 @@ elif granularity == "Miesiąc":
   df_all['sub_label'] = df_all['month'].apply(utils.get_month_from_month_number)
   sub_title = 'Średnia zajętość wg miesiąca'
 
-sub_groupby_keys = ['sub_sort', 'sub_label', 'street', 'location_name']
-if granularity == "Tydzień":
-  sub_groupby_keys.insert(2, 'week_range')
-
-sub_total_boards = df_all.groupby('sub_sort')['total_boards'].sum().rename('sub_total_boards')
-
-sub_agg = (
-  df_all
-  .groupby(sub_groupby_keys, as_index=False)
-  .agg(slots_taken=('slots_taken', 'sum'), total_boards=('total_boards', 'sum'))
-  .merge(sub_total_boards, on='sub_sort')
-  .assign(
-    boards_occupancy=lambda d: (d['slots_taken'] / d['sub_total_boards'] * 100).round(0),
-    city_occupancy=lambda d: (d['slots_taken'] / d['total_boards'] * 100).round(0).where(d['total_boards'] > 0, 0),
-  )
-  .sort_values('sub_sort')
-)
-
-sorted_sub_labels = sub_agg.drop_duplicates('sub_label').sort_values('sub_sort')['sub_label'].tolist()
-
-sub_tooltips = [
-  alt.Tooltip('sub_label:O', title='Tydzień'),
-  alt.Tooltip('week_range:N', title='Zakres dat'),
-  alt.Tooltip('location_name:N', title='Lokacja'),
-  alt.Tooltip('boards_occupancy:Q', title='Udział globalny (%)'),
-  alt.Tooltip('city_occupancy:Q', title='Zajętość lokacji (%)'),
-] if granularity == "Tydzień" else [
-  alt.Tooltip('sub_label:O', title='Okres'),
-  alt.Tooltip('location_name:N', title='Lokacja'),
-  alt.Tooltip('boards_occupancy:Q', title='Udział globalny (%)'),
-  alt.Tooltip('city_occupancy:Q', title='Zajętość lokacji (%)'),
-]
-
-sub_bar = alt.Chart(sub_agg).mark_bar().encode(
-  x=alt.X('sub_label:O', sort=sorted_sub_labels, title='', axis=alt.Axis(labelAngle=-45)),
-  y=alt.Y('boards_occupancy:Q', title='Zajętość mat (%)'),
-  color=alt.Color('location_name:N', title='Lokacja'),
-  tooltip=sub_tooltips
-).properties(width=800, title=sub_title)
-
-st.altair_chart(sub_bar, use_container_width=True)
-
-# Add sort_key (and full_hour for Godzina) to df_vt via lookup from df_all
 vt_lookup_cols = ['date', 'hour_key', 'sort_key']
 if granularity == "Godzina":
   vt_lookup_cols.append('full_hour')
@@ -315,7 +272,7 @@ if not df_vt.empty:
 
 def build_export_sheet(street_df, street_vt_df):
   if street_vt_df.empty:
-    return pd.DataFrame(columns=['okres', 'attraction_group', 'zajetość (%)'])
+    return pd.DataFrame(columns=['okres', 'Typ wizyty', 'zajetość (%)'])
   if granularity == "Godzina":
     cap = street_df.groupby(['sort_key', 'full_hour'], as_index=False).agg(total_boards=('total_boards', 'sum'))
     cap['okres'] = cap['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + cap['full_hour'].apply(lambda h: f"{int(h):02d}:00")
@@ -339,7 +296,8 @@ def build_export_sheet(street_df, street_vt_df):
 
   result = vt.merge(cap[['okres', 'total_boards']], on='okres', how='left')
   result['zajetość (%)'] = (result['zajete_sloty'] / result['total_boards'] * 100).round(1)
-  return result.sort_values(['sort_key', 'attraction_group'])[['okres', 'attraction_group', 'zajetość (%)']]
+  result = result.rename(columns={'attraction_group': 'Typ wizyty'})
+  return result.sort_values(['sort_key', 'Typ wizyty'])[['okres', 'Typ wizyty', 'zajetość (%)']]
 
 export_sheets = {}
 for street in selected_streets:
@@ -354,6 +312,7 @@ file_name = f"raport_zajętości_mat_po_okresie_{locations_part}_{groups_part}_{
 
 @st.fragment
 def download_section():
+  st.info("Raport gotowy do pobrania.")
   utils.download_button(export_sheets, file_name)
 
 download_section()
