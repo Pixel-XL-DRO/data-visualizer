@@ -34,12 +34,13 @@ reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py"
 bok_income_report = st.Page("navigation_pages/reports/bok_income_report.py", title = "Źródła tworzenia rezerwacji", icon=":material/note_add:")
 clients_report = st.Page("navigation_pages/reports/clients_report.py", title = "Klienci", icon=":material/groups_3:")
 not_started_reservations_report = st.Page("navigation_pages/reports/not_started_reservations_report.py", title = "Raport rezerwacji nieodbytych", icon=":material/event_busy:")
+boards_occupancy_time_period_report = st.Page("navigation_pages/reports/boards_occupancy_time_period_report.py", title="Zajętość mat — okresy", icon=":material/bar_chart:")
 reservations_report = st.Page("navigation_pages/reports/reservations_report.py", title = "Raport roczny rezerwacji", icon=":material/event_repeat:")
 
 pages_by_role = {
   "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
-    "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page, clients_report, not_started_reservations_report, bok_income_report, reservations_report],
+    "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page, clients_report, not_started_reservations_report, bok_income_report, boards_occupancy_time_period_report],
     "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],

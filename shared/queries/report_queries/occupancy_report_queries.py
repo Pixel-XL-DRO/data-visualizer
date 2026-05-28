@@ -2,22 +2,18 @@ import pandas as pd
 import streamlit as st
 from google.cloud import bigquery
 from queries import run_query
-import utils
 
-
-def get_reservations_data(streets, attraction_groups, start_date, end_date):
-
-  attraction_groups_condition = utils.format_array_for_query(attraction_groups)
-
-  query = f"""
+@st.cache_data(ttl=28800)
+def get_reservations_for_report(streets, attraction_groups, visit_types, start_date, end_date):
+  query = """
     SELECT
       res.id,
-      res.location_id AS location_id,
       res.time_taken AS reservation_time_taken,
       res.slots_taken AS reservation_slots_taken,
       res.reservation_system AS reservation_system,
       res.start_date AS start_date,
       loc.street AS street,
+      dvt.attraction_group AS attraction_group,
     FROM
       `pixelxl-database-dev.reservation_data.event_create_reservation` res
     JOIN
@@ -31,28 +27,31 @@ def get_reservations_data(streets, attraction_groups, start_date, end_date):
     WHERE
       res.deleted_at IS NULL
     AND
-      res.is_cancelled is FALSE
+      res.is_cancelled IS FALSE
     AND
       loc.street IN UNNEST(@streets)
     AND
-      dvt.attraction_group {attraction_groups_condition}
+      dvt.attraction_group IN UNNEST(@attraction_groups)
+    AND
+      dvt.name IN UNNEST(@visit_types)
     AND
       res.start_date >= @start
     AND
       res.start_date <= @end
     AND
-      dvt.name != "Arena"
+      dvt.name != 'Arena'
   """
 
   job_config = bigquery.QueryJobConfig(
     query_parameters=[
-        bigquery.ArrayQueryParameter("streets", "STRING", streets),
-        bigquery.ScalarQueryParameter("start", "TIMESTAMP", start_date),
-        bigquery.ScalarQueryParameter("end", "TIMESTAMP", end_date),
+      bigquery.ArrayQueryParameter("streets", "STRING", list(streets)),
+      bigquery.ArrayQueryParameter("attraction_groups", "STRING", list(attraction_groups)),
+      bigquery.ArrayQueryParameter("visit_types", "STRING", list(visit_types)),
+      bigquery.ScalarQueryParameter("start", "TIMESTAMP", start_date),
+      bigquery.ScalarQueryParameter("end", "TIMESTAMP", end_date),
     ]
   )
 
   rows = run_query(query, job_config)
   df = pd.DataFrame(rows)
-
   return df
