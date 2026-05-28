@@ -314,11 +314,13 @@ if not df_vt.empty:
   df_vt = df_vt.merge(vt_lookup, on=['date', 'hour_key'], how='left')
 
 def build_export_sheet(street_df, street_vt_df):
+  if street_vt_df.empty:
+    return pd.DataFrame(columns=['okres', 'attraction_group', 'zajetość (%)'])
   if granularity == "Godzina":
     cap = street_df.groupby(['sort_key', 'full_hour'], as_index=False).agg(total_boards=('total_boards', 'sum'))
-    cap['okres'] = cap['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + cap['full_hour'].apply(lambda h: f"{h:02d}:00")
+    cap['okres'] = cap['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + cap['full_hour'].apply(lambda h: f"{int(h):02d}:00")
     vt = street_vt_df.groupby(['sort_key', 'full_hour', 'attraction_group'], as_index=False).agg(zajete_sloty=('slots_taken', 'sum'))
-    vt['okres'] = vt['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + vt['full_hour'].apply(lambda h: f"{h:02d}:00")
+    vt['okres'] = vt['sort_key'].dt.strftime('%d.%m.%Y') + ' ' + vt['full_hour'].apply(lambda h: f"{int(h):02d}:00")
   elif granularity == "Dzień tygodnia":
     cap = street_df.groupby(['sort_key'], as_index=False).agg(total_boards=('total_boards', 'sum'))
     cap['okres'] = cap['sort_key'].dt.strftime('%d.%m.%Y')
