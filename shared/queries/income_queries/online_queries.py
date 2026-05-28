@@ -151,7 +151,7 @@ def get_online_income(groupBy, moving_average_days, start, end, date_type, citie
     dvt.attraction_group,
     DATE(ecr.{date_type}) as date,
     CASE WHEN ecr.is_cancelled = TRUE THEN 'Anulowane' WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone' ELSE 'Zrealizowane' END AS status,
-    mock_price((EXTRACT(DAYOFWEEK FROM ecr.start_date) - 1), dvt.name, dl.city, ecr.additional_items_cost, ecr.whole_cost_with_voucher, ecr.booked_date) as price
+    mock_price((EXTRACT(DAYOFWEEK FROM ecr.start_date) - 1), dvt.name, dl.city, ecr.additional_items_cost / 100, ecr.whole_cost_with_voucher / 100, ecr.booked_date) as price
   FROM
     reservation_data.event_create_reservation ecr
   JOIN
@@ -331,7 +331,7 @@ def get_online_income_by_time_period(date_type, since_when, end_when, status, ci
     dl.street,
     dvt.attraction_group,
     ecr.{date_type} as date,
-    mock_price((EXTRACT(DAYOFWEEK FROM ecr.start_date) - 1), dvt.name, dl.city, ecr.additional_items_cost, ecr.whole_cost_with_voucher, ecr.booked_date) as price
+    mock_price((EXTRACT(DAYOFWEEK FROM ecr.start_date) - 1), dvt.name, dl.city, ecr.additional_items_cost / 100, ecr.whole_cost_with_voucher / 100, ecr.booked_date) as price
   FROM
     reservation_data.event_create_reservation ecr
   JOIN
@@ -424,7 +424,7 @@ def get_online_income_cumulative(groupBy, start, end, date_type, cities, languag
     dl.street,
     dvt.attraction_group,
     DATE(ecr.{date_type}) as date,
-    mock_price((EXTRACT(DAYOFWEEK FROM ecr.start_date) - 1), dvt.name, dl.city, ecr.additional_items_cost, ecr.whole_cost_with_voucher, ecr.booked_date) as price
+    mock_price((EXTRACT(DAYOFWEEK FROM ecr.start_date) - 1), dvt.name, dl.city, ecr.additional_items_cost / 100, ecr.whole_cost_with_voucher / 100, ecr.booked_date) as price
   FROM
     reservation_data.event_create_reservation ecr
   JOIN

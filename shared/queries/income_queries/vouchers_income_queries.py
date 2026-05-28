@@ -17,7 +17,7 @@ def get_voucher_income(groupBy, moving_average_days, start_date, end_date, citie
   WITH daily_totals AS (
   SELECT
     DATE(v.voucher_creation_date) AS date,
-    SUM(v.net_amount) AS price
+    SUM(v.net_amount / 100) AS price
     {groupBy_select}
   FROM
     vouchers_data.voucher v
@@ -158,7 +158,7 @@ def get_vouchers_by_weekday(grouping_period, start_date, end_date, cities):
   WITH daily_counts AS (
     SELECT
       {select_statement}
-      SUM(v.net_amount) AS daily_count
+      SUM(v.net_amount / 100) AS daily_count
     FROM
       vouchers_data.voucher v
     JOIN
@@ -219,7 +219,7 @@ def get_voucher_cumulative_income(groupBy, start_date, end_date, cities):
   WITH daily_totals AS (
   SELECT
     DATE(v.voucher_creation_date) AS date,
-    SUM(v.net_amount) AS price
+    SUM(v.net_amount / 100) AS price
     {groupBy_select}
   FROM
     vouchers_data.voucher v

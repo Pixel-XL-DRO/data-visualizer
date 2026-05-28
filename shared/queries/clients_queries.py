@@ -16,47 +16,51 @@ def get_retention_data(date_type, since_when, groupBy, streets, language, attrac
   groupBy_condition  = f", {groupBy}" if groupBy else ""
   groupBy_select = f", {groupBy}" if groupBy else ""
   groupBy_select2 = f", {groupBy}" if groupBy else ""
+  groupBy_join = ""
 
   if groupBy == 'status':
     groupBy_select = f", CASE WHEN ecr.is_cancelled = TRUE THEN 'Anulowane' WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone' ELSE 'Zrealizowane' END AS {groupBy}"
+    groupBy_join = f"AND CASE WHEN ecr.is_cancelled = TRUE THEN 'Anulowane' WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone' ELSE 'Zrealizowane' END = c.{groupBy}"
   elif groupBy == "attraction_group":
     groupBy_select = f", dvt.attraction_group AS {groupBy}"
+    groupBy_join = f"AND dvt.attraction_group = c.{groupBy}"
   elif groupBy == "visit_type":
     groupBy_select = f", dvt.name AS {groupBy}"
+    groupBy_join = f"AND dvt.name = c.{groupBy}"
   elif groupBy == "street":
     groupBy_select = f", dl.street AS {groupBy}"
     groupBy_select2 = f", street AS {groupBy}"
+    groupBy_join = f"AND dl.street = c.{groupBy}"
 
   query = f"""
 WITH client_first_appearance AS (
   SELECT
-    client_id,
+    dc.email,
     MIN({date_type}) AS first_reservation_date
     {groupBy_select}
   FROM
     reservation_data.event_create_reservation ecr
   JOIN
-    reservation_data.dim_location dl
-  ON
-    dl.id = ecr.location_id
+    reservation_data.dim_location dl ON dl.id = ecr.location_id
   JOIN
-    reservation_data.dim_client dc
-  ON
-    dc.id = ecr.client_id
+    reservation_data.dim_client dc ON dc.id = ecr.client_id
   JOIN
-    reservation_data.dim_visit_type dvt
-  ON
-    dvt.id = ecr.visit_type_id
+    reservation_data.dim_visit_type dvt ON dvt.id = ecr.visit_type_id
   WHERE
     ecr.deleted_at IS NULL
+    AND CASE
+        WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
+        WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
+        ELSE 'Zrealizowane'
+      END {status_condition}
   GROUP BY
-    client_id
+    dc.email
     {groupBy_condition}
 ),
 reservations_with_client_type AS (
   SELECT
     ecr.id id,
-    ecr.client_id,
+    dc.email,
     {date_type} AS reservation_date,
     CASE
       WHEN DATE_TRUNC({date_type}, MONTH) = DATE_TRUNC(first_reservation_date, MONTH)
@@ -67,21 +71,14 @@ reservations_with_client_type AS (
   FROM
     reservation_data.event_create_reservation ecr
   JOIN
-    reservation_data.dim_location dl
-  ON
-    ecr.location_id = dl.id
+    reservation_data.dim_location dl ON ecr.location_id = dl.id
   JOIN
-    client_first_appearance c
-  ON
-    ecr.client_id = c.client_id
+    reservation_data.dim_client dc ON ecr.client_id = dc.id
   JOIN
-    reservation_data.dim_client dc
-  ON
-    ecr.client_id = dc.id
+    client_first_appearance c ON dc.email = c.email
+    {groupBy_join}
   JOIN
-    reservation_data.dim_visit_type dvt
-  ON
-    dvt.id = ecr.visit_type_id
+    reservation_data.dim_visit_type dvt ON dvt.id = ecr.visit_type_id
   WHERE
     ecr.deleted_at IS NULL
     AND dl.street {streets_condition}
@@ -133,7 +130,6 @@ FROM
 WHERE
   DATE(year, month, 1) >= DATE(@since_when)
 ORDER BY
-
   year, month {groupBy_condition}
   """
 
@@ -144,9 +140,9 @@ ORDER BY
   )
   rows = run_query(query, job_config)
   df = pd.DataFrame(rows)
-  
+
   df['date'] = df.apply(lambda row: f"{int(row['year']) if pd.notna(row['year']) else ''} {row['month_name']}", axis=1)
-  
+
   if groupBy == 'street':
     df['street'] = df['street'].replace(utils.street_to_location)
 

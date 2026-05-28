@@ -28,43 +28,42 @@ dotypos = st.Page("navigation_pages/dotypos.py", title="System kasowy", icon=":m
 income = st.Page("navigation_pages/income.py", title="Przychody", icon=":material/money_bag:")
 vouchers = st.Page("navigation_pages/vouchers.py", title="Vouchery", icon=":material/local_activity:")
 financial_report_page = st.Page("navigation_pages/reports/financial_report.py", title = "Raport finansowy", icon=":material/attach_money:")
-safi_products_page = st.Page("navigation_pages/safi_products.py", title="Produkty dodatkowe online", icon=":material/add_shopping_cart:")
+safi_products_page = st.Page("navigation_pages/safi_products.py", title="Produkty dodatkowe", icon=":material/add_shopping_cart:")
 voucher_report_page = st.Page("navigation_pages/reports/voucher_report.py", title = "Raport kodów promocyjnych", icon=":material/sell:")
 reservations_for_year_page = st.Page("navigation_pages/reports/visits_report.py", title = "Rezerwacje z fakturą", icon=":material/vertical_split:")
-bok_income_report = st.Page("navigation_pages/reports/bok_income_report.py", title = "Raport BOK", icon=":material/phone_callback:")
+bok_income_report = st.Page("navigation_pages/reports/bok_income_report.py", title = "Źródła tworzenia rezerwacji", icon=":material/note_add:")
 clients_report = st.Page("navigation_pages/reports/clients_report.py", title = "Klienci", icon=":material/groups_3:")
 not_started_reservations_report = st.Page("navigation_pages/reports/not_started_reservations_report.py", title = "Raport rezerwacji nieodbytych", icon=":material/event_busy:")
 boards_occupancy_time_period_report = st.Page("navigation_pages/reports/boards_occupancy_time_period_report.py", title="Zajętość mat — okresy", icon=":material/bar_chart:")
-
-# safi_products_page is hidden until we differentiate products bought and added in data parser
+reservations_report = st.Page("navigation_pages/reports/reservations_report.py", title = "Raport roczny rezerwacji", icon=":material/event_repeat:")
 
 pages_by_role = {
   "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
-    "Sprzedaż": [dotypos, income, vouchers],
     "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page, clients_report, not_started_reservations_report, bok_income_report, boards_occupancy_time_period_report],
+    "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
   },
   "admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
-    "Sprzedaż": [dotypos, income, vouchers],
-    "Raporty": [voucher_report_page, reservations_for_year_page, clients_report],
+    "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
+    "Raporty": [voucher_report_page, reservations_for_year_page, clients_report, bok_income_report, reservations_report],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
   },
   "manager": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page],
-    "Sprzedaż": [dotypos, income, vouchers],
+    "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
     "Raporty": [voucher_report_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
   },
   "marketing": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page],
-    "Sprzedaż": [vouchers],
+    "Sprzedaż": [vouchers, safi_products_page],
     "Raporty": [voucher_report_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Konto": [logout_page]
