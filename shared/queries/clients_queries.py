@@ -5,7 +5,7 @@ from datetime import datetime
 import time
 import utils
 
-def get_retention_data(date_type, since_when, groupBy, streets, language, attraction_groups, status, visit_type_groups, notes=None):
+def get_retention_data(date_type, since_when, groupBy, streets, language, attraction_groups, status, visit_type_groups, client_retention_length):
 
   streets_condition = format_array_for_query(streets)
   language_condition = format_array_for_query(language)
@@ -16,46 +16,28 @@ def get_retention_data(date_type, since_when, groupBy, streets, language, attrac
   groupBy_condition  = f", {groupBy}" if groupBy else ""
   groupBy_select = f", {groupBy}" if groupBy else ""
   groupBy_select2 = f", {groupBy}" if groupBy else ""
-  groupBy_join = ""
 
   if groupBy == 'status':
     groupBy_select = f", CASE WHEN ecr.is_cancelled = TRUE THEN 'Anulowane' WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone' ELSE 'Zrealizowane' END AS {groupBy}"
-    groupBy_join = f"AND CASE WHEN ecr.is_cancelled = TRUE THEN 'Anulowane' WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone' ELSE 'Zrealizowane' END = c.{groupBy}"
   elif groupBy == "attraction_group":
     groupBy_select = f", dvt.attraction_group AS {groupBy}"
-    groupBy_join = f"AND dvt.attraction_group = c.{groupBy}"
   elif groupBy == "visit_type":
     groupBy_select = f", dvt.name AS {groupBy}"
-    groupBy_join = f"AND dvt.name = c.{groupBy}"
   elif groupBy == "street":
     groupBy_select = f", dl.street AS {groupBy}"
     groupBy_select2 = f", street AS {groupBy}"
-    groupBy_join = f"AND dl.street = c.{groupBy}"
 
   query = f"""
-WITH client_first_appearance AS (
+WITH client_prev_visit AS (
   SELECT
-    dc.email,
-    MIN({date_type}) AS first_reservation_date
-    {groupBy_select}
+    ecr.id,
+    LAG({date_type}) OVER (PARTITION BY dc.email ORDER BY {date_type}) AS prev_reservation_date
   FROM
     reservation_data.event_create_reservation ecr
   JOIN
-    reservation_data.dim_location dl ON dl.id = ecr.location_id
-  JOIN
-    reservation_data.dim_client dc ON dc.id = ecr.client_id
-  JOIN
-    reservation_data.dim_visit_type dvt ON dvt.id = ecr.visit_type_id
+    reservation_data.dim_client dc ON ecr.client_id = dc.id
   WHERE
     ecr.deleted_at IS NULL
-    AND CASE
-        WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
-        WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
-        ELSE 'Zrealizowane'
-      END {status_condition}
-  GROUP BY
-    dc.email
-    {groupBy_condition}
 ),
 reservations_with_client_type AS (
   SELECT
@@ -63,9 +45,10 @@ reservations_with_client_type AS (
     dc.email,
     {date_type} AS reservation_date,
     CASE
-      WHEN DATE_TRUNC({date_type}, MONTH) = DATE_TRUNC(first_reservation_date, MONTH)
-        THEN 'new'
-      ELSE 'old'
+      WHEN cpv.prev_reservation_date IS NOT NULL
+        AND DATE_DIFF(DATE({date_type}), DATE(cpv.prev_reservation_date), DAY) <= @client_retention_length
+        THEN 'old'
+      ELSE 'new'
     END AS client_type
     {groupBy_select}
   FROM
@@ -75,8 +58,7 @@ reservations_with_client_type AS (
   JOIN
     reservation_data.dim_client dc ON ecr.client_id = dc.id
   JOIN
-    client_first_appearance c ON dc.email = c.email
-    {groupBy_join}
+    client_prev_visit cpv ON cpv.id = ecr.id
   JOIN
     reservation_data.dim_visit_type dvt ON dvt.id = ecr.visit_type_id
   WHERE
@@ -136,6 +118,7 @@ ORDER BY
   job_config = bigquery.QueryJobConfig(
     query_parameters=[
         bigquery.ScalarQueryParameter("since_when", "TIMESTAMP", since_when),
+        bigquery.ScalarQueryParameter("client_retention_length", "INT64", client_retention_length),
     ]
   )
   rows = run_query(query, job_config)
