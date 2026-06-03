@@ -25,39 +25,55 @@ def get_retention_data(
   visit_type_condition = format_array_for_query(visit_type_groups)
 
   groupBy_condition = f", {groupBy}" if groupBy else ""
-  groupBy_select = f", {groupBy}" if groupBy else ""
+  groupBy_join = ""
+
+  if groupBy == 'status':
+    groupBy_select = f", CASE WHEN ecr.is_cancelled = TRUE THEN 'Anulowane' WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone' ELSE 'Zrealizowane' END AS {groupBy}"
+    groupBy_join = f"AND CASE WHEN ecr.is_cancelled = TRUE THEN 'Anulowane' WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone' ELSE 'Zrealizowane' END = cfa.{groupBy}"
+  elif groupBy == "attraction_group":
+    groupBy_select = f", dvt.attraction_group AS {groupBy}"
+    groupBy_join = f"AND dvt.attraction_group = cfa.{groupBy}"
+  elif groupBy == "visit_type":
+    groupBy_select = f", dvt.name AS {groupBy}"
+    groupBy_join = f"AND dvt.name = cfa.{groupBy}"
+  elif groupBy == "street":
+    groupBy_select = f", dl.street AS {groupBy}"
+    groupBy_join = f"AND dl.street = cfa.{groupBy}"
+  else:
+    groupBy_select = ""
+
   groupBy_select2 = f", {groupBy}" if groupBy else ""
 
-  if groupBy == "status":
-      groupBy_select = f", CASE WHEN ecr.is_cancelled = TRUE THEN 'Anulowane' WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone' ELSE 'Zrealizowane' END AS {groupBy}"
-  elif groupBy == "attraction_group":
-      groupBy_select = f", dvt.attraction_group AS {groupBy}"
-  elif groupBy == "visit_type":
-      groupBy_select = f", dvt.name AS {groupBy}"
-  elif groupBy == "street":
-      groupBy_select = f", dl.street AS {groupBy}"
-      groupBy_select2 = f", street AS {groupBy}"
-
   query = f"""
-    WITH client_prev_visit AS (
+    WITH client_first_appearance AS (
       SELECT
-        ecr.id,
-        LAG({date_type}) OVER (PARTITION BY dc.email ORDER BY {date_type}) AS prev_reservation_date
+        dc.email,
+        MIN({date_type}) AS first_reservation_date
+        {groupBy_select}
       FROM
         reservation_data.event_create_reservation ecr
       JOIN
-        reservation_data.dim_client dc ON ecr.client_id = dc.id
+        reservation_data.dim_location dl ON dl.id = ecr.location_id
+      JOIN
+        reservation_data.dim_client dc ON dc.id = ecr.client_id
+      JOIN
+        reservation_data.dim_visit_type dvt ON dvt.id = ecr.visit_type_id
       WHERE
         ecr.deleted_at IS NULL
+        AND CASE
+            WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
+            WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
+            ELSE 'Zrealizowane'
+          END {status_condition}
+      GROUP BY
+        dc.email
+        {groupBy_condition}
     ),
     reservations_with_client_type AS (
       SELECT
-        ecr.id id,
-        dc.email,
         {date_type} AS reservation_date,
         CASE
-          WHEN cpv.prev_reservation_date IS NOT NULL
-            AND DATE_DIFF(DATE({date_type}), DATE(cpv.prev_reservation_date), DAY) <= @client_retention_length
+          WHEN DATE_DIFF(DATE({date_type}), DATE(cfa.first_reservation_date), DAY) BETWEEN 1 AND @length
             THEN 'old'
           ELSE 'new'
         END AS client_type
@@ -69,7 +85,8 @@ def get_retention_data(
       JOIN
         reservation_data.dim_client dc ON ecr.client_id = dc.id
       JOIN
-        client_prev_visit cpv ON cpv.id = ecr.id
+        client_first_appearance cfa ON cfa.email = dc.email
+        {groupBy_join}
       JOIN
         reservation_data.dim_visit_type dvt ON dvt.id = ecr.visit_type_id
       WHERE
@@ -129,21 +146,16 @@ def get_retention_data(
   job_config = bigquery.QueryJobConfig(
     query_parameters=[
       bigquery.ScalarQueryParameter("since_when", "TIMESTAMP", since_when),
-      bigquery.ScalarQueryParameter(
-        "client_retention_length", "INT64", client_retention_length
-      ),
+      bigquery.ScalarQueryParameter("length", "INT64", client_retention_length),
     ]
   )
   rows = run_query(query, job_config)
   df = pd.DataFrame(rows)
 
-  df["date"] = df.apply(
-    lambda row: f"{int(row['year']) if pd.notna(row['year']) else ''} {row['month_name']}",
-    axis=1,
-  )
+  df['date'] = df.apply(lambda row: f"{int(row['year']) if pd.notna(row['year']) else ''} {row['month_name']}", axis=1)
 
-  if groupBy == "street":
-    df["street"] = df["street"].replace(utils.street_to_location)
+  if groupBy == 'street':
+    df['street'] = df['street'].replace(utils.street_to_location)
 
   return df
 
