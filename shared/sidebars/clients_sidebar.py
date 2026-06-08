@@ -7,8 +7,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-CLIENT_RETENTION_DAYS_BACK = [14,30,60,90,180, 365]
-
 def determine_status(row):
   if row['is_cancelled']:
     return 'Anulowane'
@@ -37,8 +35,6 @@ def filter_data(df):
     if time_range == "Przedział":
       start_date = st.date_input('Data rozpoczecia')
       end_date = st.date_input('Data konca')
-
-    client_retention_length = st.selectbox('Od kiedy liczymy klienta jako powrót (dni)', CLIENT_RETENTION_DAYS_BACK, index=1)
 
     with st.expander("Filtry", expanded=True):
       with st.container(border=True):
@@ -93,4 +89,4 @@ def filter_data(df):
     groupBy = 'street' if seperate_cities else 'attraction_group' if seperate_attractions else 'status' if seperate_status else 'visit_type' if seperate_visit_types else None
 
     return (x_axis_type,
-      start_date, streets, language, attraction_groups_checkboxes,status_checkboxes,visit_types, groupBy, client_retention_length)
+      start_date, streets, language, attraction_groups_checkboxes,status_checkboxes,visit_types, groupBy)
