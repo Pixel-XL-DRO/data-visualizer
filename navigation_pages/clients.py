@@ -30,6 +30,18 @@ with st.spinner("Inicjalizacja...", show_time=True):
   groupBy,
 ) = clients_sidebar.filter_data(df)
 
+with st.spinner("Ładowanie...", show_time=True):
+  avg_retention_days = clients_queries.get_avg_return_day(
+    x_axis_type,
+    start_date,
+    streets,
+    language,
+    attraction_groups_checkboxes,
+    status_checkboxes,
+    visit_types,
+  )
+
+
 first_date = df[x_axis_type].sort_values().reset_index(drop=True)[0]
 days_since_first = (datetime.now() - first_date.to_pydatetime()).days
 
@@ -48,6 +60,8 @@ if len(attraction_groups_checkboxes) == 0:
 if len(status_checkboxes) == 0:
   st.warning("Pole status nie może być puste")
   st.stop()
+  
+st.metric("Średnia długość między ponowną wizytą (dni)", value=avg_retention_days)
 
 client_retention_length = st.selectbox(
   "Od kiedy liczymy klienta jako powrót (dni)",
@@ -67,18 +81,6 @@ with st.spinner("Ładowanie danych...", show_time=True):
     visit_types,
     days_since_first if client_retention_length == "Od początku" else client_retention_length,
   )
-  avg_retention_days = clients_queries.get_avg_return_day(
-    x_axis_type,
-    start_date,
-    streets,
-    language,
-    attraction_groups_checkboxes,
-    status_checkboxes,
-    visit_types,
-  )
-
-
-st.metric("Średnia długość między ponowną wizytą (dni)", value=avg_retention_days)
 
 st.info(
   "Retencja na miesiac (procent wizyt, które zostały stworzone przez klientów którzy już u nas byli \n"
