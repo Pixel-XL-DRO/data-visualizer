@@ -183,7 +183,6 @@ def get_avg_return_day(
         reservation_data.dim_client dc ON ecr.client_id = dc.id      
       WHERE
         ecr.deleted_at IS NULL
-        AND DATE({date_type}) >= DATE(@since_when)        
         AND CASE
           WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
           WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
