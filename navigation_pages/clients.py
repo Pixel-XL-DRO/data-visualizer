@@ -13,7 +13,7 @@ import auth
 import utils
 import clients_queries
 
-CLIENT_RETENTION_DAYS_BACK = [14, 30, 60, 90, 180, 365]
+CLIENT_RETENTION_DAYS_BACK = [14, 30, 60, 90, 180, 365, "Od początku"]
 
 with st.spinner("Inicjalizacja...", show_time=True):
   df = queries.get_initial_data()
@@ -32,7 +32,6 @@ with st.spinner("Inicjalizacja...", show_time=True):
 
 first_date = df[x_axis_type].sort_values().reset_index(drop=True)[0]
 days_since_first = (datetime.now() - first_date.to_pydatetime()).days
-CLIENT_RETENTION_DAYS_BACK.append("Od początku")
 
 if len(streets) == 0:
   st.warning("Pole miasta nie może być puste")

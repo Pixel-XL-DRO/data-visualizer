@@ -49,7 +49,6 @@ def get_retention_data(
       SELECT
         dc.email,
         MIN({date_type}) AS first_reservation_date
-        {groupBy_select}
       FROM
         reservation_data.event_create_reservation ecr
       JOIN
@@ -66,8 +65,7 @@ def get_retention_data(
             ELSE 'Zrealizowane'
           END {status_condition}
       GROUP BY
-        dc.email
-        {groupBy_condition}
+        dc.email        
     ),
     reservations_with_client_type AS (
       SELECT
@@ -86,7 +84,6 @@ def get_retention_data(
         reservation_data.dim_client dc ON ecr.client_id = dc.id
       JOIN
         client_first_appearance cfa ON cfa.email = dc.email
-        {groupBy_join}
       JOIN
         reservation_data.dim_visit_type dvt ON dvt.id = ecr.visit_type_id
       WHERE
