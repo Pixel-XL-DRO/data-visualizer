@@ -180,9 +180,15 @@ def get_avg_return_day(
       FROM
         reservation_data.event_create_reservation ecr
       JOIN
-        reservation_data.dim_client dc ON ecr.client_id = dc.id
+        reservation_data.dim_client dc ON ecr.client_id = dc.id      
       WHERE
         ecr.deleted_at IS NULL
+        AND DATE({date_type}) >= DATE(@since_when)        
+        AND CASE
+          WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
+          WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
+          ELSE 'Zrealizowane'
+        END {status_condition}
     )
     SELECT
       ROUND(AVG(DATE_DIFF(DATE({date_type}), DATE(cpv.prev_reservation_date), DAY)), 2) AS avg_days_to_return
