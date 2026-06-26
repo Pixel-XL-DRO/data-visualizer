@@ -12,7 +12,7 @@ def logout():
   if st.button("Wyloguj się"):
     st.logout()
 
-auth.authorize(["admin", "manager", "super-admin", "marketing"])
+auth.authorize(["admin", "call-center", "manager", "super-admin", "marketing"])
 
 logout_page = st.Page(logout, title="Wyloguj się", icon=":material/logout:")
 
