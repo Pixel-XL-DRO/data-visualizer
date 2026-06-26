@@ -46,6 +46,11 @@ pages_by_role = {
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
   },
+  "call-center": {
+    "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
+    "Raporty": [bok_income_report, reservations_report],
+    "Konto": [logout_page]
+  },
   "admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
     "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
