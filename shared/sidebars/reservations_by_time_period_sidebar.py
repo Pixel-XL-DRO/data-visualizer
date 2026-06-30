@@ -59,7 +59,7 @@ def filter_data(df):
     if type(time_range) is int:
       start_date = datetime(time_range, 1, 1, 0, 0, 0)
       
-      if time_range == datetime.now().year:
+      if time_range == datetime.now().year and not show_unended_period:
         end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
       else:
         end_date = (
