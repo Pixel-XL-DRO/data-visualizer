@@ -47,6 +47,7 @@ def get_performance_reviews(since_when, end_when, cities):
       location.street as Miasto,
       review.score as Ocena,
       review.feedback as Feedback,
+      review.reservationId as NrRezerwacji
     FROM
       performance_data.mail_review review
     JOIN
