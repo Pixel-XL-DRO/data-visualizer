@@ -349,7 +349,7 @@ def display_charts(parsed_data, count_by_role):
     )
     st.altair_chart(
         (bar + labels).properties(
-            width=700, height=max(100, len(df) * 40), title="Rezerwacje wg twórcy"
+            width=700, height=max(100, len(df) * 40), title="Rezerwacje robione przez Hostów i BOK wg twórcy"
         ),
         use_container_width=True,
     )
@@ -413,7 +413,7 @@ def display_charts(parsed_data, count_by_role):
                 color_field="Wizyta",
                 groupby_field="Lokacja",
                 sort_field="Wizyta",
-                title="Udział wizyt wg lokacji",
+                title="Udział wizyt robionych przez Hostów i BOK wg lokacji",
                 height=max(200, len(vl_df["Lokacja"].unique()) * 40),
                 y_title="Lokacja",
                 color_title="Typ wizyty",
@@ -449,7 +449,7 @@ def display_charts(parsed_data, count_by_role):
                 color_field="Wizyta",
                 groupby_field="Twórca",
                 sort_field="Wizyta",
-                title="Udział typów wizyt wg twórcy",
+                title="Udział typów wizyt robionych przez Hostów i BOK wg twórcy",
                 height=max(200, len(cv_df["Twórca"].unique()) * 40),
                 y_title="Twórca",
                 color_title="Typ wizyty",
@@ -523,7 +523,7 @@ def display_charts(parsed_data, count_by_role):
                 .properties(
                     width=700,
                     height=max(300, len(heatmap_df["Lokacja"].unique()) * 70),
-                    title="Liczba rezerwacji wg twórcy i lokacji",
+                    title="Liczba rezerwacji robionych przez Hostów i BOK wg twórcy i lokacji",
                 )
                 .configure_view(stroke=None),
                 use_container_width=True,
