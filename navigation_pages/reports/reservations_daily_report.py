@@ -6,6 +6,7 @@ import io
 import calendar
 import pandas as pd
 import streamlit as st
+import extra_streamlit_components as stx
 import reservations_daily_report_queries as rdrq
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -71,7 +72,7 @@ def classify_role(role_name):
 
 
 def rows_to_df(reservations, date_field):
-  columns = ["location_id", "city", "day", "source", "is_cancelled", "price", "visit_name"]
+  columns = ["location_id", "city", "day", "source", "is_cancelled", "price", "boardhours", "visit_name"]
   records = []
 
   for r in reservations:
@@ -95,6 +96,7 @@ def rows_to_df(reservations, date_field):
       "source": classify_role(r.get("role_name")),
       "is_cancelled": r.get("status") in ("CANCELLED", "CANCELLED_TO_RETURN"),
       "price": float(r.get("total_price_cents") or 0) / 100,
+      "boardhours": float(r.get("boardhours_taken") or 0),
       "visit_name": visit_name,
     })
 
@@ -126,6 +128,13 @@ def compute_metrics(df):
   price = df["price"].sum() if count else 0.0
   price_cancelled = df.loc[df["is_cancelled"], "price"].sum() if count else 0.0
   return count, cancelled, float(price), float(price_cancelled)
+
+
+def compute_boardhours(df):
+  count = len(df)
+  boardhours = df["boardhours"].sum() if count else 0.0
+  boardhours_cancelled = df.loc[df["is_cancelled"], "boardhours"].sum() if count else 0.0
+  return round(float(boardhours), 2), round(float(boardhours_cancelled), 2)
 
 
 def previous_year_day(day):
@@ -250,8 +259,109 @@ def write_report(current_df, previous_df, selected_cities, mats_map, days, break
   return buf.getvalue()
 
 
+def build_finance_row(label, city, count, cancelled, price, price_cancelled, boardhours, boardhours_cancelled, mats_count, diff_b, pct_b, diff_c, pct_c, visit_name=None):
+  row = {
+    "Data": label,
+    "Miasto": city,
+    "Liczba rezerwacji": count,
+    "Liczba matogodzin": boardhours,
+    "Liczba anulowanych": cancelled,
+    "Liczba matogodzin anulowanych": boardhours_cancelled,
+    "Przychody spodziewane": round(price, 2),
+    "Przychody na matę": round(price / mats_count, 2) if mats_count else None,
+    "Liczba mat": mats_count,
+    "Przychody anulowane": round(price_cancelled, 2),
+    "Przychody anulowane na matę": round(price_cancelled / mats_count, 2) if mats_count else None,
+    "Zmiana liczbowa rezerwacji r/r": diff_b,
+    "Zmiana % rezerwacji r/r": pct_b,
+    "Zmiana liczbowa anulowanych r/r": diff_c,
+    "Zmiana % anulowanych r/r": pct_c,
+  }
+  if visit_name is not None:
+    ordered = {"Data": label, "Miasto": city, "Rodzaj atrakcji": visit_name}
+    ordered.update({k: v for k, v in row.items() if k not in ("Data", "Miasto")})
+    row = ordered
+  return row
+
+
+def build_finance_rows(current_df, previous_df, selected_cities, mats_map, days, visit_names=None):
+  rows = []
+  groups = visit_names if visit_names else [None]
+
+  for day in days:
+    prev_day = previous_year_day(day)
+
+    for city in selected_cities:
+      mats_count = mats_map.get(city, 0)
+      cur_city_day = current_df[(current_df["day"] == day) & (current_df["city"] == city)]
+      if prev_day is not None:
+        prev_city_day = previous_df[(previous_df["day"] == prev_day) & (previous_df["city"] == city)]
+      else:
+        prev_city_day = previous_df.iloc[0:0]
+
+      for visit_name in groups:
+        cur = cur_city_day if visit_name is None else cur_city_day[cur_city_day["visit_name"] == visit_name]
+        prev = prev_city_day if visit_name is None else prev_city_day[prev_city_day["visit_name"] == visit_name]
+
+        count, cancelled, price, price_cancelled = compute_metrics(cur)
+        boardhours, boardhours_cancelled = compute_boardhours(cur)
+
+        if prev_day is not None:
+          prev_count, prev_cancelled, _, _ = compute_metrics(prev)
+          diff_b, pct_b, diff_c, pct_c = yoy(count, cancelled, prev_count, prev_cancelled)
+        else:
+          diff_b = pct_b = diff_c = pct_c = None
+
+        rows.append(build_finance_row(
+          day.strftime("%d.%m"), city, count, cancelled, price, price_cancelled,
+          boardhours, boardhours_cancelled, mats_count, diff_b, pct_b, diff_c, pct_c, visit_name,
+        ))
+
+  return rows
+
+
+def build_finance_suma_row(current_df, previous_df, selected_cities, mats_map, with_visit_col):
+  count, cancelled, price, price_cancelled = compute_metrics(current_df)
+  boardhours, boardhours_cancelled = compute_boardhours(current_df)
+  prev_count, prev_cancelled, _, _ = compute_metrics(previous_df)
+  diff_b, pct_b, diff_c, pct_c = yoy(count, cancelled, prev_count, prev_cancelled)
+  total_mats = sum(mats_map.get(c, 0) for c in selected_cities)
+
+  return build_finance_row(
+    "Suma", "", count, cancelled, price, price_cancelled,
+    boardhours, boardhours_cancelled, total_mats, diff_b, pct_b, diff_c, pct_c,
+    "" if with_visit_col else None,
+  )
+
+
+def build_finance_source_table(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names):
+  rows = build_finance_rows(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
+  rows.append(build_finance_suma_row(
+    current_df[current_df["city"].isin(selected_cities)],
+    previous_df[previous_df["city"].isin(selected_cities)],
+    selected_cities, mats_map, with_visit_col=breakdown_visit_names is not None,
+  ))
+  return pd.DataFrame(rows)
+
+
+def write_finance_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names):
+  buf = io.BytesIO()
+
+  sources = [("Sumarycznie", None), ("Online", "Online"), ("Host", "Host"), ("CC", "CC")]
+
+  with pd.ExcelWriter(buf, engine="xlsxwriter") as writer:
+    for sheet_name, source_filter in sources:
+      cur_src = current_df if source_filter is None else current_df[current_df["source"] == source_filter]
+      prev_src = previous_df if source_filter is None else previous_df[previous_df["source"] == source_filter]
+
+      df = build_finance_source_table(cur_src, prev_src, selected_cities, mats_map, days, breakdown_visit_names)
+      df.to_excel(writer, sheet_name=sheet_name, startrow=0, index=False)
+
+  return buf.getvalue()
+
+
 @st.fragment
-def render_results(current_raw, previous_raw, mats_by_location, days, use_start_date, allowed_cities, allowed_safi_ids, start_date, end_date):
+def render_results(current_raw, previous_raw, mats_by_location, days, use_start_date, allowed_cities, allowed_safi_ids, start_date, end_date, active_tab):
   date_field = "start_at" if use_start_date else "created_at"
 
   current_df = rows_to_df(current_raw, date_field)
@@ -282,21 +392,35 @@ def render_results(current_raw, previous_raw, mats_by_location, days, use_start_
 
   breakdown_visit_names = selected_visit_names if breakdown else None
 
-  xlsx_bytes = write_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
+  if active_tab == "finanse":
+    xlsx_bytes = write_finance_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
+    dl_key, tag = "daily_report_download_finanse", "finanse"
+  else:
+    xlsx_bytes = write_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
+    dl_key, tag = "daily_report_download_marketing", "marketing"
 
   st.download_button(
     label="Pobierz plik .xlsx",
     data=xlsx_bytes,
     icon="⬇️",
-    file_name=f"raport_dzienny_rezerwacji_{start_date}_{end_date}.xlsx",
+    file_name=f"raport_dzienny_rezerwacji_{tag}_{start_date}_{end_date}.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    key="daily_report_download",
+    key=dl_key,
   )
 
 
 def view():
   today = date.today()
   current_year = today.year
+
+  active_tab = stx.tab_bar(
+    data=[
+      stx.TabBarItemData(id="marketing", title="Marketing", description="Raport marketingowy"),
+      stx.TabBarItemData(id="finanse", title="Finanse", description="Raport finansowy"),
+    ],
+    default="marketing",
+    key="daily_report_tabs",
+  )
 
   mode_col, type_col = st.columns(2)
   with mode_col:
@@ -344,7 +468,7 @@ def view():
     render_results(
       payload["current"], payload["previous_year"], payload["mats_by_location"],
       payload["days"], payload["use_start_date"], ALL_CITIES, ALL_SAFI_IDS,
-      payload["start_date"], payload["end_date"],
+      payload["start_date"], payload["end_date"], active_tab,
     )
 
 
