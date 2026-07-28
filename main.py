@@ -36,11 +36,12 @@ clients_report = st.Page("navigation_pages/reports/clients_report.py", title = "
 not_started_reservations_report = st.Page("navigation_pages/reports/not_started_reservations_report.py", title = "Raport rezerwacji nieodbytych", icon=":material/event_busy:")
 boards_occupancy_time_period_report = st.Page("navigation_pages/reports/boards_occupancy_time_period_report.py", title="Zajętość mat — okresy", icon=":material/bar_chart:")
 reservations_report = st.Page("navigation_pages/reports/reservations_report.py", title = "Raport roczny rezerwacji", icon=":material/event_repeat:")
+reservations_daily_report_page = st.Page("navigation_pages/reports/reservations_daily_report.py", title = "Raport dzienny rezerwacji", icon=":material/event_note:")
 
 pages_by_role = {
   "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
-    "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page, clients_report, not_started_reservations_report, bok_income_report, boards_occupancy_time_period_report],
+    "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page, clients_report, not_started_reservations_report, bok_income_report, boards_occupancy_time_period_report, reservations_daily_report_page],
     "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
