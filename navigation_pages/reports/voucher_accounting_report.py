@@ -161,7 +161,7 @@ def fetch_vouchers_expired(utc_start, utc_end, location_ids):
   return _fetch_voucher_report("/api/get-vouchers-expired", utc_start, utc_end, location_ids)
 
 
-def _render_section(title, result, column_map, amount_col, file_name, note=None):
+def _render_section(title, result, column_map, file_name, note=None):
   st.subheader(title)
 
   if not result["ok"]:
@@ -187,22 +187,6 @@ def _render_section(title, result, column_map, amount_col, file_name, note=None)
   present_cols = [key for key in column_map if key in df.columns]
   df = df[present_cols].rename(columns=column_map)
 
-  row_count = len(df)
-  gross_sum = pd.to_numeric(df.get(amount_col), errors="coerce").sum()
-
-  st.write(f"Liczba rekordów: {row_count}")
-  st.write(f"Suma {amount_col}: {gross_sum:,.2f} PLN")
-
-  column_config = {}
-  if "nr paragonu" in df.columns:
-    column_config["nr paragonu"] = st.column_config.LinkColumn("nr paragonu", display_text="Otwórz paragon")
-  if "eparagony_link" in df.columns:
-    column_config["eparagony_link"] = st.column_config.LinkColumn("eparagony_link", display_text="Otwórz eparagon")
-
-  column_config = column_config or None
-
-  st.dataframe(df, column_config=column_config)
-
   utils.download_button({title: df}, file_name, label="Pobierz plik .xlsx")
 
 
@@ -212,7 +196,6 @@ def render_purchased(result, start_date, end_date):
     title="Vouchery zakupione",
     result=result,
     column_map=PURCHASED_COLUMNS,
-    amount_col="kwota brutto",
     file_name=f"raport_voucherow_zakupione_{start_date}-{end_date}",
   )
 
@@ -234,7 +217,6 @@ def render_cancelled(result, start_date, end_date):
     title="Vouchery anulowane",
     result=result,
     column_map=column_map,
-    amount_col="kwota brutto",
     file_name=f"raport_voucherow_anulowane_{start_date}-{end_date}",
     note=note,
   )
@@ -246,7 +228,6 @@ def render_redeemed(result, start_date, end_date):
     title="Vouchery zrealizowane",
     result=result,
     column_map=REDEEMED_COLUMNS,
-    amount_col="kwota brutto",
     file_name=f"raport_voucherow_zrealizowane_{start_date}-{end_date}",
   )
 
@@ -257,7 +238,6 @@ def render_expired(result, start_date, end_date):
     title="Vouchery, które straciły ważność",
     result=result,
     column_map=EXPIRED_COLUMNS,
-    amount_col="kwota brutto",
     file_name=f"raport_voucherow_wygasle_{start_date}-{end_date}",
   )
 
