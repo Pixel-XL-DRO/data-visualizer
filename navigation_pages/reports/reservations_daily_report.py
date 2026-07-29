@@ -68,7 +68,9 @@ def build_day_range(start_date, end_date):
 
 
 def classify_role(role_name):
-  return "Online" if not role_name else ("Host" if role_name == "Worker" else "CC")
+  if not role_name:
+    return "Online"
+  return "Lokal" if role_name in ("Worker", "Manager") else "CC"
 
 
 def rows_to_df(reservations, date_field):
@@ -237,7 +239,7 @@ def build_source_tables(current_df, previous_df, selected_cities, mats_map, days
 def write_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names):
   buf = io.BytesIO()
 
-  sources = [("Sumarycznie", None), ("Online", "Online"), ("Host", "Host"), ("CC", "CC")]
+  sources = [("Sumarycznie", None), ("Online", "Online"), ("Lokal", "Lokal"), ("CC", "CC")]
 
   with pd.ExcelWriter(buf, engine="xlsxwriter") as writer:
     label_fmt = writer.book.add_format({"bold": True, "align": "center"})
@@ -347,7 +349,7 @@ def build_finance_source_table(current_df, previous_df, selected_cities, mats_ma
 def write_finance_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names):
   buf = io.BytesIO()
 
-  sources = [("Sumarycznie", None), ("Online", "Online"), ("Host", "Host"), ("CC", "CC")]
+  sources = [("Sumarycznie", None), ("Online", "Online"), ("Lokal", "Lokal"), ("CC", "CC")]
 
   with pd.ExcelWriter(buf, engine="xlsxwriter") as writer:
     for sheet_name, source_filter in sources:
