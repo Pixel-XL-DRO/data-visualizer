@@ -222,18 +222,32 @@ def build_city_table(current_df_city, previous_df_city, mats_count, days, visit_
 def build_source_tables(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names):
   tables = []
 
+  total_mats = sum(mats_map.get(c, 0) for c in selected_cities)
+  cur_all = current_df[current_df["city"].isin(selected_cities)]
+  prev_all = previous_df[previous_df["city"].isin(selected_cities)]
+  tables.append(("Sumarycznie", build_city_table(cur_all, prev_all, total_mats, days, breakdown_visit_names)))
+
   for city in selected_cities:
     cur_c = current_df[current_df["city"] == city]
     prev_c = previous_df[previous_df["city"] == city]
     mats_count = mats_map.get(city, 0)
     tables.append((city, build_city_table(cur_c, prev_c, mats_count, days, breakdown_visit_names)))
 
-  total_mats = sum(mats_map.get(c, 0) for c in selected_cities)
-  cur_all = current_df[current_df["city"].isin(selected_cities)]
-  prev_all = previous_df[previous_df["city"].isin(selected_cities)]
-  tables.append(("Sumarycznie", build_city_table(cur_all, prev_all, total_mats, days, breakdown_visit_names)))
-
   return tables
+
+
+def render_marketing_preview(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names):
+  sources = [("Sumarycznie", None), ("Online", "Online"), ("Lokal", "Lokal"), ("CC", "CC")]
+  source_tabs = st.tabs([name for name, _ in sources])
+
+  for tab, (_, source_filter) in zip(source_tabs, sources):
+    with tab:
+      cur_src = current_df if source_filter is None else current_df[current_df["source"] == source_filter]
+      prev_src = previous_df if source_filter is None else previous_df[previous_df["source"] == source_filter]
+      tables = build_source_tables(cur_src, prev_src, selected_cities, mats_map, days, breakdown_visit_names)
+      for label, df in tables:
+        st.markdown(f"<div style='text-align:center;font-weight:bold'>{label}</div>", unsafe_allow_html=True)
+        st.dataframe(df, hide_index=True)
 
 
 def write_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names):
@@ -400,15 +414,16 @@ def render_results(current_raw, previous_raw, mats_by_location, days, use_start_
   else:
     xlsx_bytes = write_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
     dl_key, tag = "daily_report_download_marketing", "marketing"
+    st.download_button(
+      label="Pobierz plik .xlsx",
+      data=xlsx_bytes,
+      icon="⬇️",
+      file_name=f"raport_dzienny_rezerwacji_{tag}_{start_date}_{end_date}.xlsx",
+      mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      key=dl_key,
+    )
+    render_marketing_preview(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
 
-  st.download_button(
-    label="Pobierz plik .xlsx",
-    data=xlsx_bytes,
-    icon="⬇️",
-    file_name=f"raport_dzienny_rezerwacji_{tag}_{start_date}_{end_date}.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    key=dl_key,
-  )
 
 
 def view():
