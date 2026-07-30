@@ -445,7 +445,8 @@ def view():
 
   mode_col, type_col = st.columns(2)
   with mode_col:
-    mode = st.selectbox("Tryb", ["Miesiąc", "Dzień"], key="daily_report_mode")
+    mode_options = ["Miesiąc", "Zakres"] if active_tab == "finanse" else ["Miesiąc", "Dzień"]
+    mode = st.selectbox("Tryb", mode_options, key=f"daily_report_mode_{active_tab}")
   with type_col:
     date_type = st.selectbox("Rodzaj daty", ["Data stworzenia", "Data odbycia"], key="daily_report_date_type")
   use_start_date = date_type == "Data odbycia"
@@ -463,6 +464,20 @@ def view():
       )
     start_date = date(year, month, 1)
     end_date = date(year, month, calendar.monthrange(year, month)[1])
+  elif mode == "Zakres":
+    default_end = today - timedelta(days=1)
+    default_start = default_end - timedelta(days=6)
+    date_range = st.date_input(
+      "Zakres dat",
+      value=(default_start, default_end),
+      min_value=min_date,
+      key="daily_report_range",
+    )
+    if isinstance(date_range, tuple) and len(date_range) == 2:
+      start_date, end_date = date_range
+    else:
+      st.info("Wybierz datę początkową i końcową.")
+      return
   else:
     day = st.date_input("Dzień", value=today - timedelta(days=1), min_value=min_date, key="daily_report_day")
     start_date = end_date = day
