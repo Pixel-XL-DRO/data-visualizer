@@ -408,20 +408,24 @@ def render_results(current_raw, previous_raw, mats_by_location, days, use_start_
 
   breakdown_visit_names = selected_visit_names if breakdown else None
 
-  if active_tab == "finanse":
-    xlsx_bytes = write_finance_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
-    dl_key, tag = "daily_report_download_finanse", "finanse"
-  else:
-    xlsx_bytes = write_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
-    dl_key, tag = "daily_report_download_marketing", "marketing"
-    st.download_button(
-      label="Pobierz plik .xlsx",
-      data=xlsx_bytes,
-      icon="⬇️",
-      file_name=f"raport_dzienny_rezerwacji_{tag}_{start_date}_{end_date}.xlsx",
-      mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      key=dl_key,
-    )
+  with st.spinner("Tworzenie pliku.."):
+    if active_tab == "finanse":
+      xlsx_bytes = write_finance_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
+      dl_key, tag = "daily_report_download_finanse", "finanse"
+    else:
+      xlsx_bytes = write_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
+      dl_key, tag = "daily_report_download_marketing", "marketing"
+
+  st.download_button(
+    label="Pobierz plik .xlsx",
+    data=xlsx_bytes,
+    icon="⬇️",
+    file_name=f"raport_dzienny_rezerwacji_{tag}_{start_date}_{end_date}.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    key=dl_key,
+  )
+
+  if active_tab == "marketing":
     render_marketing_preview(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
 
 
