@@ -36,10 +36,11 @@ PURCHASED_COLUMNS = {
   "vat_rate": "stawka VAT",
   "gross_amount": "kwota brutto",
   "purchase_date": "data zakupu",
+  "was_cancelled": "czy anulowane",
   "cancellation_date": "data anulowania",
   "receipt_link": "nr paragonu",
   "document_url": "eparagony_link",
-  "invoice_number": "nr faktury",
+  "document_type": "typ dokumentu",
   "safi_order_number": "nr zamówienia Safi",
   "payment_type": "typ_platnosci",
   "email": "email",
@@ -56,7 +57,7 @@ CANCELLED_COLUMNS = {
   "purchase_date": "data zakupu",
   "receipt_link": "nr paragonu",
   "document_url": "eparagony_link",
-  "invoice_number": "nr faktury",
+  "document_type": "typ dokumentu",
   "safi_order_number": "nr zamówienia Safi",
   "payment_type": "typ_platnosci",
   "email": "email",
@@ -70,6 +71,12 @@ PAYMENT_TYPE_LABELS = {
   "ONLINE": "online",
   "ON_SPOT": "na miejscu",
   "DEFERRED": "odroczona",
+}
+
+DOCUMENT_TYPE_LABELS = {
+  "RECEIPT": "Paragon",
+  "COMPANY": "Na firmę",
+  "PERSON": "Na osobę fizyczną",
 }
 
 REDEEMED_COLUMNS = {
@@ -97,8 +104,7 @@ EXPIRED_COLUMNS = {
   "expiry_date": "data wygaśnięcia",
   "receipt_link": "nr paragonu",
   "document_url": "eparagony_link",
-  "invoice_number": "nr faktury",
-  "order_number": "nr zamówienia",
+  "document_type": "typ dokumentu",
   "safi_order_number": "nr zamówienia Safi",
   "payment_type": "typ_platnosci",
   "email": "email",
@@ -183,6 +189,12 @@ def _render_section(title, result, column_map, file_name, note=None):
 
   if "payment_type" in df.columns:
     df["payment_type"] = df["payment_type"].map(PAYMENT_TYPE_LABELS).fillna(df["payment_type"])
+
+  if "document_type" in df.columns:
+    df["document_type"] = df["document_type"].map(DOCUMENT_TYPE_LABELS).fillna(df["document_type"])
+
+  if "was_cancelled" in df.columns:
+    df["was_cancelled"] = df["was_cancelled"].map({True: "tak", False: "nie"}).fillna(df["was_cancelled"])
 
   present_cols = [key for key in column_map if key in df.columns]
   df = df[present_cols].rename(columns=column_map)
