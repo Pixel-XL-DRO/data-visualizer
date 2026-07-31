@@ -42,7 +42,8 @@ reservations_daily_report_page = st.Page("navigation_pages/reports/reservations_
 pages_by_role = {
   "super-admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
-    "Raporty": [financial_report_page, reservations_for_year_page, voucher_report_page, voucher_accounting_report_page, clients_report, not_started_reservations_report, bok_income_report, boards_occupancy_time_period_report, reservations_daily_report_page],
+    "Finanse": [financial_report_page, reservations_for_year_page, voucher_accounting_report_page],
+    "Raporty": [voucher_report_page, clients_report, not_started_reservations_report, bok_income_report, boards_occupancy_time_period_report, reservations_daily_report_page],
     "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
@@ -56,7 +57,8 @@ pages_by_role = {
   "admin": {
     "Rezerwacje": [reservations_page, clients_page, boards_occupancy_page, reservations_by_time_period_page, reservations_cumulative_page],
     "Sprzedaż": [dotypos, income, vouchers, safi_products_page],
-    "Raporty": [voucher_report_page, voucher_accounting_report_page, reservations_for_year_page, clients_report, bok_income_report, reservations_report],
+    "Finanse": [reservations_for_year_page, voucher_accounting_report_page],
+    "Raporty": [voucher_report_page, clients_report, bok_income_report, reservations_report],
     "Opinie": [google_reviews_page, reviews_page],
     "Admin Panel": [data_editor_page],
     "Konto": [logout_page]
