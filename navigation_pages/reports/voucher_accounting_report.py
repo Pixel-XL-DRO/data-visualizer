@@ -31,6 +31,7 @@ SAFI_LOCATIONS = {
 
 PURCHASED_COLUMNS = {
   "voucher_code": "numer kodu vouchera",
+  "purchase_city": "miasto zakupu",
   "net_amount": "kwota netto",
   "vat_tax": "podatek VAT",
   "vat_rate": "stawka VAT",
@@ -50,6 +51,7 @@ PURCHASED_COLUMNS = {
 
 CANCELLED_COLUMNS = {
   "voucher_code": "numer kodu vouchera",
+  "purchase_city": "miasto zakupu",
   "net_amount": "kwota netto",
   "vat_tax": "podatek VAT",
   "vat_rate": "stawka VAT",
@@ -97,6 +99,7 @@ REDEEMED_COLUMNS = {
 
 EXPIRED_COLUMNS = {
   "voucher_code": "numer kodu vouchera",
+  "purchase_city": "miasto zakupu",
   "net_amount": "kwota netto",
   "vat_tax": "podatek VAT",
   "vat_rate": "stawka VAT",
