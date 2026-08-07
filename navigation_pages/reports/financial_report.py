@@ -158,6 +158,14 @@ def get_safi_data(iso_start, iso_end):
         utc_updated_at = datetime.fromisoformat(receipt.get("updated_at").replace("Z", "+00:00")).astimezone(USER_TZ)
         parsed_utc_updated_at = utc_updated_at.strftime("%Y-%m-%d")
 
+        visit_date_raw = receipt.get("visit_date")
+        parsed_visit_date = (
+            datetime.fromisoformat(visit_date_raw.replace("Z", "+00:00"))
+            .astimezone(USER_TZ)
+            .strftime("%Y-%m-%d")
+            if visit_date_raw else None
+        )
+
         for line in lines:
             tax_rate = int(tax_rates[line["taxRate"]])
             discounts = line.get("rebatesMarkups")
@@ -184,7 +192,8 @@ def get_safi_data(iso_start, iso_end):
                 "numer rezerwacji": receipt["reservation_number"],
                 "lokalizacja": city_label,
                 "typ przychodu": "online - safi",
-                "atrakcja": receipt["visit_name"]
+                "atrakcja": receipt["visit_name"],
+                "data wizyty": parsed_visit_date
             }
 
             if f"Suma NETTO {city_label}" not in cities_sum:
