@@ -4,10 +4,11 @@ from queries import run_query
 import time
 import utils
 from datetime import datetime
-def get_reservations_count(date_type, since_when, moving_average_days, groupBy, cities, language, attraction_groups, status, visit_type_groups, notes=None):
+def get_reservations_count(date_type, since_when, moving_average_days, groupBy, cities, language, mode_names, attraction_groups, status, visit_type_groups, notes=None):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -50,6 +51,7 @@ def get_reservations_count(date_type, since_when, moving_average_days, groupBy, 
       AND DATE({date_type}) > DATE(@since_when)
       AND DATE({date_type}) < DATE('{timestamp_now}')
       AND language {language_condition}
+      AND ecr.mode_name {mode_name_condition}
       AND dvt.name {visit_type_condition}
       AND dvt.attraction_group {attraction_condition}
       AND street {cities_condition}
@@ -102,10 +104,11 @@ def get_reservations_count(date_type, since_when, moving_average_days, groupBy, 
 
   return df
 
-def get_people_count(date_type, since_when, moving_average_days, groupBy, cities, language, attraction_groups, status, visit_type_groups, notes=None):
+def get_people_count(date_type, since_when, moving_average_days, groupBy, cities, language, mode_names, attraction_groups, status, visit_type_groups, notes=None):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -198,6 +201,7 @@ def get_people_count(date_type, since_when, moving_average_days, groupBy, cities
       AND DATE({date_type}) > DATE(@since_when)
       AND DATE({date_type}) < DATE('{timestamp_now}')
       AND language {language_condition}
+      AND ecr.mode_name {mode_name_condition}
       AND dvt.name {visit_type_condition}
       AND street {cities_condition}
       AND dvt.attraction_group {attraction_condition}
@@ -250,10 +254,11 @@ def get_people_count(date_type, since_when, moving_average_days, groupBy, cities
 
   return df
 
-def get_boardhours(date_type, since_when, moving_average_days, groupBy, cities, language, attraction_groups, status, visit_type_groups, notes=None):
+def get_boardhours(date_type, since_when, moving_average_days, groupBy, cities, language, mode_names, attraction_groups, status, visit_type_groups, notes=None):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -307,6 +312,7 @@ def get_boardhours(date_type, since_when, moving_average_days, groupBy, cities, 
       AND DATE({date_type}) > DATE(@since_when)
       AND DATE({date_type}) < DATE('{timestamp_now}')
       AND language {language_condition}
+      AND ecr.mode_name {mode_name_condition}
       AND dvt.name {visit_type_condition}
       AND street {cities_condition}
       AND dvt.attraction_group {attraction_condition}
@@ -359,10 +365,11 @@ def get_boardhours(date_type, since_when, moving_average_days, groupBy, cities, 
 
   return df
 
-def get_mean_days_ahead(date_type, since_when,cities, language, attraction_groups, status, visit_type_groups):
+def get_mean_days_ahead(date_type, since_when, cities, language, mode_names, attraction_groups, status, visit_type_groups):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -394,10 +401,11 @@ def get_mean_days_ahead(date_type, since_when,cities, language, attraction_group
     AND
       ecr.deleted_at IS NULL
     AND language {language_condition}
+    AND ecr.mode_name {mode_name_condition}
     AND dvt.name {visit_type_condition}
     AND dvt.attraction_group {attraction_condition}
     AND street {cities_condition}
-    AND 
+    AND
       CASE
         WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
         WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
@@ -423,9 +431,10 @@ def get_mean_days_ahead(date_type, since_when,cities, language, attraction_group
 
   return df
 
-def get_days_ahead_by_city(date_type, period, since_when, street, language, attraction_groups, status, visit_type_groups):
+def get_days_ahead_by_city(date_type, period, since_when, street, language, mode_names, attraction_groups, status, visit_type_groups):
 
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -465,14 +474,15 @@ def get_days_ahead_by_city(date_type, period, since_when, street, language, attr
     AND
       ecr.deleted_at IS NULL
     AND language {language_condition}
+    AND ecr.mode_name {mode_name_condition}
     AND dvt.name {visit_type_condition}
     AND dvt.attraction_group {attraction_condition}
-    AND 
+    AND
       CASE
         WHEN ecr.is_cancelled = TRUE THEN 'Anulowane'
         WHEN ecr.is_payed = FALSE THEN 'Zrealizowane nieopłacone'
         ELSE 'Zrealizowane'
-      END {status_condition}  
+      END {status_condition}
     GROUP BY
       days
     ORDER BY

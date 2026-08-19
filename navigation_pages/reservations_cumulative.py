@@ -15,19 +15,19 @@ with st.spinner("Inicjalizacja...", show_time=True):
 
 (x_axis_type, moving_average_toggle,
  show_only_moving_average,
-  start_date, end_date, cities, language, attraction_groups_checkboxes,status_checkboxes,visit_type_groups_checkboxes, groupBy) = reservations_cumulative_sidebar.filter_data(df)
+ start_date, end_date, cities, language, mode_names, attraction_groups_checkboxes, status_checkboxes, visit_type_groups_checkboxes, groupBy) = reservations_cumulative_sidebar.filter_data(df)
 
 with st.spinner("Ładowanie danych...", show_time=True):
 
   df_reservations, df_boardhours, df_people = utils.run_in_parallel(
     (reservations_cumulative_queries.get_reservations_cumulative, (x_axis_type, start_date, end_date, groupBy,
-          cities, language, attraction_groups_checkboxes,
+          cities, language, mode_names, attraction_groups_checkboxes,
           status_checkboxes, visit_type_groups_checkboxes)),
     (reservations_cumulative_queries.get_reservations_boardhours_cumulative, (x_axis_type, start_date, end_date, groupBy,
-          cities, language, attraction_groups_checkboxes,
+          cities, language, mode_names, attraction_groups_checkboxes,
           status_checkboxes, visit_type_groups_checkboxes)),
     (reservations_cumulative_queries.get_reservations_people_cumulative, (x_axis_type, start_date, end_date, groupBy,
-          cities, language, attraction_groups_checkboxes,
+          cities, language, mode_names, attraction_groups_checkboxes,
           status_checkboxes, visit_type_groups_checkboxes))
   )
 

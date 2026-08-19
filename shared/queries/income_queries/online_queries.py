@@ -127,10 +127,11 @@ mock_function = """
   ''';
 """
 
-def get_online_income(groupBy, moving_average_days, start, end, date_type, cities, languages, attractions, status, attraction_types):
+def get_online_income(groupBy, moving_average_days, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types):
 
   cities_condition = utils.format_array_for_query(cities)
   language_condition = utils.format_array_for_query(languages)
+  mode_name_condition = utils.format_array_for_query(mode_names)
   attraction_condition = utils.format_array_for_query(attractions)
   status_condition = utils.format_array_for_query(status)
   visit_type_condition = utils.format_array_for_query(attraction_types)
@@ -176,6 +177,7 @@ def get_online_income(groupBy, moving_average_days, start, end, date_type, citie
       ELSE 'Zrealizowane'
     END {status_condition}
     AND dc.language {language_condition}
+    AND ecr.mode_name {mode_name_condition}
     AND dvt.name {visit_type_condition}
     AND dl.street {cities_condition}
     AND dvt.attraction_group {attraction_condition}
@@ -231,10 +233,11 @@ def get_online_income(groupBy, moving_average_days, start, end, date_type, citie
   return df
 
 
-def get_online_income_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period):
+def get_online_income_by_time_period(date_type, since_when, end_when, status, cities, language, mode_names, attraction_groups, visit_type_groups, grouping_period):
 
   cities_condition = utils.format_array_for_query(cities)
   language_condition = utils.format_array_for_query(language)
+  mode_name_condition = utils.format_array_for_query(mode_names)
   attraction_condition = utils.format_array_for_query(attraction_groups)
   status_condition = utils.format_array_for_query(status)
   visit_type_condition = utils.format_array_for_query(visit_type_groups)
@@ -356,6 +359,7 @@ def get_online_income_by_time_period(date_type, since_when, end_when, status, ci
       ELSE 'Zrealizowane'
     END {status_condition}
     AND dc.language {language_condition}
+    AND ecr.mode_name {mode_name_condition}
     AND dvt.name {visit_type_condition}
     AND dl.street {cities_condition}
     AND dvt.attraction_group {attraction_condition}
@@ -401,9 +405,10 @@ def get_online_income_by_time_period(date_type, since_when, end_when, status, ci
 
   return df
 
-def get_online_income_cumulative(groupBy, start, end, date_type, cities, languages, attractions, status, attraction_types):
+def get_online_income_cumulative(groupBy, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types):
   cities_condition = utils.format_array_for_query(cities)
   language_condition = utils.format_array_for_query(languages)
+  mode_name_condition = utils.format_array_for_query(mode_names)
   attraction_condition = utils.format_array_for_query(attractions)
   status_condition = utils.format_array_for_query(status)
   visit_type_condition = utils.format_array_for_query(attraction_types)
@@ -447,6 +452,7 @@ def get_online_income_cumulative(groupBy, start, end, date_type, cities, languag
       ELSE 'Zrealizowane'
     END {status_condition}
     AND dc.language {language_condition}
+    AND ecr.mode_name {mode_name_condition}
     AND dvt.name {visit_type_condition}
     AND dl.street {cities_condition}
     AND dvt.attraction_group {attraction_condition}

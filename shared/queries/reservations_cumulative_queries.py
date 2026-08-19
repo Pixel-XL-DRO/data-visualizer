@@ -6,10 +6,11 @@ import time
 from datetime import datetime
 import utils
 
-def get_reservations_cumulative(date_type, since_when, end_date, groupBy, cities, language, attraction_groups, status, visit_type_groups):
+def get_reservations_cumulative(date_type, since_when, end_date, groupBy, cities, language, mode_names, attraction_groups, status, visit_type_groups):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -46,6 +47,7 @@ def get_reservations_cumulative(date_type, since_when, end_date, groupBy, cities
     WHERE
         ecr.deleted_at IS NULL
         AND language {language_condition}
+        AND ecr.mode_name {mode_name_condition}
         AND dvt.name {visit_type_condition}
         AND dvt.attraction_group {attraction_condition}
         AND street {cities_condition}
@@ -89,11 +91,11 @@ ORDER BY
 
   return df
 
-def get_reservations_boardhours_cumulative(date_type, since_when, end_date, groupBy, cities, language, attraction_groups, status, visit_type_groups):
-
+def get_reservations_boardhours_cumulative(date_type, since_when, end_date, groupBy, cities, language, mode_names, attraction_groups, status, visit_type_groups):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -140,6 +142,7 @@ def get_reservations_boardhours_cumulative(date_type, since_when, end_date, grou
     WHERE
         ecr.deleted_at IS NULL
         AND language {language_condition}
+        AND ecr.mode_name {mode_name_condition}
         AND dvt.name {visit_type_condition}
         AND dvt.attraction_group {attraction_condition}
         AND street {cities_condition}
@@ -187,11 +190,11 @@ ORDER BY
 
   return df
 
-def get_reservations_people_cumulative(date_type, since_when, end_date, groupBy, cities, language, attraction_groups, status, visit_type_groups):
-
+def get_reservations_people_cumulative(date_type, since_when, end_date, groupBy, cities, language, mode_names, attraction_groups, status, visit_type_groups):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -278,6 +281,7 @@ def get_reservations_people_cumulative(date_type, since_when, end_date, groupBy,
     WHERE
         ecr.deleted_at IS NULL
         AND language {language_condition}
+        AND ecr.mode_name {mode_name_condition}
         AND dvt.name {visit_type_condition}
         AND dvt.attraction_group {attraction_condition}
         AND street {cities_condition}

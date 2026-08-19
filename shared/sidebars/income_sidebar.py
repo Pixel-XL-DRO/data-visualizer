@@ -47,6 +47,8 @@ def filter_online_data(df, filter_only_cities=True):
                 with st.container(border=True):
                     languages = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique(), key="online_lang")
 
+                mode_name_checkboxes = st.multiselect('Tryb rezerwacji', df['mode_name'].dropna().unique(), default=df['mode_name'].dropna().unique(), key="online_mode_name")
+
                 with st.container(border=True):
                     attractions = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique(), key="online_attr")
                     separate_attractions = st.checkbox('Rozdziel atrakcje', key="online_attr_sep", on_change=lambda: utils.make_sure_only_one_toggle_is_on(["online_sep", "online_attr_sep", "online_status_sep", "online_visit_sep"], "online_attr_sep"))
@@ -63,12 +65,14 @@ def filter_online_data(df, filter_only_cities=True):
 
             else:
                 languages = df['language'].unique()
+                mode_name_checkboxes = df['mode_name'].dropna().unique()
                 attractions = df['attraction_group'].unique()
                 status = ["Zrealizowane", "Zrealizowane nieopłacone"]
                 attraction_types = df['visit_type'].unique()
                 group_by = 'street' if separate_cities else None
 
             cities = df['street'][df['location'].isin(cities)].unique()
+            mode_names = df['mode_name'].dropna().unique() if len(mode_name_checkboxes) == 0 else df['mode_name'][df['mode_name'].isin(mode_name_checkboxes)].unique()
 
     current_ts = pd.Timestamp(datetime.now())
     if time_range == 'Od poczatku':
@@ -85,7 +89,7 @@ def filter_online_data(df, filter_only_cities=True):
     attraction_types = df['visit_type'].unique() if "Wszystkie" in attraction_types else df['visit_type'][df['visit_type'].isin(attraction_types)].unique()
     moving_average_days -= 1 # adjust for SQL indexing
 
-    return (group_by, show_moving_average_only, moving_average_days, show_moving_average, group_dates_by, start, end, date_type, cities, languages, attractions, status, attraction_types)
+    return (group_by, show_moving_average_only, moving_average_days, show_moving_average, group_dates_by, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types)
 
 
 def filter_pos_data(df_dotypos):

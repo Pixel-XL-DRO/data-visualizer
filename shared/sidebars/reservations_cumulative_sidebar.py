@@ -38,6 +38,7 @@ def filter_data(df):
         city_checkboxes = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique())
         seperate_cities = st.checkbox('Rozdziel miasta', key="t3", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t3"))
       language_checkboxes = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique())
+      mode_name_checkboxes = st.multiselect('Tryb rezerwacji', df['mode_name'].dropna().unique(), default=df['mode_name'].dropna().unique())
       with st.container(border=True):
         attraction_groups_checkboxes = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique())
         seperate_attractions = st.checkbox('Rozdziel atrakcje', key="t4", on_change=lambda:utils.make_sure_only_one_toggle_is_on(["t3", "t4", "t5", "t6"], "t4"))
@@ -79,6 +80,7 @@ def filter_data(df):
       start_date = datetime.combine(start_date, datetime.min.time())
     cities = df['street'][df['location'].isin(city_checkboxes)].unique()
     language = df['language'][df['language'].isin(language_checkboxes)].unique()
+    mode_names = df['mode_name'].dropna().unique() if len(mode_name_checkboxes) == 0 else df['mode_name'][df['mode_name'].isin(mode_name_checkboxes)].unique()
     visit_types = df['visit_type'].unique() if "Wszystkie" in visit_type_groups_checkboxes else df['visit_type'][df['visit_type'].isin(visit_type_groups_checkboxes)].unique()
 
     moving_average_days -= 1 # sql index starts from 0 so we have to subtract 1
@@ -87,4 +89,4 @@ def filter_data(df):
 
     return (x_axis_type, moving_average_toggle,
       show_only_moving_average,
-       start_date, end_date, cities, language, attraction_groups_checkboxes,status_checkboxes,visit_types, groupBy)
+      start_date, end_date, cities, language, mode_names, attraction_groups_checkboxes, status_checkboxes, visit_types, groupBy)

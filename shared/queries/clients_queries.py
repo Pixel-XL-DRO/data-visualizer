@@ -12,6 +12,7 @@ def get_retention_data(
   groupBy,
   streets,
   language,
+  mode_names,
   attraction_groups,
   status,
   visit_type_groups,
@@ -20,6 +21,7 @@ def get_retention_data(
 
   streets_condition = format_array_for_query(streets)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -90,6 +92,7 @@ def get_retention_data(
         ecr.deleted_at IS NULL
         AND dl.street {streets_condition}
         AND dc.language {language_condition}
+        AND ecr.mode_name {mode_name_condition}
         AND dvt.name {visit_type_condition}
         AND dvt.attraction_group {attraction_condition}
         AND CASE
@@ -162,12 +165,14 @@ def get_avg_return_day(
   since_when,
   streets,
   language,
+  mode_names,
   attraction_groups,
   status,
   visit_type_groups,
 ):
   streets_condition = format_array_for_query(streets)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -207,6 +212,7 @@ def get_avg_return_day(
       AND DATE({date_type}) >= DATE(@since_when)
       AND dl.street {streets_condition}
       AND dc.language {language_condition}
+      AND ecr.mode_name {mode_name_condition}
       AND dvt.name {visit_type_condition}
       AND dvt.attraction_group {attraction_condition}
       AND CASE

@@ -13,10 +13,11 @@ day_of_week_map = {
   7: "6. Sobota"
 }
 
-def get_reservations_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period, show_unended_period):
+def get_reservations_by_time_period(date_type, since_when, end_when, status, cities, language, mode_names, attraction_groups, visit_type_groups, grouping_period, show_unended_period):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -133,6 +134,7 @@ def get_reservations_by_time_period(date_type, since_when, end_when, status, cit
         ELSE 'Zrealizowane'
       END {status_condition}
       AND dc.language {language_condition}
+      AND ecr.mode_name {mode_name_condition}
       AND dvt.name {visit_type_condition}
       AND dl.street {cities_condition}
       AND dvt.attraction_group {attraction_condition}
@@ -173,10 +175,11 @@ def get_reservations_by_time_period(date_type, since_when, end_when, status, cit
 
   return df
 
-def get_boardhours_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period, show_unended_period):
+def get_boardhours_by_time_period(date_type, since_when, end_when, status, cities, language, mode_names, attraction_groups, visit_type_groups, grouping_period, show_unended_period):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -301,6 +304,7 @@ def get_boardhours_by_time_period(date_type, since_when, end_when, status, citie
         ELSE 'Zrealizowane'
       END {status_condition}
       AND dc.language {language_condition}
+      AND ecr.mode_name {mode_name_condition}
       AND dvt.name {visit_type_condition}
       AND dl.street {cities_condition}
       AND dvt.attraction_group {attraction_condition}
@@ -340,10 +344,11 @@ def get_boardhours_by_time_period(date_type, since_when, end_when, status, citie
 
   return df
 
-def get_people_by_time_period(date_type, since_when, end_when, status, cities, language, attraction_groups, visit_type_groups, grouping_period, show_unended_period):
+def get_people_by_time_period(date_type, since_when, end_when, status, cities, language, mode_names, attraction_groups, visit_type_groups, grouping_period, show_unended_period):
 
   cities_condition = format_array_for_query(cities)
   language_condition = format_array_for_query(language)
+  mode_name_condition = format_array_for_query(mode_names)
   attraction_condition = format_array_for_query(attraction_groups)
   status_condition = format_array_for_query(status)
   visit_type_condition = format_array_for_query(visit_type_groups)
@@ -506,6 +511,7 @@ def get_people_by_time_period(date_type, since_when, end_when, status, cities, l
         ELSE 'Zrealizowane'
       END {status_condition}
       AND dc.language {language_condition}
+      AND ecr.mode_name {mode_name_condition}
       AND dvt.name {visit_type_condition}
       AND dl.street {cities_condition}
       AND dvt.attraction_group {attraction_condition}
