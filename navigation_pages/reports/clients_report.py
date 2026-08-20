@@ -14,6 +14,7 @@ attraction_map = {
   "Indywidualne": "Indywidualnie",
   "Indywidualnie": "Indywidualnie",
   "Integracje": "Integracja Firmowa",
+  "Imprezy zorganizowane": "Imprezy zorganizowane",
   "Integracja firmowa": "Integracja Firmowa",
   "Integracja Firmowa": "Integracja Firmowa",
   "Wycieczki szkolne / półkolonie": "Szkoły",
