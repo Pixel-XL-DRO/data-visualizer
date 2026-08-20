@@ -398,7 +398,7 @@ def render_results(current_raw, previous_raw, mats_by_location, days, use_start_
 
   if active_tab == "marketing":
     all_mode_names = sorted(current_df["mode_name"].dropna().unique().tolist())
-    selected_mode_names = st.multiselect("Tryb rezerwacji", all_mode_names, default=all_mode_names, key="daily_report_mode_names")
+    selected_mode_names = st.multiselect("Tryb rezerwacji", all_mode_names, default=all_mode_names, key="daily_report_mode_names") if len(all_mode_names) > 1 else all_mode_names
 
   breakdown = st.checkbox("Rozdziel rodzaje atrakcji", key="daily_report_breakdown")
 

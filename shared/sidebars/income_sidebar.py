@@ -47,7 +47,8 @@ def filter_online_data(df, filter_only_cities=True):
                 with st.container(border=True):
                     languages = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique(), key="online_lang")
 
-                mode_name_checkboxes = st.multiselect('Tryb rezerwacji', df['mode_name'].dropna().unique(), default=df['mode_name'].dropna().unique(), key="online_mode_name")
+                available_mode_names = df['mode_name'].dropna().unique()
+                mode_name_checkboxes = st.multiselect('Tryb rezerwacji', available_mode_names, default=available_mode_names, key="online_mode_name") if len(available_mode_names) > 1 else available_mode_names
 
                 with st.container(border=True):
                     attractions = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique(), key="online_attr")
@@ -72,7 +73,7 @@ def filter_online_data(df, filter_only_cities=True):
                 group_by = 'street' if separate_cities else None
 
             cities = df['street'][df['location'].isin(cities)].unique()
-            mode_names = df['mode_name'].dropna().unique() if len(mode_name_checkboxes) == 0 else df['mode_name'][df['mode_name'].isin(mode_name_checkboxes)].unique()
+            mode_names = df['mode_name'][df['mode_name'].isin(mode_name_checkboxes)].unique() if len(mode_name_checkboxes) > 0 else df['mode_name'].dropna().unique()
 
     current_ts = pd.Timestamp(datetime.now())
     if time_range == 'Od poczatku':
