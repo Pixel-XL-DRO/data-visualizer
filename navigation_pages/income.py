@@ -28,16 +28,16 @@ with st.spinner("Ładowanie danych...", show_time=True):
     df_voucher = auth.filter_locations(df_voucher)
 
 def render_online_view(df):
-    (group_by, show_moving_average_only, moving_average_days, show_moving_average, group_dates_by, start, end, date_type, cities, languages, attractions, status, attraction_types) = income_sidebar.filter_online_data(df,filter_only_cities=False)
+    (group_by, show_moving_average_only, moving_average_days, show_moving_average, group_dates_by, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types) = income_sidebar.filter_online_data(df, filter_only_cities=False)
 
     grouping_period, group_dates_by = utils.parse_grouping_period(group_dates_by)
 
     with st.spinner("Ładowanie danych...", show_time=True):
 
         df_online, df_online_period, df_online_cumulative = utils.run_in_parallel(
-            (online_queries.get_online_income, (group_by, moving_average_days, start, end, date_type, cities, languages, attractions, status, attraction_types)),
-            (online_queries.get_online_income_by_time_period, (date_type, start, end, status, cities, languages, attractions, attraction_types, grouping_period)),
-            (online_queries.get_online_income_cumulative, (group_by, start, end, date_type, cities, languages, attractions, status, attraction_types)),
+            (online_queries.get_online_income, (group_by, moving_average_days, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types)),
+            (online_queries.get_online_income_by_time_period, (date_type, start, end, status, cities, languages, mode_names, attractions, attraction_types, grouping_period)),
+            (online_queries.get_online_income_cumulative, (group_by, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types)),
         )
     
     online_chart = utils.create_chart_new(df_online, 'date', "Data", 'price' if not show_moving_average_only else None, 'price_ma' if show_moving_average else None, "Przychód (PLN)", group_by, 2 if group_by else 4, "Średnia", False)
@@ -95,7 +95,7 @@ def render_total_view(df):
         value=False
     )
 
-    (group_by, show_moving_average_only, moving_average_days, show_moving_average, group_dates_by, start, end, date_type, cities, languages, attractions, status, attraction_types) = income_sidebar.filter_online_data(df, filter_only_cities=True)
+    (group_by, show_moving_average_only, moving_average_days, show_moving_average, group_dates_by, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types) = income_sidebar.filter_online_data(df, filter_only_cities=True)
     
     grouping_period, group_dates_by = utils.parse_grouping_period(group_dates_by)
 

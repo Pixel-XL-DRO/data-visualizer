@@ -74,7 +74,7 @@ def classify_role(role_name):
 
 
 def rows_to_df(reservations, date_field):
-  columns = ["location_id", "city", "day", "source", "is_cancelled", "price", "boardhours", "visit_name"]
+  columns = ["location_id", "city", "day", "source", "is_cancelled", "price", "boardhours", "visit_name", "mode_name"]
   records = []
 
   for r in reservations:
@@ -100,6 +100,7 @@ def rows_to_df(reservations, date_field):
       "price": float(r.get("total_price_cents") or 0) / 100,
       "boardhours": float(r.get("boardhours_taken") or 0),
       "visit_name": visit_name,
+      "mode_name": r.get("mode_name"),
     })
 
   if not records:
@@ -394,6 +395,11 @@ def render_results(current_raw, previous_raw, mats_by_location, days, use_start_
 
   selected_cities = st.multiselect("Miasta", allowed_cities, default=allowed_cities, key="daily_report_cities")
   selected_visit_names = st.multiselect("Grupy atrakcji", all_visit_names, default=all_visit_names, key="daily_report_visit_names")
+
+  if active_tab == "marketing":
+    all_mode_names = sorted(current_df["mode_name"].dropna().unique().tolist())
+    selected_mode_names = st.multiselect("Tryb rezerwacji", all_mode_names, default=all_mode_names, key="daily_report_mode_names") if len(all_mode_names) > 1 else all_mode_names
+
   breakdown = st.checkbox("Rozdziel rodzaje atrakcji", key="daily_report_breakdown")
 
   if not selected_cities:
@@ -405,6 +411,10 @@ def render_results(current_raw, previous_raw, mats_by_location, days, use_start_
 
   current_df = current_df[current_df["visit_name"].isin(selected_visit_names)]
   previous_df = previous_df[previous_df["visit_name"].isin(selected_visit_names)]
+
+  if active_tab == "marketing":
+    current_df = current_df[current_df["mode_name"].isin(selected_mode_names)]
+    previous_df = previous_df[previous_df["mode_name"].isin(selected_mode_names)]
 
   breakdown_visit_names = selected_visit_names if breakdown else None
 

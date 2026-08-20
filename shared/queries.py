@@ -590,6 +590,7 @@ def get_initial_data():
       dvt.attraction_group as attraction_group,
       dvt.name as visit_type,
       dc.language as language,
+      ecr.mode_name as mode_name,
       DATETIME(MIN(ecr.start_date)) as start_date,
       DATETIME(MIN(ecr.booked_date)) as booked_date
     FROM
@@ -610,7 +611,8 @@ def get_initial_data():
       l.street,
       dvt.attraction_group,
       dvt.name,
-      dc.language  
+      dc.language,
+      ecr.mode_name
   """
 
   rows = run_query(query)

@@ -47,6 +47,8 @@ def filter_data(df):
     with st.expander("Filtry", expanded=True):
       city_checkboxes = st.multiselect("Miasta", df['location'].unique(), default=df['location'].unique())
       language_checkboxes = st.multiselect('Język klienta', df['language'].unique(), default=df['language'].unique())
+      available_mode_names = df['mode_name'].dropna().unique()
+      mode_name_checkboxes = st.multiselect('Tryb rezerwacji', available_mode_names, default=available_mode_names) if len(available_mode_names) > 1 else available_mode_names
       attraction_groups_checkboxes = st.multiselect('Grupy atrakcji', df['attraction_group'].unique(), default=df['attraction_group'].unique())
       status_checkboxes = st.multiselect("Status", ["Zrealizowane", "Anulowane", "Zrealizowane nieopłacone"], default=["Zrealizowane", "Zrealizowane nieopłacone"])
       visit_type_groups_checkboxes = st.multiselect('Typy wizyty', np.concatenate([df['visit_type'].unique(), np.array(["Wszystkie"])]), default="Wszystkie", on_change=lambda:ensure_status(), key="ms1")
@@ -77,6 +79,7 @@ def filter_data(df):
       end_date = datetime.combine(end_date, time.max)
 
     cities = df['street'][df['location'].isin(city_checkboxes)].unique()
+    mode_names = df['mode_name'][df['mode_name'].isin(mode_name_checkboxes)].unique() if len(mode_name_checkboxes) > 0 else df['mode_name'].dropna().unique()
     visit_types = df['visit_type'].unique() if "Wszystkie" in visit_type_groups_checkboxes else df['visit_type'][df['visit_type'].isin(visit_type_groups_checkboxes)].unique()
 
-    return (x_axis_type, group_dates_by, start_date, end_date, status_checkboxes, cities, language_checkboxes, attraction_groups_checkboxes, visit_types, show_unended_period)
+    return (x_axis_type, group_dates_by, start_date, end_date, status_checkboxes, cities, language_checkboxes, mode_names, attraction_groups_checkboxes, visit_types, show_unended_period)
