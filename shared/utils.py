@@ -356,7 +356,8 @@ street_to_location = {
   "lubicz": "Kraków, Lubicz 17A",
   "ogrodowa": "Łódź, Ogrodowa 8",
   "kijowska": "Warszawa, Kijowska 3",
-  "szajnochy": "Bydgoszcz, Szajnochy 4"
+  "szajnochy": "Bydgoszcz, Szajnochy 4",
+  "struga": "Szczecin, Andrzeja Struga 5"
 }
 
 def parse_grouping_period(period):

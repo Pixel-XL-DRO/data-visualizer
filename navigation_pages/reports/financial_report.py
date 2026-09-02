@@ -105,6 +105,14 @@ safi_locations = [
       "dotypos_cloud_id": 357162453,
       "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_357162453"),
     }
+  },
+  {
+    "label": "Szczecin Struga",
+    "value": {
+      "safi_id": "019fd2db-4418-7349-ae72-064a200b6869",
+      "dotypos_cloud_id": 301440149,
+      "dotypos_refresh_token": st.secrets["dotypos"].get("REFRESH_TOKEN_301440149"),
+    }
   }
 ]
 

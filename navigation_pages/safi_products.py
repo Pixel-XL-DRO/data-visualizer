@@ -25,10 +25,11 @@ street_to_city_name = {
   "sokolska": "Katowice",
   "swidnicka": "Wrocław",
   "swietego-marcina": "Poznań",
-  "lubicz": "Kraków",
+  "lubicz": "Kraków",  
   "ogrodowa": "Łódź",
   "kijowska": "Warszawa",
-  "szajnochy": "Bydgoszcz"
+  "szajnochy": "Bydgoszcz",
+  "struga": "Szczecin"
 }
 
 with st.spinner("Inicjalizacja...", show_time=True):

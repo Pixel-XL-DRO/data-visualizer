@@ -29,6 +29,7 @@ SAFI_LOCATIONS = {
   "warszawa-arkadia": ("Warszawa Box", "019bc67a-793e-705f-99db-3ee07379f1e1"),
   "bydgoszcz-szajnochy": ("Bydgoszcz", "019c6612-ff2e-711a-9646-78e9d3054c68"),
   "wroclaw-swidnicka": ("Wrocław", "019c32dd-e660-7073-8969-b350de2f45c9"),
+  "szczecin-struga": ("Szczecin", "019fd2db-4418-7349-ae72-064a200b6869")
 }
 
 LOCATION_ID_TO_CITY = {safi_id: city for city, safi_id in SAFI_LOCATIONS.values()}

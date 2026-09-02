@@ -12,6 +12,15 @@ LAST_HOURS_AVAILABILITY = {
         5: {22: _FOUR},
         6: {20: _FOUR},
     },
+    "struga": {
+        0: {20: _FOUR},
+        1: {20: _FOUR},
+        2: {20: _FOUR},
+        3: {20: _FOUR},
+        4: {20: _FOUR},
+        5: {20: _FOUR},
+        6: {19: _FOUR},
+    },
     "swietego-marcina": {
         0: {22: _FOUR},
         1: {22: _FOUR},

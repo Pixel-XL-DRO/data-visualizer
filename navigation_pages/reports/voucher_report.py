@@ -18,7 +18,8 @@ SAFI_LOCATIONS = {
   "gdansk-grunwaldzka": "019b3130-6834-7373-8b4b-c22d2b8b086a",
   "warszawa-arkadia": "019bc67a-793e-705f-99db-3ee07379f1e1",
   "wroclaw-swidnicka": "019c32dd-e660-7073-8969-b350de2f45c9",
-  "bydgoszcz-szajnochy": "019c6612-ff2e-711a-9646-78e9d3054c68"
+  "bydgoszcz-szajnochy": "019c6612-ff2e-711a-9646-78e9d3054c68",
+  "szczecin-struga": "019fd2db-4418-7349-ae72-064a200b6869",
 }
 
 def get_promo_codes_reports(start_date, end_date, use_start_at, locations):
