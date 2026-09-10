@@ -16,7 +16,7 @@ def get_reservations_data(streets, attraction_groups, start_date, end_date):
       res.time_taken AS reservation_time_taken,
       res.slots_taken AS reservation_slots_taken,
       res.reservation_system AS reservation_system,
-      res.start_date AS start_date,
+      DATETIME(res.start_date, 'Europe/Warsaw') AS start_date,
       loc.street AS street,
     FROM
       `pixelxl-database-dev.reservation_data.event_create_reservation` res
