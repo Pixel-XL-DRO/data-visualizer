@@ -42,6 +42,52 @@ VISIT_NAME_MAP = {
   "Wycieczki szkolne / półkolonie": "Szkoły",
 }
 
+RAW_FIELDS = [
+  "reservation_number",
+  "location_name",
+  "ticket_receipt_name",
+  "visit_name",
+  "status",
+  "customer_present",
+  "payment_type",
+  "document_type",
+  "invoice_tax_number",
+  "receipt_url",
+  "mode_name",
+  "created_at",
+  "start_at",
+  "boardhours_taken",
+  "role_name",
+  "total_gross_before_discount_grosze",
+  "total_net_before_discount_grosze",
+  "total_gross_after_discount_grosze",
+  "total_net_after_discount_grosze",
+]
+
+RAW_ROLE_NAME_MAP = {"Worker": "Lokal"}
+
+RAW_PAYMENT_TYPE_MAP = {
+  "ON_SPOT": "NA_MIEJSCU",
+  "DEFFERED": "ODROCZONA",
+  "DEFERRED": "ODROCZONA",
+}
+
+RAW_STATUS_MAP = {
+  "PAID": "OPŁACONA",
+  "ADVANCE_PAID": "OPŁACONO_ZALICZKE",
+  "CANCELLED": "ANULOWANA",
+  "CANCELLED_TO_RETURN": "ANULOWANA_DO_ZWROTU",
+  "NEW": "NOWA",
+}
+
+RAW_INVOICE_TYPE_MAP = {
+  "PERSON": "Faktura imienna",
+  "COMPANY": "Faktura",
+}
+
+RAW_DATE_FIELDS = ("created_at", "start_at")
+RAW_HELPER_FIELDS = ["location_id", "city", "day", "visit_name_group", "source"]
+
 
 def to_utc_range(start, end):
   utc_start = (
@@ -74,6 +120,14 @@ def classify_role(role_name):
   return "Lokal" if role_name in ("Worker", "Manager") else "CC"
 
 
+def to_local_date(raw_dt):
+  if not raw_dt:
+    return None
+  if len(raw_dt) == 10:
+    return date.fromisoformat(raw_dt)
+  return datetime.fromisoformat(raw_dt.replace("Z", "+00:00")).astimezone(USER_TZ).date()
+
+
 def rows_to_df(reservations, date_field):
   columns = ["location_id", "city", "day", "source", "is_cancelled", "price", "boardhours", "visit_name", "mode_name"]
   records = []
@@ -87,7 +141,7 @@ def rows_to_df(reservations, date_field):
     raw_dt = r.get(date_field)
     if not raw_dt:
       continue
-    day = datetime.fromisoformat(raw_dt.replace("Z", "+00:00")).astimezone(USER_TZ).date()
+    day = to_local_date(raw_dt)
 
     visit_name = r.get("visit_name")
     visit_name = VISIT_NAME_MAP.get(visit_name, visit_name)
@@ -98,7 +152,7 @@ def rows_to_df(reservations, date_field):
       "day": day,
       "source": classify_role(r.get("role_name")),
       "is_cancelled": r.get("status") in ("CANCELLED", "CANCELLED_TO_RETURN"),
-      "price": float(r.get("total_price_cents") or 0) / 100,
+      "price": float(r.get("total_price_grosze") or 0) / 100,
       "boardhours": float(r.get("boardhours_taken") or 0),
       "visit_name": visit_name,
       "mode_name": r.get("mode_name"),
@@ -108,6 +162,69 @@ def rows_to_df(reservations, date_field):
     return pd.DataFrame(columns=columns)
 
   return pd.DataFrame(records)
+
+
+def display_role(role_name):
+  if not role_name:
+    return "Online"
+  return RAW_ROLE_NAME_MAP.get(role_name, role_name)
+
+
+def as_bool(value):
+  if isinstance(value, str):
+    return value.strip().lower() in ("1", "true", "t", "yes")
+  return bool(value)
+
+
+def display_customer_present(customer_present):
+  return "ZREALIZOWANA" if as_bool(customer_present) else "NIEZREALIZOWANA"
+
+
+def display_document_type(invoice_type):
+  return RAW_INVOICE_TYPE_MAP.get(invoice_type, "Paragon")
+
+
+def display_status(status, payment_type):
+  if status == "NEW" and payment_type == "ON_SPOT":
+    return "OPŁACONA"
+  return RAW_STATUS_MAP.get(status, status)
+
+
+def rows_to_raw_df(reservations, date_field):
+  records = []
+
+  for r in reservations:
+    location_id = r.get("location_id")
+    city = LOCATION_ID_TO_CITY.get(location_id)
+    if city is None:
+      continue
+
+    raw_dt = r.get(date_field)
+    if not raw_dt:
+      continue
+
+    record = {field: r.get(field) for field in RAW_FIELDS}
+    for field in RAW_DATE_FIELDS:
+      record[field] = to_local_date(record[field])
+    record["role_name"] = display_role(record["role_name"])
+    record["status"] = display_status(record["status"], record["payment_type"])
+    record["customer_present"] = display_customer_present(record["customer_present"])
+    record["document_type"] = display_document_type(r.get("invoice_type"))
+    record["payment_type"] = RAW_PAYMENT_TYPE_MAP.get(record["payment_type"], record["payment_type"])
+
+    visit_name = r.get("visit_name")
+    record["location_id"] = location_id
+    record["city"] = city
+    record["day"] = to_local_date(raw_dt)
+    record["visit_name_group"] = VISIT_NAME_MAP.get(visit_name, visit_name)
+    record["source"] = classify_role(r.get("role_name"))
+
+    records.append(record)
+
+  if not records:
+    return pd.DataFrame(columns=RAW_FIELDS + RAW_HELPER_FIELDS)
+
+  return pd.DataFrame(records, columns=RAW_FIELDS + RAW_HELPER_FIELDS)
 
 
 def mats_by_city(mats_by_location, allowed_safi_ids):
@@ -378,6 +495,15 @@ def write_finance_report(current_df, previous_df, selected_cities, mats_map, day
   return buf.getvalue()
 
 
+def write_raw_report(raw_df):
+  buf = io.BytesIO()
+
+  with pd.ExcelWriter(buf, engine="xlsxwriter", date_format="yyyy-mm-dd") as writer:
+    raw_df[RAW_FIELDS].to_excel(writer, sheet_name="Rezerwacje", startrow=0, index=False)
+
+  return buf.getvalue()
+
+
 @st.fragment
 def render_results(current_raw, previous_raw, mats_by_location, days, use_start_date, allowed_cities, allowed_safi_ids, start_date, end_date, active_tab):
   date_field = "start_at" if use_start_date else "created_at"
@@ -401,7 +527,7 @@ def render_results(current_raw, previous_raw, mats_by_location, days, use_start_
     all_mode_names = sorted(current_df["mode_name"].dropna().unique().tolist())
     selected_mode_names = st.multiselect("Tryb rezerwacji", all_mode_names, default=all_mode_names, key="daily_report_mode_names") if len(all_mode_names) > 1 else all_mode_names
 
-  breakdown = st.checkbox("Rozdziel rodzaje atrakcji", key="daily_report_breakdown")
+  breakdown = st.checkbox("Rozdziel rodzaje atrakcji", key="daily_report_breakdown") if active_tab != "szczegoly" else False
 
   if not selected_cities:
     st.warning("Wybierz co najmniej jedno miasto!")
@@ -420,7 +546,15 @@ def render_results(current_raw, previous_raw, mats_by_location, days, use_start_
   breakdown_visit_names = selected_visit_names if breakdown else None
 
   with st.spinner("Tworzenie pliku.."):
-    if active_tab == "finanse":
+    if active_tab == "szczegoly":
+      raw_df = rows_to_raw_df(current_raw, date_field)
+      raw_df = raw_df[raw_df["location_id"].isin(allowed_safi_ids)]
+      raw_df = raw_df[(raw_df["day"] >= days[0]) & (raw_df["day"] <= days[-1])]
+      raw_df = raw_df[raw_df["city"].isin(selected_cities)]
+      raw_df = raw_df[raw_df["visit_name_group"].isin(selected_visit_names)]
+      xlsx_bytes = write_raw_report(raw_df)
+      dl_key, tag = "daily_report_download_szczegoly", "szczegolowy"
+    elif active_tab == "finanse":
       xlsx_bytes = write_finance_report(current_df, previous_df, selected_cities, mats_map, days, breakdown_visit_names)
       dl_key, tag = "daily_report_download_finanse", "finanse"
     else:
@@ -449,6 +583,7 @@ def view():
     data=[
       stx.TabBarItemData(id="marketing", title="Marketing", description="Raport marketingowy"),
       stx.TabBarItemData(id="finanse", title="Finanse", description="Raport finansowy"),
+      stx.TabBarItemData(id="szczegoly", title="Rezerwacje", description="Lista rezerwacji"),
     ],
     default="marketing",
     key="daily_report_tabs",
@@ -456,7 +591,7 @@ def view():
 
   mode_col, type_col = st.columns(2)
   with mode_col:
-    mode_options = ["Miesiąc", "Zakres"] if active_tab == "finanse" else ["Miesiąc", "Dzień"]
+    mode_options = ["Miesiąc", "Dzień"] if active_tab == "marketing" else ["Miesiąc", "Zakres"]
     mode = st.selectbox("Tryb", mode_options, key=f"daily_report_mode_{active_tab}")
   with type_col:
     date_type = st.selectbox("Rodzaj daty", ["Data stworzenia", "Data odbycia"], key="daily_report_date_type")
