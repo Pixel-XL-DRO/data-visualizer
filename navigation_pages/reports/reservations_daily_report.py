@@ -36,10 +36,18 @@ LOCATION_ID_TO_CITY = {safi_id: city for city, safi_id in SAFI_LOCATIONS.values(
 ALL_CITIES = sorted({city for city, _ in SAFI_LOCATIONS.values()})
 ALL_SAFI_IDS = {safi_id for _, safi_id in SAFI_LOCATIONS.values()}
 
-VISIT_NAME_MAP = {
-  "Integracja firmowa": "Integracje",
-  "Wycieczki szkolne": "Szkoły",
+ATTRACTION_MAP = {
+  "Indywidualne": "Indywidualnie",
+  "Indywidualnie": "Indywidualnie",
+  "Integracje": "Integracja Firmowa",
+  "Imprezy zorganizowane": "Imprezy zorganizowane",
+  "Integracja firmowa": "Integracja Firmowa",
+  "Integracja Firmowa": "Integracja Firmowa",
   "Wycieczki szkolne / półkolonie": "Szkoły",
+  "Wycieczki szkolne": "Szkoły",
+  "Szkoły": "Szkoły",
+  "Urodziny": "Urodziny",
+  "Blokada": "Blokada",
 }
 
 RAW_FIELDS = [
@@ -58,11 +66,25 @@ RAW_FIELDS = [
   "start_at",
   "boardhours_taken",
   "role_name",
-  "total_gross_before_discount_grosze",
-  "total_net_before_discount_grosze",
-  "total_gross_after_discount_grosze",
-  "total_net_after_discount_grosze",
+  "total_gross_before_discount_pln",
+  "total_net_before_discount_pln",
+  "total_vat_before_discount_pln",
+  "total_gross_after_discount_pln",
+  "total_net_after_discount_pln",
+  "total_vat_after_discount_pln",
 ]
+
+RAW_MONEY_FIELDS = {
+  "total_gross_before_discount_pln": "total_gross_before_discount_grosze",
+  "total_net_before_discount_pln": "total_net_before_discount_grosze",
+  "total_gross_after_discount_pln": "total_gross_after_discount_grosze",
+  "total_net_after_discount_pln": "total_net_after_discount_grosze",
+}
+
+RAW_VAT_FIELDS = {
+  "total_vat_before_discount_pln": ("total_gross_before_discount_grosze", "total_net_before_discount_grosze"),
+  "total_vat_after_discount_pln": ("total_gross_after_discount_grosze", "total_net_after_discount_grosze"),
+}
 
 RAW_ROLE_NAME_MAP = {"Worker": "Lokal"}
 
@@ -144,7 +166,7 @@ def rows_to_df(reservations, date_field):
     day = to_local_date(raw_dt)
 
     visit_name = r.get("visit_name")
-    visit_name = VISIT_NAME_MAP.get(visit_name, visit_name)
+    visit_name = ATTRACTION_MAP.get(visit_name, visit_name)
 
     records.append({
       "location_id": location_id,
@@ -184,6 +206,18 @@ def display_document_type(invoice_type):
   return RAW_INVOICE_TYPE_MAP.get(invoice_type, "Paragon")
 
 
+def to_zloty(grosze):
+  if grosze is None:
+    return None
+  return round(float(grosze) / 100, 2)
+
+
+def compute_vat(gross, net):
+  if gross is None or net is None:
+    return None
+  return round((float(gross) - float(net)) / 100, 2)
+
+
 def display_status(status, payment_type):
   if status == "NEW" and payment_type == "ON_SPOT":
     return "OPŁACONA"
@@ -203,7 +237,14 @@ def rows_to_raw_df(reservations, date_field):
     if not raw_dt:
       continue
 
-    record = {field: r.get(field) for field in RAW_FIELDS}
+    record = {
+      field: r.get(field) for field in RAW_FIELDS
+      if field not in RAW_MONEY_FIELDS and field not in RAW_VAT_FIELDS
+    }
+    for money_field, source_field in RAW_MONEY_FIELDS.items():
+      record[money_field] = to_zloty(r.get(source_field))
+    for vat_field, (gross_field, net_field) in RAW_VAT_FIELDS.items():
+      record[vat_field] = compute_vat(r.get(gross_field), r.get(net_field))
     for field in RAW_DATE_FIELDS:
       record[field] = to_local_date(record[field])
     record["role_name"] = display_role(record["role_name"])
@@ -212,11 +253,12 @@ def rows_to_raw_df(reservations, date_field):
     record["document_type"] = display_document_type(r.get("invoice_type"))
     record["payment_type"] = RAW_PAYMENT_TYPE_MAP.get(record["payment_type"], record["payment_type"])
 
-    visit_name = r.get("visit_name")
+    visit_name = ATTRACTION_MAP.get(r.get("visit_name"), r.get("visit_name"))
+    record["visit_name"] = visit_name
     record["location_id"] = location_id
     record["city"] = city
     record["day"] = to_local_date(raw_dt)
-    record["visit_name_group"] = VISIT_NAME_MAP.get(visit_name, visit_name)
+    record["visit_name_group"] = visit_name
     record["source"] = classify_role(r.get("role_name"))
 
     records.append(record)
@@ -500,6 +542,12 @@ def write_raw_report(raw_df):
 
   with pd.ExcelWriter(buf, engine="xlsxwriter", date_format="yyyy-mm-dd") as writer:
     raw_df[RAW_FIELDS].to_excel(writer, sheet_name="Rezerwacje", startrow=0, index=False)
+
+    ws = writer.sheets["Rezerwacje"]
+    money_fmt = writer.book.add_format({"num_format": "0.00"})
+    for field in list(RAW_MONEY_FIELDS) + list(RAW_VAT_FIELDS):
+      col = RAW_FIELDS.index(field)
+      ws.set_column(col, col, len(field) + 2, money_fmt)
 
   return buf.getvalue()
 
