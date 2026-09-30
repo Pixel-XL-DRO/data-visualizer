@@ -57,7 +57,12 @@ def view():
   with st.spinner(""):
     df = queries.get_initial_data()
     df = auth.filter_locations(df)
-    locations = list(set([f"{city}-{street}" for city, street in df[["city", "street"]].values]))
+    location_labels = {
+      f"{city}-{street}": utils.street_to_location.get(street, street)
+      for city, street in df[["city", "street"]].values
+      if f"{city}-{street}" in SAFI_LOCATIONS
+    }
+    locations = sorted(location_labels, key=lambda loc: location_labels[loc])
   col1, col2 = st.columns(2)
 
   now = datetime.now()
@@ -69,6 +74,14 @@ def view():
 
   date_type = st.selectbox("Wybierz rodzaj daty", ["Data stworzenia", "Data rozpoczecia"], key="date_type")
   use_start_date = True if date_type == "Data rozpoczecia" else False
+
+  selected_locations = st.multiselect(
+    "Lokacje",
+    locations,
+    default=locations,
+    format_func=lambda loc: location_labels[loc],
+    key="voucher_report_locations"
+  )
 
 
   dt_start_date = datetime.combine(start_date, datetime.min.time(), tzinfo=USER_TZ)
@@ -87,9 +100,13 @@ def view():
     .strftime("%Y-%m-%dT%H:%M:%SZ")
   )
 
+  if not selected_locations:
+    st.warning("Wybierz co najmniej jedną lokację!")
+    return
+
   if st.button("Generuj raport"):
     with st.spinner("Ładowanie danych...", show_time=True):
-      data = get_promo_codes_reports(utc_start, utc_end, use_start_date, locations)
+      data = get_promo_codes_reports(utc_start, utc_end, use_start_date, selected_locations)
       st.info("Sumaryczne dane, rozdzielone typy wizyt dostępne w pliku do pobrania")
       for visit_name in data:
 
