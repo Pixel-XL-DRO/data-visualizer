@@ -7,10 +7,10 @@ import online_queries
 import pos_queries
 import vouchers_income_queries
 
-def get_total_income(group_by, moving_average_days, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox):
+def get_total_income(group_by, moving_average_days, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types, filter_checkbox):
 
   df, df_pos, df_voucher = utils.run_in_parallel(
-    (online_queries.get_online_income, (group_by, moving_average_days, start, end, date_type, cities, languages, attractions, status, attraction_types)),
+    (online_queries.get_online_income, (group_by, moving_average_days, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types)),
     (pos_queries.get_pos_income, (start, end, cities, filter_checkbox, moving_average_days, group_by)),
     (vouchers_income_queries.get_voucher_income, (group_by, moving_average_days, start, end, cities))
   )
@@ -42,10 +42,10 @@ def get_total_income(group_by, moving_average_days, start, end, date_type, citie
 
   return df_final
 
-def get_total_income_by_period(grouping_period, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox):
+def get_total_income_by_period(grouping_period, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types, filter_checkbox):
 
   df, df_pos, df_voucher = utils.run_in_parallel(
-    (online_queries.get_online_income_by_time_period, (date_type, start, end, status, cities, languages, attractions, attraction_types, grouping_period)),
+    (online_queries.get_online_income_by_time_period, (date_type, start, end, status, cities, languages, mode_names, attractions, attraction_types, grouping_period)),
     (pos_queries.get_pos_income_by_period, (grouping_period, start, end, cities, filter_checkbox)),
     (vouchers_income_queries.get_vouchers_by_weekday, (grouping_period, start, end, cities)),
   )
@@ -68,10 +68,10 @@ def get_total_income_by_period(grouping_period, start, end, date_type, cities, l
 
   return df_final
 
-def get_total_cumulative_income(group_by, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox):
+def get_total_cumulative_income(group_by, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types, filter_checkbox):
 
   df, df_pos, df_voucher = utils.run_in_parallel(
-    (online_queries.get_online_income_cumulative, (group_by, start, end, date_type, cities, languages, attractions, status, attraction_types)),
+    (online_queries.get_online_income_cumulative, (group_by, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types)),
     (pos_queries.get_pos_cumulative_income, (start, end, cities, filter_checkbox, group_by)),
     (vouchers_income_queries.get_voucher_cumulative_income, (group_by, start, end, cities)),
   )

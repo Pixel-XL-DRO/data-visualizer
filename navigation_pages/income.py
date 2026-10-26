@@ -102,9 +102,9 @@ def render_total_view(df):
     with st.spinner("Ładowanie danych...", show_time=True):
 
         df_total, df_total_period, df_total_cumulative = utils.run_in_parallel(
-            (total_queries.get_total_income, (group_by, moving_average_days, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox)),
-            (total_queries.get_total_income_by_period, (grouping_period, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox)),
-            (total_queries.get_total_cumulative_income, (group_by, start, end, date_type, cities, languages, attractions, status, attraction_types, filter_checkbox)),
+            (total_queries.get_total_income, (group_by, moving_average_days, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types, filter_checkbox)),
+            (total_queries.get_total_income_by_period, (grouping_period, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types, filter_checkbox)),
+            (total_queries.get_total_cumulative_income, (group_by, start, end, date_type, cities, languages, mode_names, attractions, status, attraction_types, filter_checkbox)),
         )
 
     income_chart = utils.create_chart_new(df_total, 'date', "Data", 'price' if not show_moving_average_only else None, 'price_ma' if show_moving_average else None, "Przychód (PLN)", group_by, 2 if group_by else 4, "Średnia", False)
