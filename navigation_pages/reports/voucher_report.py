@@ -67,7 +67,7 @@ def view():
 
   now = datetime.now()
   with col1:
-    start_date = st.date_input("Podaj date poczatku", now - timedelta(days=1), key="start_date", max_value=now - timedelta(days=1))
+    start_date = st.date_input("Podaj date poczatku", now - timedelta(days=1), key="start_date")
 
   with col2:
     end_date = st.date_input("Podaj date końca", now, key="end_date")
